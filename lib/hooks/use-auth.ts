@@ -60,11 +60,16 @@ export function useAuth() {
     }
 
     try {
+      // Dynamic redirect: use current origin (client-side) or fallback to Vercel URL (SSR/build)
+      const redirectTo = typeof window !== 'undefined'
+        ? `${window.location.origin}/auth/callback`
+        : 'https://remindmybill-webapp.vercel.app/auth/callback'
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           scopes: "https://www.googleapis.com/auth/gmail.readonly",
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo,
           queryParams: {
             access_type: "offline",
             prompt: "consent",
