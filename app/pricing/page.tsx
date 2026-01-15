@@ -18,14 +18,14 @@ export default function PricingPage() {
       description: "Perfect for getting started with subscription tracking",
       badge: null,
       features: [
-        { text: "Up to 3 subscriptions", included: true },
-        { text: "Basic renewal alerts", included: true },
-        { text: "Manual tracking", included: true },
-        { text: "Email notifications", included: true },
-        { text: "AI Inbox Hunter", included: false },
-        { text: "Trust Analyst deep-reports", included: false },
-        { text: "SMS alerts", included: false },
-        { text: "Priority support", included: false },
+        { text: "Up to 3 subscriptions", included: true, highlight: false },
+        { text: "Basic renewal alerts", included: true, highlight: false },
+        { text: "Manual tracking", included: true, highlight: false },
+        { text: "Email notifications", included: true, highlight: false },
+        { text: "AI Inbox Hunter", included: false, highlight: false },
+        { text: "Trust Analyst deep-reports", included: false, highlight: false },
+        { text: "SMS alerts", included: false, highlight: false },
+        { text: "Priority support", included: false, highlight: false },
       ],
       cta: "Get Started",
       highlight: false,
@@ -37,14 +37,14 @@ export default function PricingPage() {
       description: "Complete automation and insights for power users",
       badge: "Most Popular",
       features: [
-        { text: "Unlimited subscriptions", included: true },
+        { text: "Unlimited subscriptions", included: true, highlight: false },
         { text: "AI Inbox Hunter", included: true, highlight: true },
         { text: "Trust Analyst deep-reports", included: true, highlight: true },
         { text: "SMS alerts", included: true, highlight: true },
-        { text: "Advanced analytics", included: true },
-        { text: "Dark pattern detection", included: true },
-        { text: "Priority support", included: true },
-        { text: "Export & reporting", included: true },
+        { text: "Advanced analytics", included: true, highlight: false },
+        { text: "Dark pattern detection", included: true, highlight: false },
+        { text: "Priority support", included: true, highlight: false },
+        { text: "Export & reporting", included: true, highlight: false },
       ],
       cta: "Start Free Trial",
       highlight: true,
@@ -119,10 +119,10 @@ export default function PricingPage() {
                       )}
                       <span
                         className={`${feature.included
-                            ? feature.highlight
-                              ? "font-medium text-foreground"
-                              : "text-foreground"
-                            : "text-muted-foreground opacity-50"
+                          ? feature.highlight
+                            ? "font-medium text-foreground"
+                            : "text-foreground"
+                          : "text-muted-foreground opacity-50"
                           }`}
                       >
                         {feature.text}
