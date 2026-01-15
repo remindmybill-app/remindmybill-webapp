@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, Search, Bell, User, Settings, LogOut, Shield, AlertCircle } from "lucide-react"
+import { Menu, Search, Bell, User, Settings, LogOut, AlertCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useProfile } from "@/lib/hooks/use-profile"
 import type { Notification } from "@/lib/types"
@@ -70,8 +70,8 @@ export function Navigation() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <Shield className="h-7 w-7 text-primary" />
-            <span className="text-xl font-bold">SubGuard</span>
+            <Bell className="h-7 w-7 text-primary" />
+            <span className="text-xl font-bold">Remind My Bill</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -204,8 +204,8 @@ export function Navigation() {
               <SheetContent side="right" className="w-80">
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center gap-2 border-b pb-4">
-                    <Shield className="h-6 w-6 text-primary" />
-                    <span className="text-lg font-bold">SubGuard</span>
+                    <Bell className="h-6 w-6 text-primary" />
+                    <span className="text-lg font-bold">Remind My Bill</span>
                   </div>
                   <nav className="flex flex-col gap-2">
                     <Button variant="ghost" className="justify-start" asChild>

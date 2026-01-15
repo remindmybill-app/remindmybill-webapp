@@ -143,7 +143,7 @@ export default function SettingsPage() {
                   <CreditCard className="h-5 w-5 text-primary" />
                   Current Plan
                 </CardTitle>
-                <CardDescription>Manage your SubGuard subscription</CardDescription>
+                <CardDescription>Manage your Remind My Bill subscription</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between rounded-lg border bg-card/50 p-4">

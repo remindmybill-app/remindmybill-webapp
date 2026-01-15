@@ -79,9 +79,8 @@ export default function PricingPage() {
           {plans.map((plan, index) => (
             <Card
               key={index}
-              className={`relative overflow-hidden ${
-                plan.highlight ? "border-primary/50 shadow-lg shadow-primary/20 ring-2 ring-primary/20" : ""
-              }`}
+              className={`relative overflow-hidden ${plan.highlight ? "border-primary/50 shadow-lg shadow-primary/20 ring-2 ring-primary/20" : ""
+                }`}
             >
               {plan.highlight && (
                 <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/5 to-transparent" />
@@ -112,21 +111,19 @@ export default function PricingPage() {
                     <li key={featureIndex} className="flex items-start gap-3">
                       {feature.included ? (
                         <Check
-                          className={`mt-0.5 h-5 w-5 flex-shrink-0 ${
-                            feature.highlight ? "text-primary" : "text-muted-foreground"
-                          }`}
+                          className={`mt-0.5 h-5 w-5 flex-shrink-0 ${feature.highlight ? "text-primary" : "text-muted-foreground"
+                            }`}
                         />
                       ) : (
                         <Check className="mt-0.5 h-5 w-5 flex-shrink-0 text-muted-foreground opacity-30" />
                       )}
                       <span
-                        className={`${
-                          feature.included
+                        className={`${feature.included
                             ? feature.highlight
                               ? "font-medium text-foreground"
                               : "text-foreground"
                             : "text-muted-foreground opacity-50"
-                        }`}
+                          }`}
                       >
                         {feature.text}
                       </span>
@@ -152,7 +149,7 @@ export default function PricingPage() {
             <div className="flex-1">
               <h3 className="mb-2 text-xl font-bold">30-Day Money-Back Guarantee</h3>
               <p className="text-muted-foreground">
-                Try SubGuard Pro risk-free. If you're not completely satisfied within the first 30 days, we'll refund
+                Try Remind My Bill Pro risk-free. If you're not completely satisfied within the first 30 days, we'll refund
                 your money—no questions asked.
               </p>
             </div>

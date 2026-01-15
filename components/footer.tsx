@@ -1,4 +1,4 @@
-import { Shield, Twitter, Github, Linkedin } from "lucide-react"
+import { Bell, Twitter, Github, Linkedin } from "lucide-react"
 
 export function Footer() {
   return (
@@ -114,9 +114,9 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="mt-8 flex flex-col items-center justify-between gap-4 border-t border-border/40 pt-8 md:flex-row">
           <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
+            <Bell className="h-5 w-5 text-primary" />
             <span className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()} SubGuard. All rights reserved.
+              © {new Date().getFullYear()} Remind My Bill. All rights reserved.
             </span>
           </div>
           <div className="text-sm text-muted-foreground">Built with security and privacy in mind</div>

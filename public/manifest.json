@@ -1,6 +1,6 @@
 {
-  "name": "SubGuard - Subscription Management",
-  "short_name": "SubGuard",
+  "name": "Remind My Bill - Subscription Management",
+  "short_name": "Remind My Bill",
   "description": "AI-powered subscription management platform to optimize your spending",
   "start_url": "/",
   "display": "standalone",
@@ -21,21 +21,35 @@
       "purpose": "any"
     }
   ],
-  "categories": ["finance", "productivity", "utilities"],
+  "categories": [
+    "finance",
+    "productivity",
+    "utilities"
+  ],
   "shortcuts": [
     {
       "name": "Dashboard",
       "short_name": "Dashboard",
       "description": "View your subscription dashboard",
       "url": "/",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Trust Center",
       "short_name": "Trust",
       "description": "Analyze subscription services",
       "url": "/trust-center",
-      "icons": [{ "src": "/icon-192x192.png", "sizes": "192x192" }]
+      "icons": [
+        {
+          "src": "/icon-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

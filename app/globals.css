@@ -40,7 +40,7 @@
 }
 
 .dark {
-  /* SubGuard dark theme: zinc-950 background, slate-400 text, emerald-500 accents */
+  /* Remind My Bill dark theme: zinc-950 background, slate-400 text, emerald-500 accents */
   --background: oklch(0.09 0.005 270);
   --foreground: oklch(0.68 0.005 270);
   --card: oklch(0.11 0.005 270);

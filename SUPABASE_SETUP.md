@@ -1,6 +1,6 @@
-# SubGuard Supabase Setup Guide
+# Remind My Bill Supabase Setup Guide
 
-This guide will help you set up Supabase for your SubGuard application.
+This guide will help you set up Supabase for your Remind My Bill application.
 
 ## Prerequisites
 

@@ -3,7 +3,7 @@
 
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Shield, Sparkles, Inbox, Lock, ArrowRight, CheckCircle2, Zap, Eye, AlertTriangle } from "lucide-react"
+import { Bell, Sparkles, Inbox, Lock, ArrowRight, CheckCircle2, Zap, Eye, AlertTriangle } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useEffect, useState } from "react"
 
@@ -37,7 +37,7 @@ export default function LandingPage() {
                             <span className="text-primary">pays for itself.</span>
                         </h1>
                         <p className="mt-8 text-lg leading-8 text-muted-foreground max-w-2xl mx-auto">
-                            I built SubGuard because I was tired of losing money to "free" trials and hidden subscriptions.
+                            I built Remind My Bill because I was tired of losing money to "free" trials and hidden subscriptions.
                             Our AI scans your receipts, finds the leaks, and helps you cancel the noise.
                         </p>
                         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6">
@@ -117,7 +117,7 @@ export default function LandingPage() {
                         {/* Feature 2 */}
                         <div className="md:col-span-1 rounded-3xl bg-card border border-border/50 p-8 flex flex-col relative overflow-hidden group hover:border-primary/20 transition-all duration-500">
                             <div className="h-12 w-12 rounded-xl bg-orange-500/10 flex items-center justify-center mb-6">
-                                <Shield className="h-6 w-6 text-orange-500" />
+                                <Bell className="h-6 w-6 text-orange-500" />
                             </div>
                             <h3 className="text-xl font-bold mb-2">Trust Scores</h3>
                             <p className="text-muted-foreground text-sm">

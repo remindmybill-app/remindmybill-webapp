@@ -10,15 +10,15 @@ const _geist = Geist({ subsets: ["latin"] })
 const _geistMono = Geist_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "SubGuard - Subscription Management Dashboard",
+  title: "Remind My Bill - Subscription Management Dashboard",
   description:
-    "Manage your subscriptions, optimize spending, and track your financial health with SubGuard's AI-powered platform",
+    "Manage your subscriptions, optimize spending, and track your financial health with Remind My Bill's AI-powered platform",
   generator: "v0.app",
-  applicationName: "SubGuard",
+  applicationName: "Remind My Bill",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "SubGuard",
+    title: "Remind My Bill",
   },
   formatDetection: {
     telephone: false,

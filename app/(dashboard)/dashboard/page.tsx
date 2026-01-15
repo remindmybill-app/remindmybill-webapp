@@ -7,7 +7,7 @@ import { QuickStats } from "@/components/quick-stats"
 import { SubscriptionsTable } from "@/components/subscriptions-table"
 import { SavingsAlerts } from "@/components/savings-alerts"
 import { Button } from "@/components/ui/button"
-import { Inbox, Shield, Sparkles, Plus } from "lucide-react"
+import { Inbox, Bell, Sparkles, Plus } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
@@ -62,7 +62,7 @@ export default function DashboardPage() {
             <div className="flex min-h-screen items-center justify-center bg-background px-4">
                 <div className="w-full max-w-md text-center">
                     <div className="mb-6 inline-flex items-center justify-center rounded-2xl bg-zinc-900 p-6 ring-1 ring-white/10">
-                        <Shield className="h-12 w-12 text-white" />
+                        <Bell className="h-12 w-12 text-white" />
                     </div>
                     <h1 className="mb-2 text-2xl font-bold tracking-tight">Security Check</h1>
                     <p className="mb-6 text-muted-foreground">Please sign in to access your financial dashboard.</p>
@@ -147,9 +147,9 @@ export default function DashboardPage() {
                         {/* Premium Feature Teaser */}
                         <div className="rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 p-6 text-white shadow-xl shadow-indigo-500/20">
                             <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
-                                <Shield className="h-5 w-5 text-white" />
+                                <Bell className="h-5 w-5 text-white" />
                             </div>
-                            <h3 className="mb-2 text-lg font-bold">SubGuard Premium</h3>
+                            <h3 className="mb-2 text-lg font-bold">Remind My Bill Premium</h3>
                             <p className="mb-4 text-sm text-indigo-100">
                                 Get Legal Concierge to cancel hard-to-cancel subscriptions for you.
                             </p>

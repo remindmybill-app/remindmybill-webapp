@@ -4,14 +4,14 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Shield, Mail, Sparkles, CheckCircle2, Loader2 } from "lucide-react"
+import { Bell, Mail, Sparkles, CheckCircle2, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 
 const steps = [
   {
     id: 1,
-    title: "Welcome to SubGuard",
+    title: "Welcome to Remind My Bill",
     description: "Let's find your hidden subscriptions",
   },
   {
@@ -116,19 +116,17 @@ export default function OnboardingPage() {
             {steps.map((step) => (
               <div key={step.id} className={`flex items-center ${step.id !== steps.length ? "flex-1" : ""}`}>
                 <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${
-                    currentStep >= step.id
+                  className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${currentStep >= step.id
                       ? "border-primary bg-primary text-primary-foreground"
                       : "border-muted bg-background text-muted-foreground"
-                  }`}
+                    }`}
                 >
                   {currentStep > step.id ? <CheckCircle2 className="h-5 w-5" /> : step.id}
                 </div>
                 {step.id !== steps.length && (
                   <div
-                    className={`mx-2 h-0.5 flex-1 transition-colors ${
-                      currentStep > step.id ? "bg-primary" : "bg-muted"
-                    }`}
+                    className={`mx-2 h-0.5 flex-1 transition-colors ${currentStep > step.id ? "bg-primary" : "bg-muted"
+                      }`}
                   />
                 )}
               </div>
@@ -144,9 +142,9 @@ export default function OnboardingPage() {
           <Card className="border-2">
             <CardHeader className="text-center">
               <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10">
-                <Shield className="h-10 w-10 text-primary" />
+                <Bell className="h-10 w-10 text-primary" />
               </div>
-              <CardTitle className="text-3xl">Welcome to SubGuard</CardTitle>
+              <CardTitle className="text-3xl">Welcome to Remind My Bill</CardTitle>
               <CardDescription className="text-lg">Let's find your hidden subscriptions</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -199,7 +197,7 @@ export default function OnboardingPage() {
             <CardContent className="space-y-6">
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-6">
                 <div className="mb-4 flex items-center gap-2 text-primary">
-                  <Shield className="h-5 w-5" />
+                  <Bell className="h-5 w-5" />
                   <p className="font-semibold">Your Privacy is Protected</p>
                 </div>
                 <ul className="space-y-2 text-sm text-muted-foreground">

@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { Button } from "@/components/ui/button"
-import { Shield, Mail } from "lucide-react"
+import { Bell, Mail } from "lucide-react"
 
 export default function LoginPage() {
     const { signIn, isLoading, isAuthenticated } = useAuth()
@@ -34,10 +34,10 @@ export default function LoginPage() {
                 {/* Logo & Branding */}
                 <div className="flex flex-col items-center gap-4">
                     <div className="inline-flex items-center justify-center rounded-2xl bg-primary/10 p-6 ring-1 ring-primary/20">
-                        <Shield className="h-12 w-12 text-primary" />
+                        <Bell className="h-12 w-12 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight">Welcome to SubGuard</h1>
+                        <h1 className="text-3xl font-bold tracking-tight">Welcome to Remind My Bill</h1>
                         <p className="mt-2 text-muted-foreground">
                             Sign in with Google to start tracking your subscriptions
                         </p>
@@ -66,7 +66,7 @@ export default function LoginPage() {
                 {/* Security Badge */}
                 <div className="rounded-lg border border-border/50 bg-muted/20 p-4">
                     <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                        <Shield className="h-4 w-4 text-green-500" />
+                        <Bell className="h-4 w-4 text-green-500" />
                         <span>Secured with Google OAuth 2.0</span>
                     </div>
                 </div>
