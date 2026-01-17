@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: "Remind My Bill - Subscription Management Dashboard",
   description:
     "Manage your subscriptions, optimize spending, and track your financial health with Remind My Bill's AI-powered platform",
-  generator: "v0.app",
+  generator: "For You Digital Solutions",
   applicationName: "Remind My Bill",
   appleWebApp: {
     capable: true,
