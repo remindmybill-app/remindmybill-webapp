@@ -19,21 +19,16 @@ import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { useMemo } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 
-// Mock data for spending trend (last 12 months)
-const spendingTrendData = [
-  { month: "Jan", spending: 128.5 },
-  { month: "Feb", spending: 135.2 },
-  { month: "Mar", spending: 142.8 },
-  { month: "Apr", spending: 138.9 },
-  { month: "May", spending: 145.6 },
-  { month: "Jun", spending: 152.3 },
-  { month: "Jul", spending: 148.7 },
-  { month: "Aug", spending: 155.4 },
-  { month: "Sep", spending: 149.8 },
-  { month: "Oct", spending: 142.5 },
-  { month: "Nov", spending: 139.6 },
-  { month: "Dec", spending: 142.5 },
-]
+// Helper to get last 12 months
+const getLast12Months = () => {
+  const months = []
+  const date = new Date()
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(date.getFullYear(), date.getMonth() - i, 1)
+    months.push(d.toLocaleString("default", { month: "short" }))
+  }
+  return months
+}
 
 export default function AnalyticsPage() {
   const { subscriptions, isLoading } = useSubscriptions()
@@ -97,6 +92,26 @@ export default function AnalyticsPage() {
     const lowUsageSubs = (subscriptions || []).filter((sub) => sub.trust_score < 50)
     const projectedSavings = lowUsageSubs.reduce((sum, sub) => sum + sub.cost * 12, 0)
 
+    // Calculate Spending Trends (Last 12 Months)
+    // For MVP: Project current monthly spend across previous months with slight variance to show "trend"
+    // In production: This would query historical transaction data.
+    const last12Months = getLast12Months()
+    const spendingTrendData = last12Months.map((month, i) => {
+      // Create a fake "history" curve - slightly lower in past to show growth, or flat
+      // Variance factor: 0.9 to 1.1
+      // If we have no data, 0
+      if (totalMonthlySpend === 0) return { month, spending: 0 }
+
+      // Simple simulation: Past months were slightly cheaper (inflation/new subs)
+      // e.g., 6 months ago was 90% of current.
+      // This is purely visual for the MVP "Feel".
+      const growthFactor = 0.9 + (i / 11) * 0.1 // Grows from 90% to 100%
+      return {
+        month,
+        spending: Math.round(totalMonthlySpend * growthFactor),
+      }
+    })
+
     return {
       totalMonthlySpend,
       activeCount: subscriptions.length,
@@ -104,6 +119,7 @@ export default function AnalyticsPage() {
       upcomingRenewals: upcomingRenewals || [],
       projectedSavings,
       lowUsageSubs: lowUsageSubs || [],
+      spendingTrendData,
     }
   }, [subscriptions])
 
@@ -196,54 +212,47 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Spending Trend Area Chart */}
-        <Card className="mb-10 rounded-3xl border-zinc-200 bg-white p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 overflow-hidden">
-          <CardHeader className="p-6 pb-0">
+        {/* Spending Trend Area Chart */}
+        <Card className="col-span-4 rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 mb-10 overflow-hidden">
+          <CardHeader className="p-8 pb-0">
             <div className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-indigo-500" />
-              <CardTitle className="text-xl font-bold">Spending Trend</CardTitle>
+              <CardTitle className="text-xl font-bold">Spending Trends</CardTitle>
             </div>
-            <CardDescription>12-month trailing subscription expenditures</CardDescription>
+            <CardDescription>Monthly subscription costs over time</CardDescription>
           </CardHeader>
-          <CardContent className="p-0 sm:p-6">
-            <div className="h-[350px] w-full pt-6">
+          <CardContent className="p-0">
+            <div className="h-[300px] w-full mt-4">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={spendingTrendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <AreaChart
+                  data={analytics.spendingTrendData}
+                  margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+                >
                   <defs>
-                    <linearGradient id="spendingGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="oklch(0.65 0.17 250)" stopOpacity={0.1} />
-                      <stop offset="95%" stopColor="oklch(0.65 0.17 250)" stopOpacity={0} />
+                    <linearGradient id="colorSpending" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="oklch(0.25 0.05 250 / 0.1)" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.1} />
                   <XAxis
                     dataKey="month"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                    tickFormatter={(value) => `$${value}`}
+                    tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+                    dy={10}
                   />
                   <Tooltip
-                    contentStyle={{
-                      backgroundColor: "rgba(255, 255, 255, 0.9)",
-                      border: "1px solid rgba(0, 0, 0, 0.1)",
-                      borderRadius: "12px",
-                      boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                      backdropFilter: "blur(4px)"
-                    }}
-                    cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1 }}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                    formatter={(value: number) => [`$${value}`, "Spending"]}
                   />
                   <Area
                     type="monotone"
                     dataKey="spending"
-                    stroke="hsl(var(--indigo-500))"
+                    stroke="#6366f1"
                     strokeWidth={3}
-                    fill="url(#spendingGradient)"
-                    animationDuration={1500}
+                    fillOpacity={1}
+                    fill="url(#colorSpending)"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -336,7 +345,7 @@ export default function AnalyticsPage() {
                   ))}
                   {analytics.lowUsageSubs.length === 0 && (
                     <div className="rounded-xl border border-dashed border-indigo-200 p-8 text-center bg-white/20">
-                      <p className="text-sm text-indigo-600/60">No high-risk expenditures detected.</p>
+                      <p className="text-sm text-indigo-600/60">No inefficiencies detected yet.</p>
                     </div>
                   )}
                 </div>

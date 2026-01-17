@@ -1,7 +1,4 @@
-
-"use client"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -19,6 +16,7 @@ import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase"
 import { toast } from "sonner"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import type { Subscription } from "@/lib/types"
 
 const formSchema = z.object({
     name: z.string().min(1, "Service name is required"),
@@ -49,13 +47,25 @@ const popularServices = [
     "Dropbox", "Planet Fitness", "HelloFresh", "Uber One", "ChatGPT Plus"
 ]
 
-export function ManualSubscriptionModal({ onSubscriptionAdded }: { onSubscriptionAdded: () => void }) {
-    const [open, setOpen] = useState(false)
+interface ManualSubscriptionModalProps {
+    onSubscriptionAdded: () => void
+    subscriptionToEdit?: Subscription | null
+    open?: boolean
+    onOpenChange?: (open: boolean) => void
+    trigger?: React.ReactNode
+}
+
+export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdit, open: controlledOpen, onOpenChange, trigger }: ManualSubscriptionModalProps) {
+    const [internalOpen, setInternalOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const [date, setDate] = useState<Date>()
     const [serviceOpen, setServiceOpen] = useState(false)
 
-    const { register, handleSubmit, setValue, watch, reset, formState: { errors, isValid, isDirty } } = useForm<z.infer<typeof formSchema>>({
+    // Derived state for controlled/uncontrolled
+    const isOpen = controlledOpen ?? internalOpen
+    const setIsOpen = onOpenChange ?? setInternalOpen
+
+    const { register, handleSubmit, setValue, watch, reset, formState: { errors, isValid } } = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         mode: "onChange",
         defaultValues: {
@@ -65,6 +75,35 @@ export function ManualSubscriptionModal({ onSubscriptionAdded }: { onSubscriptio
             category: "Entertainment",
         }
     })
+
+    // Reset/Populate form when modal opens or subscriptionToEdit changes
+    useEffect(() => {
+        if (isOpen) {
+            if (subscriptionToEdit) {
+                setValue("name", subscriptionToEdit.name)
+                setValue("cost", String(subscriptionToEdit.cost))
+                setValue("currency", subscriptionToEdit.currency)
+                setValue("frequency", subscriptionToEdit.frequency)
+                setValue("category", subscriptionToEdit.category)
+                setValue("isTrial", false) // Assuming mock data didn't have this, or add if needed
+
+                if (subscriptionToEdit.renewal_date) {
+                    const rDate = new Date(subscriptionToEdit.renewal_date)
+                    setDate(rDate)
+                    setValue("renewalDate", rDate)
+                }
+            } else {
+                reset({
+                    currency: "USD",
+                    frequency: "monthly",
+                    isTrial: false,
+                    category: "Entertainment",
+                })
+                setDate(undefined)
+            }
+        }
+    }, [isOpen, subscriptionToEdit, setValue, reset])
+
 
     const isTrial = watch("isTrial")
 
@@ -89,51 +128,74 @@ export function ManualSubscriptionModal({ onSubscriptionAdded }: { onSubscriptio
                 return
             }
 
-            console.log("Attempting to insert subscription for user:", user.id)
+            if (subscriptionToEdit) {
+                // UPDATE existing
+                const { error } = await supabase.from('subscriptions').update({
+                    name: values.name,
+                    cost: Number(values.cost),
+                    currency: values.currency,
+                    frequency: values.frequency,
+                    renewal_date: values.renewalDate.toISOString(),
+                    category: values.category,
+                    // trust_score: 50, // Keep existing trust score
+                }).eq('id', subscriptionToEdit.id)
 
-            const { error } = await supabase.from('subscriptions').insert({
-                user_id: user.id,
-                name: values.name,
-                cost: Number(values.cost),
-                currency: values.currency,
-                frequency: values.frequency,
-                renewal_date: values.renewalDate.toISOString(),
-                status: values.isTrial ? "active" : "active", // Defaulting to active as requested
-                category: values.category,
-                trust_score: 50,
-            })
+                if (error) throw error
+                toast.success("Subscription updated")
 
-            if (error) {
-                console.error("Supabase insert error:", error)
-                throw new Error(error.message || "Database insert failed")
+            } else {
+                // INSERT new
+                const { error } = await supabase.from('subscriptions').insert({
+                    user_id: user.id,
+                    name: values.name,
+                    cost: Number(values.cost),
+                    currency: values.currency,
+                    frequency: values.frequency,
+                    renewal_date: values.renewalDate.toISOString(),
+                    status: values.isTrial ? "active" : "active",
+                    category: values.category,
+                    trust_score: 50,
+                })
+                if (error) throw error
+                toast.success("Subscription added successfully")
+
+                // Insert Notification
+                await supabase.from('notifications').insert({
+                    user_id: user.id,
+                    type: 'info',
+                    title: 'New Subscription',
+                    message: `Tracking started for ${values.name}`,
+                    read: false,
+                })
             }
 
-            toast.success("Subscription added successfully")
-            setOpen(false)
+            setIsOpen(false)
             reset()
             setDate(undefined)
-            onSubscriptionAdded()
+            onSubscriptionAdded() // This calls refreshSubscriptions in parent
         } catch (error: any) {
-            console.error("Error adding subscription:", error)
-            toast.error(error.message || "Check your internet or database connection")
+            console.error("Error saving subscription:", error)
+            toast.error(error.message || "Operation failed")
         } finally {
             setLoading(false)
         }
     }
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
-                <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-                    <Plus className="h-4 w-4" />
-                    Add Manually
-                </Button>
+                {trigger || (
+                    <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+                        <Plus className="h-4 w-4" />
+                        Add Manually
+                    </Button>
+                )}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
-                    <DialogTitle>Add Subscription</DialogTitle>
+                    <DialogTitle>{subscriptionToEdit ? "Edit Subscription" : "Add Subscription"}</DialogTitle>
                     <DialogDescription>
-                        All fields marked with * are mandatory.
+                        {subscriptionToEdit ? "Update details for this subscription." : "All fields marked with * are mandatory."}
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
@@ -152,16 +214,18 @@ export function ManualSubscriptionModal({ onSubscriptionAdded }: { onSubscriptio
                                             errors.name && "border-destructive focus-visible:ring-destructive"
                                         )}
                                     >
-                                        {watch("name") ? watch("name") : "Select or type service..."}
+                                        {watch("name") ? watch("name") : "Select a service or type your own..."}
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-[400px] p-0">
                                     <Command>
-                                        <CommandInput placeholder="Search service..." className="h-9" onValueChange={(val) => {
+                                        <CommandInput placeholder="Search or type custom service..." className="h-9" onValueChange={(val) => {
                                             setValue("name", val, { shouldValidate: true })
                                         }} />
                                         <CommandList>
-                                            <CommandEmpty>Type to add custom service.</CommandEmpty>
+                                            <CommandEmpty>
+                                                <span className="text-muted-foreground">Type to add custom service</span>
+                                            </CommandEmpty>
                                             <CommandGroup>
                                                 {popularServices.map((service) => (
                                                     <CommandItem
@@ -213,7 +277,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded }: { onSubscriptio
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="currency">Currency *</Label>
-                            <Select onValueChange={(val) => setValue("currency", val, { shouldValidate: true })} defaultValue="USD">
+                            <Select onValueChange={(val) => setValue("currency", val, { shouldValidate: true })} defaultValue={subscriptionToEdit?.currency || "USD"}>
                                 <SelectTrigger className={errors.currency ? "border-destructive" : ""}>
                                     <SelectValue placeholder="Select currency" />
                                 </SelectTrigger>
@@ -230,7 +294,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded }: { onSubscriptio
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
                             <Label htmlFor="frequency">Billing Cycle *</Label>
-                            <Select onValueChange={(val) => setValue("frequency", val, { shouldValidate: true })} defaultValue="monthly">
+                            <Select onValueChange={(val) => setValue("frequency", val, { shouldValidate: true })} defaultValue={subscriptionToEdit?.frequency || "monthly"}>
                                 <SelectTrigger className={errors.frequency ? "border-destructive" : ""}>
                                     <SelectValue placeholder="Select cycle" />
                                 </SelectTrigger>
@@ -244,7 +308,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded }: { onSubscriptio
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="category">Category</Label>
-                            <Select onValueChange={(val) => setValue("category", val)} defaultValue="Entertainment">
+                            <Select onValueChange={(val) => setValue("category", val)} defaultValue={subscriptionToEdit?.category || "Entertainment"}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select category" />
                                 </SelectTrigger>
@@ -286,7 +350,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded }: { onSubscriptio
                     </div>
 
                     <div className="flex items-center space-x-2 rounded-lg border p-3 bg-muted/20">
-                        <Checkbox id="trial" onCheckedChange={(checked) => setValue("isTrial", checked === true)} />
+                        <Checkbox id="trial" checked={isTrial} onCheckedChange={(checked) => setValue("isTrial", checked === true)} />
                         <div className="grid gap-1.5 leading-none">
                             <Label htmlFor="trial" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                 Is this a free trial?
@@ -299,7 +363,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded }: { onSubscriptio
 
                     <DialogFooter>
                         <Button type="submit" disabled={loading || !isValid} className="w-full">
-                            {loading ? "Adding Subscription..." : "Add Subscription"}
+                            {loading ? "Saving..." : subscriptionToEdit ? "Update Subscription" : "Add Subscription"}
                         </Button>
                     </DialogFooter>
                 </form>

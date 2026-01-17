@@ -6,10 +6,57 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { Check, Mail, MessageSquare, TrendingUp, FileText, ShieldCheck } from "lucide-react"
+import { Check, Mail, MessageSquare, TrendingUp, FileText, ShieldCheck, Loader2 } from "lucide-react"
+import { useProfile } from "@/lib/hooks/use-profile"
+import { toast } from "sonner"
+import { useRouter } from "next/navigation"
+import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 
 export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(false)
+  const { profile, updateProfile } = useProfile()
+  const [isUpdating, setIsUpdating] = useState(false)
+  const router = useRouter()
+
+  const handleStripeCheckout = async (period: 'monthly' | 'yearly') => {
+    if (!profile) {
+      toast.error("Please sign in to upgrade")
+      router.push("/auth/login")
+      return
+    }
+
+    setIsUpdating(true)
+    const supabase = getSupabaseBrowserClient()
+
+    console.log("Calling create-checkout-session...")
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
+        body: {
+          subscription_tier: 'pro',
+          period
+        }
+      })
+
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+
+      if (data?.url) {
+        window.location.href = data.url
+      } else {
+        throw new Error("No checkout URL returned")
+      }
+
+    } catch (error: any) {
+      console.error("Upgrade Failed:", error)
+      toast.error("Checkout failed: " + (error.message || "Unknown error"))
+      setIsUpdating(false)
+    }
+  }
+
+  const handleManageSubscription = () => {
+    toast.info("Manage your subscription in the Settings page.")
+    router.push("/settings")
+  }
 
   const plans = [
     {
@@ -23,15 +70,13 @@ export default function PricingPage() {
         { text: "Manual tracking", included: true, highlight: false },
         { text: "Email notifications", included: true, highlight: false },
         { text: "AI Inbox Hunter", included: false, highlight: false },
-        { text: "Trust Analyst deep-reports", included: false, highlight: false },
-        { text: "SMS alerts", included: false, highlight: false },
         { text: "Priority support", included: false, highlight: false },
       ],
       cta: "Get Started",
       highlight: false,
     },
     {
-      name: "Automated (Pro)",
+      name: "Pro Plan",
       price: isAnnual ? 3.33 : 3.99,
       originalPrice: isAnnual ? 3.99 : null,
       description: "Complete automation and insights for power users",
@@ -39,14 +84,13 @@ export default function PricingPage() {
       features: [
         { text: "Unlimited subscriptions", included: true, highlight: false },
         { text: "AI Inbox Hunter", included: true, highlight: true },
-        { text: "Trust Analyst deep-reports", included: true, highlight: true },
-        { text: "SMS alerts", included: true, highlight: true },
+        // { text: "SMS alerts", included: true, highlight: true }, // Removed as per feedback
         { text: "Advanced analytics", included: true, highlight: false },
         { text: "Dark pattern detection", included: true, highlight: false },
         { text: "Priority support", included: true, highlight: false },
         { text: "Export & reporting", included: true, highlight: false },
       ],
-      cta: "Start Free Trial",
+      cta: "Upgrade to Pro",
       highlight: true,
     },
   ]
@@ -132,8 +176,29 @@ export default function PricingPage() {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button className="w-full" variant={plan.highlight ? "default" : "outline"} size="lg">
-                  {plan.cta}
+                <Button
+                  className="w-full gap-2"
+                  variant={plan.highlight ? "default" : "outline"}
+                  size="lg"
+                  id={`checkout-${plan.name.toLowerCase().replace(/\s+/g, '-')}`}
+                  disabled={isUpdating}
+                  onClick={() => {
+                    if (plan.name === "Pro Plan") {
+                      if (profile?.subscription_tier === 'pro') {
+                        handleManageSubscription()
+                      } else {
+                        handleStripeCheckout(isAnnual ? 'yearly' : 'monthly')
+                      }
+                    } else {
+                      // Essential Plan
+                      router.push("/dashboard")
+                    }
+                  }}
+                >
+                  {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {plan.name === "Pro Plan" && profile?.subscription_tier === 'pro'
+                    ? "Manage Subscription"
+                    : plan.cta}
                 </Button>
               </CardFooter>
             </Card>
@@ -169,16 +234,7 @@ export default function PricingPage() {
                 Automatically detects subscriptions from your email receipts
               </p>
             </div>
-            <div className="flex flex-col items-center gap-3 rounded-lg border bg-card p-6 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                <FileText className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="font-semibold">Trust Analyst Reports</h3>
-              <p className="text-sm text-muted-foreground">
-                Deep analysis of cancellation difficulty and dark patterns
-              </p>
-            </div>
-            <div className="flex flex-col items-center gap-3 rounded-lg border bg-card p-6 text-center">
+            {/* <div className="flex flex-col items-center gap-3 rounded-lg border bg-card p-6 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                 <MessageSquare className="h-6 w-6 text-primary" />
               </div>
@@ -186,7 +242,7 @@ export default function PricingPage() {
               <p className="text-sm text-muted-foreground">
                 Get instant text messages before renewals and price changes
               </p>
-            </div>
+            </div> */}
             <div className="flex flex-col items-center gap-3 rounded-lg border bg-card p-6 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
                 <TrendingUp className="h-6 w-6 text-primary" />

@@ -98,7 +98,9 @@ export default function SettingsPage() {
                   <Lock className="h-5 w-5 text-primary" />
                   Password
                 </CardTitle>
-                <CardDescription>Change your password to keep your account secure</CardDescription>
+                <CardDescription>
+                  Change your password to keep your account secure <span className="text-primary">(Managed via Supabase Auth)</span>
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -173,31 +175,15 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
+            {/* Billing History - HIDDEN FOR MVP (Mock Data)
             <Card>
               <CardHeader>
                 <CardTitle>Billing History</CardTitle>
                 <CardDescription>View your past invoices and payments</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { date: "Jan 1, 2025", amount: "3.99", status: "Paid" },
-                    { date: "Dec 1, 2024", amount: "3.99", status: "Paid" },
-                    { date: "Nov 1, 2024", amount: "3.99", status: "Paid" },
-                  ].map((invoice, index) => (
-                    <div key={index} className="flex items-center justify-between rounded-lg border p-3">
-                      <div>
-                        <p className="font-medium">{invoice.date}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {currency} {invoice.amount}
-                        </p>
-                      </div>
-                      <Badge className="bg-primary/20 text-primary">{invoice.status}</Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+              ...
+            </Card> 
+            */}
           </TabsContent>
 
           {/* Notifications Tab */}

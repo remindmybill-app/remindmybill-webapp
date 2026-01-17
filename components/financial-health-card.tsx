@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import { TrendingUp } from "lucide-react"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 
@@ -83,8 +84,8 @@ export function FinancialHealthCard() {
               </div>
             </div>
 
-            <Button className="w-full" size="lg">
-              View Recommendations
+            <Button className="w-full" size="lg" asChild>
+              <Link href="/analytics">View Recommendations</Link>
             </Button>
           </div>
         </div>

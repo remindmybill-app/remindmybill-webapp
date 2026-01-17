@@ -22,11 +22,83 @@ interface TrustAnalysis {
   alert_count: number
 }
 
+// Extended Data Sets
+const TRUSTED_SERVICES = [
+  { name: "Spotify", score: 92, status: "Excellent" },
+  { name: "GitHub", score: 88, status: "Great" },
+  { name: "Steam", score: 85, status: "Good" },
+  { name: "Notion", score: 84, status: "Good" },
+  { name: "Figma", score: 82, status: "Good" },
+  { name: "Linear", score: 89, status: "Great" },
+  { name: "Vercel", score: 87, status: "Great" },
+  { name: "Slack", score: 81, status: "Good" },
+  { name: "Discord", score: 80, status: "Good" },
+  { name: "Basecamp", score: 86, status: "Great" }
+]
+
+const RISKY_SERVICES = [
+  { name: "Adobe", score: 12, difficulty: "Hard" },
+  { name: "Planet Fitness", score: 5, difficulty: "Very Hard" },
+  { name: "NYTimes", score: 45, difficulty: "Medium" },
+  { name: "Wall Street Journal", score: 40, difficulty: "Medium" },
+  { name: "SiriusXM", score: 15, difficulty: "Hard" },
+  { name: "HelloFresh", score: 35, difficulty: "Medium" },
+  { name: "Savage X Fenty", score: 25, difficulty: "Hard" },
+  { name: "Fabletics", score: 28, difficulty: "Hard" },
+  { name: "Comcast", score: 10, difficulty: "Very Hard" },
+  { name: "AT&T", score: 18, difficulty: "Hard" }
+]
+
+const OTHER_SERVICES = [
+  { name: "Disney+", score: 75, difficulty: "Easy" },
+  { name: "Hulu", score: 72, difficulty: "Easy" },
+  { name: "Dropbox", score: 68, difficulty: "Medium" },
+  { name: "Amazon Prime", score: 65, difficulty: "Medium" },
+  { name: "Netflix", score: 78, difficulty: "Easy" }
+]
+
+const ALL_SERVICES = [
+  ...TRUSTED_SERVICES.map(s => ({ ...s, difficulty: "Easy" })),
+  ...RISKY_SERVICES,
+  ...OTHER_SERVICES
+]
+
+
 export default function TrustCenterPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysis, setAnalysis] = useState<TrustAnalysis | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [searchResults, setSearchResults] = useState<typeof ALL_SERVICES>([])
+
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val)
+    if (val.length > 1) {
+      const results = ALL_SERVICES.filter(s => s.name.toLowerCase().includes(val.toLowerCase()))
+      setSearchResults(results)
+    } else {
+      setSearchResults([])
+    }
+  }
+
+  const handleSelectService = (service: typeof ALL_SERVICES[0]) => {
+    // Mock data injection for immediate feedback
+    setAnalysis({
+      service_name: service.name,
+      trust_score: service.score,
+      category: "Subscription",
+      cancellation_difficulty: "difficulty" in service ? (service.difficulty.toLowerCase() as any) : "medium",
+      dark_patterns: service.score < 50 ? ["Forced Phone Call", "Hidden Cancellation Link"] : [],
+      positive_features: service.score > 80 ? ["One-Click Cancel", "Clear Pricing"] : [],
+      risk_flags: [],
+      trend: service.score < 50 ? "falling" : "stable",
+      alert_count: 0
+    })
+    setSearchQuery("")
+    setSearchResults([])
+    setIsAnalyzing(false)
+  }
+
 
   const handleAnalyze = async () => {
     if (!searchQuery) return
@@ -68,7 +140,7 @@ export default function TrustCenterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50/50 dark:bg-black py-12 sm:py-20">
+    <div className="bg-zinc-50/50 dark:bg-black py-12 sm:py-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div className="mb-16 text-center">
           <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-900 shadow-xl shadow-zinc-500/20 dark:bg-zinc-800">
@@ -89,9 +161,32 @@ export default function TrustCenterPage() {
                 placeholder="Check any service (e.g. adobe.com, netflix.com)"
                 className="h-14 border-none bg-transparent pl-12 text-lg focus-visible:ring-0 shadow-none outline-none"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
               />
+              {/* Search Dropdown */}
+              {searchQuery.length > 1 && (
+                <div className="absolute top-full left-0 mt-2 w-full rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 z-50">
+                  {searchResults.length > 0 ? (
+                    searchResults.map((result) => (
+                      <button
+                        key={result.name}
+                        onClick={() => handleSelectService(result)}
+                        className="flex w-full items-center justify-between rounded-xl p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left"
+                      >
+                        <span className="font-medium text-zinc-900 dark:text-zinc-50">{result.name}</span>
+                        <Badge variant="outline" className={`${result.score >= 80 ? "text-emerald-500 border-emerald-200" : result.score >= 50 ? "text-amber-500 border-amber-200" : "text-rose-500 border-rose-200"}`}>
+                          {result.score} / 100
+                        </Badge>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                      No reports found for "{searchQuery}". <button onClick={handleAnalyze} className="text-primary underline">Request manual audit?</button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <Button
               onClick={handleAnalyze}
@@ -105,6 +200,24 @@ export default function TrustCenterPage() {
           <p className="mt-4 text-center text-xs font-medium text-muted-foreground uppercase tracking-widest">
             T&C Audit &bull; UX Review &bull; Fee Transparency
           </p>
+        </div>
+
+        {/* Pro Tip - Cancellation Insights */}
+        <div className="mx-auto max-w-4xl mb-16">
+          <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-6 flex items-start gap-4 dark:border-indigo-900/50 dark:bg-indigo-950/20">
+            <div className="hidden sm:flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50">
+              <Zap className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-indigo-900 dark:text-indigo-100 flex items-center gap-2">
+                <span className="sm:hidden"><Zap className="h-4 w-4" /></span>
+                Cancellation Hack #1
+              </h3>
+              <p className="mt-1 text-indigo-800/80 dark:text-indigo-200/80">
+                Pro Tip: 84% of difficult cancellations can be bypassed by switching your billing address to <strong>California</strong> (where online cancellation is required by law).
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Global Platform Indicators */}
@@ -157,6 +270,67 @@ export default function TrustCenterPage() {
               <p className="mt-2 text-xs text-muted-foreground">Categories with highest transparency scores.</p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Trust Leaderboards */}
+        <div className="grid gap-8 lg:grid-cols-2 mb-16">
+          {/* Top Trusted */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <span className="text-2xl">🏆</span> Top Trusted Services
+              </h2>
+            </div>
+            <div className="space-y-3">
+              {TRUSTED_SERVICES.map((service) => (
+                <div key={service.name} className="flex items-center justify-between rounded-xl border border-zinc-100 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center dark:bg-emerald-500/10">
+                      <span className="text-emerald-700 font-bold dark:text-emerald-400">{service.name[0]}</span>
+                    </div>
+                    <div>
+                      <p className="font-bold">{service.name}</p>
+                      <p className="text-xs text-muted-foreground">Verified Easy Cancel</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-lg font-black text-emerald-600 dark:text-emerald-400">{service.score}</span>
+                    <span className="text-[10px] font-bold uppercase text-zinc-400">Trust Score</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Hall of Shame */}
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <span className="text-2xl">⚠️</span> High Risk / Hard to Cancel
+              </h2>
+            </div>
+            <div className="space-y-3">
+              {RISKY_SERVICES.map((service) => (
+                <div key={service.name} className="flex items-center justify-between rounded-xl border border-rose-100 bg-rose-50/30 p-4 shadow-sm dark:border-rose-900/20 dark:bg-rose-950/10">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-rose-100 flex items-center justify-center dark:bg-rose-500/10">
+                      <span className="text-rose-700 font-bold dark:text-rose-400">{service.name[0]}</span>
+                    </div>
+                    <div>
+                      <p className="font-bold">{service.name}</p>
+                      <Badge variant="outline" className="border-rose-200 text-rose-600 dark:border-rose-800 dark:text-rose-400 text-[10px] h-5">
+                        {service.difficulty}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="block text-lg font-black text-rose-600 dark:text-rose-400">{service.score}</span>
+                    <span className="text-[10px] font-bold uppercase text-zinc-400">Trust Score</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {error && (

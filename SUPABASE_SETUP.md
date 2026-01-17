@@ -263,3 +263,35 @@ supabase functions deploy scan-inbox
 - Implement the Gmail scanning logic in the Edge Function
 - Add more trust analysis data for popular services
 - Set up automated notifications for upcoming renewals
+
+## Edge Function Webhook (Welcome Email)
+
+To trigger the `send-email` function when a new user signs up, run this in SQL Editor:
+
+```sql
+-- Create a trigger function to call Edge Function
+create or replace function public.handle_new_user_email() 
+returns trigger as $$
+begin
+  perform net.http_post(
+    url := 'https://<PROJECT_REF>.functions.supabase.co/send-email',
+    headers := '{"Content-Type": "application/json", "Authorization": "Bearer <ANON_KEY>"}',
+    body := json_build_object(
+      'to', new.email,
+      'subject', 'Welcome to Remind My Bill',
+      'type', 'welcome',
+      'data', json_build_object('name', new.raw_user_meta_data->>'full_name')
+    )::jsonb
+  );
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Create the trigger
+create trigger on_auth_user_created_email
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user_email();
+```
+
+> **Note:** You need to enable the `net` extension in Supabase Dashboard -> Database -> Extensions.
+> Replace `<PROJECT_REF>` and `<ANON_KEY>` with your actual project details.

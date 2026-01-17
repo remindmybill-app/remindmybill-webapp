@@ -31,6 +31,7 @@ export interface Profile {
   full_name: string | null
   avatar_url: string | null
   default_currency?: string
+  subscription_tier?: 'free' | 'pro'
   created_at: string
   updated_at: string
 }

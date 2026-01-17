@@ -64,8 +64,55 @@ export function useSubscriptions() {
     }
   }
 
+  // NOTE: Email reminder logic should be implemented in a Supabase Edge Function
+  // triggered by a cron job (pg_cron).
+  // Example path: supabase/functions/send-reminders/index.ts
+  // This hook handles client-side state only.
+
   const refreshSubscriptions = () => {
     fetchSubscriptions()
+  }
+
+  const deleteSubscription = async (id: string) => {
+    try {
+      const supabase = getSupabaseBrowserClient()
+      const { error } = await supabase.from("subscriptions").delete().eq("id", id)
+      if (error) throw error
+      setSubscriptions((prev) => prev.filter((sub) => sub.id !== id))
+      return true
+    } catch (err) {
+      console.error("Error deleting subscription:", err)
+      setError("Failed to delete subscription")
+      return false
+    }
+  }
+
+  const updateSubscription = async (id: string, updates: Partial<Subscription>) => {
+    try {
+      const supabase = getSupabaseBrowserClient()
+      const { error } = await supabase.from("subscriptions").update(updates).eq("id", id)
+      if (error) throw error
+      setSubscriptions((prev) => prev.map((sub) => (sub.id === id ? { ...sub, ...updates } : sub)))
+      return true
+    } catch (err) {
+      console.error("Error updating subscription:", err)
+      setError("Failed to update subscription")
+      return false
+    }
+  }
+
+  const cancelSubscription = async (id: string) => {
+    try {
+      const supabase = getSupabaseBrowserClient()
+      const { error } = await supabase.from("subscriptions").update({ status: 'cancelled' }).eq("id", id)
+      if (error) throw error
+      setSubscriptions((prev) => prev.map((sub) => (sub.id === id ? { ...sub, status: 'cancelled' } : sub)))
+      return true
+    } catch (err) {
+      console.error("Error cancelling subscription:", err)
+      setError("Failed to cancel subscription")
+      return false
+    }
   }
 
   return {
@@ -73,5 +120,8 @@ export function useSubscriptions() {
     isLoading,
     error,
     refreshSubscriptions,
+    deleteSubscription,
+    updateSubscription,
+    cancelSubscription
   }
 }

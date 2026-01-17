@@ -17,44 +17,15 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, Search, Bell, User, Settings, LogOut, AlertCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useProfile } from "@/lib/hooks/use-profile"
-import type { Notification } from "@/lib/types"
+import { useNotifications } from "@/lib/hooks/use-notifications"
+// import type { Notification } from "@/lib/types" // No longer needed as we use the hook's type or inferred type
 
-const mockNotifications: Notification[] = [
-  {
-    id: "notif-1",
-    user_id: "user-1",
-    type: "warning",
-    title: "Renewal Soon",
-    message: "Netflix renewal in 2 days ($15.99)",
-    subscription_id: "1",
-    read: false,
-    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "notif-2",
-    user_id: "user-1",
-    type: "alert",
-    title: "Unused Subscription",
-    message: "Adobe Creative Cloud - No activity in 30 days",
-    subscription_id: "5",
-    read: false,
-    created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: "notif-3",
-    user_id: "user-1",
-    type: "info",
-    title: "Trust Score Update",
-    message: "New trust score available for Spotify",
-    subscription_id: "2",
-    read: false,
-    created_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
-  },
-]
+// const mockNotifications: Notification[] = [] // Removed
 
 export function Navigation() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const { profile } = useProfile()
+  const { notifications } = useNotifications()
 
   const getTimeAgo = (timestamp: string) => {
     const seconds = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000)
@@ -118,7 +89,9 @@ export function Navigation() {
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
                   <Bell className="h-5 w-5" />
-                  <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive" />
+                  {notifications.some(n => !n.read) && (
+                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive" />
+                  )}
                   <span className="sr-only">Notifications</span>
                 </Button>
               </PopoverTrigger>
@@ -126,29 +99,33 @@ export function Navigation() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold">Recent Alerts</h3>
-                    <Badge variant="secondary">{mockNotifications.length}</Badge>
+                    <Badge variant="secondary">{notifications.length}</Badge>
                   </div>
                   <div className="space-y-3">
-                    {mockNotifications.map((notification) => (
-                      <div
-                        key={notification.id}
-                        className="flex gap-3 rounded-lg border p-3 transition-colors hover:bg-accent"
-                      >
-                        <AlertCircle
-                          className={`mt-0.5 h-5 w-5 flex-shrink-0 ${notification.type === "warning"
-                            ? "text-yellow-500"
-                            : notification.type === "alert"
-                              ? "text-destructive"
-                              : "text-primary"
-                            }`}
-                        />
-                        <div className="flex-1 space-y-1">
-                          <p className="text-sm font-medium">{notification.title}</p>
-                          <p className="text-xs text-muted-foreground">{notification.message}</p>
-                          <p className="text-xs text-muted-foreground">{getTimeAgo(notification.created_at)}</p>
+                    {notifications.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">No new notifications</p>
+                    ) : (
+                      notifications.map((notification) => (
+                        <div
+                          key={notification.id}
+                          className="flex gap-3 rounded-lg border p-3 transition-colors hover:bg-accent"
+                        >
+                          <AlertCircle
+                            className={`mt-0.5 h-5 w-5 flex-shrink-0 ${notification.type === "warning"
+                              ? "text-yellow-500"
+                              : notification.type === "alert"
+                                ? "text-destructive"
+                                : "text-primary"
+                              }`}
+                          />
+                          <div className="flex-1 space-y-1">
+                            <p className="text-sm font-medium">{notification.title}</p>
+                            <p className="text-xs text-muted-foreground">{notification.message}</p>
+                            <p className="text-xs text-muted-foreground">{getTimeAgo(notification.created_at)}</p>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                   <Button variant="outline" className="w-full bg-transparent" size="sm">
                     View All Notifications

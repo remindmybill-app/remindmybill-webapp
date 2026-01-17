@@ -1,24 +1,33 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { FinancialHealthCard } from "@/components/financial-health-card"
 import { QuickStats } from "@/components/quick-stats"
 import { SubscriptionsTable } from "@/components/subscriptions-table"
 import { SavingsAlerts } from "@/components/savings-alerts"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import { Inbox, Bell, Sparkles, Plus } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
+import { useProfile } from "@/lib/hooks/use-profile"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { ManualSubscriptionModal } from "@/components/manual-subscription-modal"
-import Link from "next/link"
 
 export default function DashboardPage() {
     const { isAuthenticated, signIn, isLoading: authLoading } = useAuth()
     const { subscriptions, refreshSubscriptions } = useSubscriptions()
+    const { refreshProfile } = useProfile()
     const [isScanning, setIsScanning] = useState(false)
     const [lastSynced, setLastSynced] = useState<Date | null>(null)
+
+    // Force profile sync on mount to ensure latest subscription status
+    useEffect(() => {
+        if (isAuthenticated) {
+            refreshProfile()
+        }
+    }, [isAuthenticated, refreshProfile])
 
     const handleScanInbox = async () => {
         console.log("[v0] Scanning inbox for subscriptions...")
@@ -142,7 +151,7 @@ export default function DashboardPage() {
                     </div>
 
                     <div className="w-full xl:sticky xl:top-8 xl:h-fit space-y-6">
-                        <SavingsAlerts />
+                        {/* <SavingsAlerts /> */}
 
                         {/* Premium Feature Teaser */}
                         <div className="rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 p-6 text-white shadow-xl shadow-indigo-500/20">
@@ -153,8 +162,8 @@ export default function DashboardPage() {
                             <p className="mb-4 text-sm text-indigo-100">
                                 Get Legal Concierge to cancel hard-to-cancel subscriptions for you.
                             </p>
-                            <Button variant="secondary" className="w-full bg-white text-indigo-600 hover:bg-indigo-50">
-                                Upgrade Plan
+                            <Button variant="secondary" className="w-full bg-white text-indigo-600 hover:bg-indigo-50" asChild>
+                                <Link href="/pricing">Upgrade Plan</Link>
                             </Button>
                         </div>
                     </div>
