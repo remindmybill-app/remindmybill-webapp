@@ -11,6 +11,7 @@ import { useProfile } from "@/lib/hooks/use-profile"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
+import { upgradeUserToPro, downgradeUserToFree } from "@/app/actions/mock-upgrade"
 
 export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(false)
@@ -199,28 +200,12 @@ export default function PricingPage() {
                         return
                       }
 
-                      // Handle Upgrade (Mock)
+                      // Handle Upgrade using Server Action
                       setIsUpdating(true)
                       try {
-                        const res = await fetch('/api/mock-upgrade', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ userId: profile?.id, plan: 'pro' })
-                        })
-
-                        const data = await res.json()
-                        if (!res.ok) throw new Error(data.error)
-
+                        await upgradeUserToPro(profile!.id)
                         toast.success("Successfully upgraded to Pro!")
-
-                        // Force profile refresh by re-fetching or invalidating cache if possible.
-                        // For now we rely on the realtime subscription or page reload if needed, 
-                        // but updating the local profile state would be ideal.
-                        // The useProfile hook should pick up changes if we use SWR or similar, 
-                        // but typically we might need a manual refresh trigger.
-                        // Let's reload to be safe and simple for this mock interaction.
                         window.location.reload()
-
                       } catch (err: any) {
                         toast.error(err.message || "Upgrade failed")
                         setIsUpdating(false)
@@ -268,12 +253,7 @@ export default function PricingPage() {
             <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={async () => {
               try {
                 setIsUpdating(true)
-                const res = await fetch('/api/mock-downgrade', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ userId: profile?.id })
-                })
-                if (!res.ok) throw new Error('Failed')
+                await downgradeUserToFree(profile!.id)
                 window.location.reload()
               } catch (e) {
                 toast.error("Reset failed")
