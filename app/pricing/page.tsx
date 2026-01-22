@@ -240,21 +240,50 @@ export default function PricingPage() {
           ))}
         </div>
 
-        {/* Money-Back Guarantee */}
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="flex flex-col items-center gap-4 p-8 text-center md:flex-row md:text-left">
-            <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-primary/20">
-              <ShieldCheck className="h-8 w-8 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="mb-2 text-xl font-bold">30-Day Money-Back Guarantee</h3>
-              <p className="text-muted-foreground">
-                Try Remind My Bill Pro risk-free. If you're not completely satisfied within the first 30 days, we'll refund
-                your money—no questions asked.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* FAQ Section */}
+        <div className="mx-auto max-w-3xl mb-16">
+          <h2 className="mb-8 text-center text-2xl font-bold">Frequently Asked Questions</h2>
+          <div className="grid gap-4">
+            {[
+              { q: "Can I cancel anytime?", a: "Yes, you can cancel your subscription at any time. Your access will continue until the end of your billing period." },
+              { q: "How does the AI Inbox Hunter work?", a: "We securely scan your email receipts to automatically find subscriptions you might have forgotten about. We never sell your data." },
+              { q: "Is there a limit on manual subscriptions?", a: "The Essential plan covers up to 3 subscriptions. Pro allows unlimited tracking." },
+              { q: "Can I get a refund?", a: "We offer a 30-day money-back guarantee if you're not satisfied with the Pro features." }
+            ].map((faq, i) => (
+              <Card key={i} className="border-muted/50 shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base">{faq.q}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">{faq.a}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Dev Tools - Reset Subscription */}
+        {process.env.NODE_ENV === 'development' || (typeof window !== 'undefined' && window.location.hostname === 'localhost') ? (
+          <div className="flex justify-center mt-8 opacity-50 hover:opacity-100 transition-opacity">
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={async () => {
+              try {
+                setIsUpdating(true)
+                const res = await fetch('/api/mock-downgrade', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ userId: profile?.id })
+                })
+                if (!res.ok) throw new Error('Failed')
+                window.location.reload()
+              } catch (e) {
+                toast.error("Reset failed")
+                setIsUpdating(false)
+              }
+            }}>
+              Dev: Reset to Free
+            </Button>
+          </div>
+        ) : null}
 
         {/* Feature Highlights */}
         <div className="mt-12">

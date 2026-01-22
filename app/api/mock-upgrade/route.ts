@@ -24,15 +24,16 @@ export async function POST(req: Request) {
         )
 
         // 4. Determine limits based on plan
-        let limit = 10
+        let limit = 100 // Default to high limit for upgrade
         if (plan === "standard") limit = 50
-        if (plan === "premium" || plan === "pro") limit = 200 // "Pro" in UI seems to map to premium/standard logic
+        // "Pro" maps to premium in our new logic for testing
+        const targetTier = (plan === 'pro' || plan === 'premium') ? 'premium' : plan
 
         // 5. Update Profile
         const { error } = await supabaseAdmin
             .from("profiles")
             .update({
-                subscription_tier: plan === 'pro' ? 'pro' : plan, // normalize to 'pro' if that's what we use
+                subscription_tier: targetTier,
                 subscription_limit: limit,
                 subscription_status: "active",
                 stripe_customer_id: "mock_cust_" + Math.random().toString(36).substring(7),

@@ -137,8 +137,13 @@ export function Navigation() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary relative">
                     <User className="h-5 w-5" />
+                    {(profile?.subscription_tier === 'premium' || profile?.subscription_tier === 'pro') && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-8 items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-[9px] font-bold text-white shadow-sm ring-1 ring-white dark:ring-black">
+                        PRO
+                      </span>
+                    )}
                   </div>
                 </Button>
               </DropdownMenuTrigger>
