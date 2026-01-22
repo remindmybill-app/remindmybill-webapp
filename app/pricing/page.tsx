@@ -181,24 +181,59 @@ export default function PricingPage() {
                   variant={plan.highlight ? "default" : "outline"}
                   size="lg"
                   id={`checkout-${plan.name.toLowerCase().replace(/\s+/g, '-')}`}
-                  disabled={isUpdating}
-                  onClick={() => {
+                  disabled={isUpdating || (plan.name === "Pro Plan" && profile?.subscription_tier === 'pro') || (plan.name === "Essential" && (!profile?.subscription_tier || profile.subscription_tier === 'free'))}
+                  onClick={async () => {
+                    if (plan.name === "Essential") {
+                      if (profile?.subscription_tier === 'pro') {
+                        toast.info("To downgrade, please contact support or manage via Settings.")
+                        // In a real app we might downgrade via API too, but focus is on Upgrade for now.
+                        return
+                      }
+                      router.push("/dashboard")
+                      return
+                    }
+
                     if (plan.name === "Pro Plan") {
                       if (profile?.subscription_tier === 'pro') {
                         handleManageSubscription()
-                      } else {
-                        handleStripeCheckout(isAnnual ? 'yearly' : 'monthly')
+                        return
                       }
-                    } else {
-                      // Essential Plan
-                      router.push("/dashboard")
+
+                      // Handle Upgrade (Mock)
+                      setIsUpdating(true)
+                      try {
+                        const res = await fetch('/api/mock-upgrade', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ userId: profile?.id, plan: 'pro' })
+                        })
+
+                        const data = await res.json()
+                        if (!res.ok) throw new Error(data.error)
+
+                        toast.success("Successfully upgraded to Pro!")
+
+                        // Force profile refresh by re-fetching or invalidating cache if possible.
+                        // For now we rely on the realtime subscription or page reload if needed, 
+                        // but updating the local profile state would be ideal.
+                        // The useProfile hook should pick up changes if we use SWR or similar, 
+                        // but typically we might need a manual refresh trigger.
+                        // Let's reload to be safe and simple for this mock interaction.
+                        window.location.reload()
+
+                      } catch (err: any) {
+                        toast.error(err.message || "Upgrade failed")
+                        setIsUpdating(false)
+                      }
                     }
                   }}
                 >
                   {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
                   {plan.name === "Pro Plan" && profile?.subscription_tier === 'pro'
-                    ? "Manage Subscription"
-                    : plan.cta}
+                    ? "Current Plan"
+                    : plan.name === "Essential" && (!profile?.subscription_tier || profile.subscription_tier === 'free')
+                      ? "Current Plan"
+                      : plan.cta}
                 </Button>
               </CardFooter>
             </Card>

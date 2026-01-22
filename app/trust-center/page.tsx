@@ -1,15 +1,29 @@
 
 "use client"
 
-import { useState } from "react"
-import { Shield, AlertTriangle, CheckCircle2, Search, ArrowRight, Lock, TrendingUp, AlertCircle, HelpCircle, Globe, Zap, Fingerprint } from "lucide-react"
+import { useState, useEffect, useCallback } from "react"
+import { Shield, AlertTriangle, CheckCircle2, Search, ArrowRight, Lock, TrendingUp, AlertCircle, HelpCircle, Globe, Zap, Fingerprint, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { getSupabaseBrowserClient } from "@/lib/supabase/client"
+import { debounce } from "lodash" // You might need to install lodash or write a simple debounce
 
 // Types for Trust Analysis
+interface Platform {
+  id: string
+  name: string
+  category: string
+  average_cost: number
+  cancellation_difficulty: "Easy" | "Medium" | "Hard"
+  cancellation_url?: string
+  logo_url?: string
+  created_at?: string
+  // Add derived properties for compatibility if needed, though we will map them
+}
+
 interface TrustAnalysis {
   service_name: string
   trust_score: number
@@ -20,79 +34,106 @@ interface TrustAnalysis {
   risk_flags: string[]
   trend: "rising" | "stable" | "falling"
   alert_count: number
+  cancellation_url?: string
 }
-
-// Extended Data Sets
-const TRUSTED_SERVICES = [
-  { name: "Spotify", score: 92, status: "Excellent" },
-  { name: "GitHub", score: 88, status: "Great" },
-  { name: "Steam", score: 85, status: "Good" },
-  { name: "Notion", score: 84, status: "Good" },
-  { name: "Figma", score: 82, status: "Good" },
-  { name: "Linear", score: 89, status: "Great" },
-  { name: "Vercel", score: 87, status: "Great" },
-  { name: "Slack", score: 81, status: "Good" },
-  { name: "Discord", score: 80, status: "Good" },
-  { name: "Basecamp", score: 86, status: "Great" }
-]
-
-const RISKY_SERVICES = [
-  { name: "Adobe", score: 12, difficulty: "Hard" },
-  { name: "Planet Fitness", score: 5, difficulty: "Very Hard" },
-  { name: "NYTimes", score: 45, difficulty: "Medium" },
-  { name: "Wall Street Journal", score: 40, difficulty: "Medium" },
-  { name: "SiriusXM", score: 15, difficulty: "Hard" },
-  { name: "HelloFresh", score: 35, difficulty: "Medium" },
-  { name: "Savage X Fenty", score: 25, difficulty: "Hard" },
-  { name: "Fabletics", score: 28, difficulty: "Hard" },
-  { name: "Comcast", score: 10, difficulty: "Very Hard" },
-  { name: "AT&T", score: 18, difficulty: "Hard" }
-]
-
-const OTHER_SERVICES = [
-  { name: "Disney+", score: 75, difficulty: "Easy" },
-  { name: "Hulu", score: 72, difficulty: "Easy" },
-  { name: "Dropbox", score: 68, difficulty: "Medium" },
-  { name: "Amazon Prime", score: 65, difficulty: "Medium" },
-  { name: "Netflix", score: 78, difficulty: "Easy" }
-]
-
-const ALL_SERVICES = [
-  ...TRUSTED_SERVICES.map(s => ({ ...s, difficulty: "Easy" })),
-  ...RISKY_SERVICES,
-  ...OTHER_SERVICES
-]
-
 
 export default function TrustCenterPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysis, setAnalysis] = useState<TrustAnalysis | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [searchResults, setSearchResults] = useState<typeof ALL_SERVICES>([])
+  const [searchResults, setSearchResults] = useState<Platform[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+
+  // Leaderboard State
+  const [trustedServices, setTrustedServices] = useState<Platform[]>([])
+  const [riskyServices, setRiskyServices] = useState<Platform[]>([])
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(true)
+
+  const supabase = getSupabaseBrowserClient()
+
+  // Fetch Leaderboards on Mount
+  useEffect(() => {
+    const fetchLeaderboards = async () => {
+      try {
+        // Fetch "Trusted" (Easy)
+        const { data: trusted } = await supabase
+          .from('platform_directory')
+          .select('*')
+          .eq('cancellation_difficulty', 'Easy')
+          .limit(10)
+
+        // Fetch "Risky" (Hard)
+        const { data: risky } = await supabase
+          .from('platform_directory')
+          .select('*')
+          .eq('cancellation_difficulty', 'Hard')
+          .limit(10)
+
+        if (trusted) setTrustedServices(trusted)
+        if (risky) setRiskyServices(risky)
+      } catch (e) {
+        console.error("Failed to fetch leaderboards", e)
+      } finally {
+        setLoadingLeaderboard(false)
+      }
+    }
+
+    fetchLeaderboards()
+  }, [])
+
+  // Debounced Search
+  const performSearch = useCallback(
+    debounce(async (query: string) => {
+      if (query.length < 2) {
+        setSearchResults([])
+        setIsSearching(false)
+        return
+      }
+
+      setIsSearching(true)
+      try {
+        const { data, error } = await supabase
+          .from('platform_directory')
+          .select('*')
+          .ilike('name', `%${query}%`)
+          .limit(5)
+
+        if (error) throw error
+        setSearchResults(data || [])
+      } catch (err) {
+        console.error("Search error:", err)
+      } finally {
+        setIsSearching(false)
+      }
+    }, 300),
+    []
+  )
 
   const handleSearchChange = (val: string) => {
     setSearchQuery(val)
-    if (val.length > 1) {
-      const results = ALL_SERVICES.filter(s => s.name.toLowerCase().includes(val.toLowerCase()))
-      setSearchResults(results)
-    } else {
-      setSearchResults([])
-    }
+    performSearch(val)
   }
 
-  const handleSelectService = (service: typeof ALL_SERVICES[0]) => {
-    // Mock data injection for immediate feedback
+  const handleSelectService = (service: Platform) => {
+    // Generate a deterministically random score based on the name char codes if we don't have one in DB
+    // Or just map difficulty to a score range for this mock view
+    let baseScore = 50
+    if (service.cancellation_difficulty === 'Easy') baseScore = 85 + (service.name.length % 15)
+    if (service.cancellation_difficulty === 'Medium') baseScore = 50 + (service.name.length % 20)
+    if (service.cancellation_difficulty === 'Hard') baseScore = 15 + (service.name.length % 20)
+
     setAnalysis({
       service_name: service.name,
-      trust_score: service.score,
-      category: "Subscription",
-      cancellation_difficulty: "difficulty" in service ? (service.difficulty.toLowerCase() as any) : "medium",
-      dark_patterns: service.score < 50 ? ["Forced Phone Call", "Hidden Cancellation Link"] : [],
-      positive_features: service.score > 80 ? ["One-Click Cancel", "Clear Pricing"] : [],
+      trust_score: Math.min(100, Math.max(0, baseScore)), // Ensure within 0-100
+      category: service.category || "Subscription",
+      cancellation_difficulty: service.cancellation_difficulty.toLowerCase() as any,
+      dark_patterns: service.cancellation_difficulty === "Hard" ? ["Forced Phone Call", "Hidden Cancellation Link", "Confirm Shaming"] : [],
+      positive_features: service.cancellation_difficulty === "Easy" ? ["One-Click Cancel", "Clear Pricing", "No Retention Flow"] : [],
       risk_flags: [],
-      trend: service.score < 50 ? "falling" : "stable",
-      alert_count: 0
+      trend: baseScore < 50 ? "falling" : "stable",
+      alert_count: 0,
+      cancellation_url: service.cancellation_url
     })
     setSearchQuery("")
     setSearchResults([])
@@ -106,6 +147,9 @@ export default function TrustCenterPage() {
     setAnalysis(null)
     setError(null)
 
+    // Check if we have a direct match in our DB first? 
+    // For now we'll stick to the existing behavior or just mock it if not found locally
+    // Use the API route as fallback
     try {
       const response = await fetch("/api/trust", {
         method: "POST",
@@ -114,14 +158,15 @@ export default function TrustCenterPage() {
       })
 
       if (!response.ok) {
+        // If API fails, mock a not found response or generic analysis
         throw new Error("Failed to analyze domain")
       }
 
       const data = await response.json()
       setAnalysis(data)
-    } catch (err) {
+    } catch (err: any) {
       console.error("Analysis error:", err)
-      setError("Could not analyze this service. Please try another URL.")
+      setError("Could not analyze this service. " + (err.message || ""))
     } finally {
       setIsAnalyzing(false)
     }
@@ -158,7 +203,7 @@ export default function TrustCenterPage() {
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Check any service (e.g. adobe.com, netflix.com)"
+                placeholder="Check any service (e.g. Netflix, Adobe)"
                 className="h-14 border-none bg-transparent pl-12 text-lg focus-visible:ring-0 shadow-none outline-none"
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
@@ -166,23 +211,39 @@ export default function TrustCenterPage() {
               />
               {/* Search Dropdown */}
               {searchQuery.length > 1 && (
-                <div className="absolute top-full left-0 mt-2 w-full rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 z-50">
-                  {searchResults.length > 0 ? (
+                <div className="absolute top-full left-0 mt-2 w-full rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 z-50 max-h-[300px] overflow-y-auto">
+                  {isSearching ? (
+                    <div className="p-4 flex justify-center text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    </div>
+                  ) : searchResults.length > 0 ? (
                     searchResults.map((result) => (
                       <button
-                        key={result.name}
+                        key={result.id}
                         onClick={() => handleSelectService(result)}
                         className="flex w-full items-center justify-between rounded-xl p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left"
                       >
-                        <span className="font-medium text-zinc-900 dark:text-zinc-50">{result.name}</span>
-                        <Badge variant="outline" className={`${result.score >= 80 ? "text-emerald-500 border-emerald-200" : result.score >= 50 ? "text-amber-500 border-amber-200" : "text-rose-500 border-rose-200"}`}>
-                          {result.score} / 100
+                        <div className="flex items-center gap-3">
+                          {/* Add Logo if available or fallback */}
+                          <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 font-bold text-xs uppercase">
+                            {result.name.substring(0, 2)}
+                          </div>
+                          <div>
+                            <span className="font-medium text-zinc-900 dark:text-zinc-50 block">{result.name}</span>
+                            <span className="text-xs text-muted-foreground">{result.category}</span>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className={`${result.cancellation_difficulty === 'Easy' ? "text-emerald-500 border-emerald-200"
+                            : result.cancellation_difficulty === 'Medium' ? "text-amber-500 border-amber-200"
+                              : "text-rose-500 border-rose-200"
+                          }`}>
+                          {result.cancellation_difficulty}
                         </Badge>
                       </button>
                     ))
                   ) : (
                     <div className="p-4 text-center text-sm text-muted-foreground">
-                      No reports found for "{searchQuery}". <button onClick={handleAnalyze} className="text-primary underline">Request manual audit?</button>
+                      No matches found for "{searchQuery}". <button onClick={handleAnalyze} className="text-primary underline">Run AI Audit?</button>
                     </div>
                   )}
                 </div>
@@ -202,24 +263,6 @@ export default function TrustCenterPage() {
           </p>
         </div>
 
-        {/* Pro Tip - Cancellation Insights */}
-        <div className="mx-auto max-w-4xl mb-16">
-          <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-6 flex items-start gap-4 dark:border-indigo-900/50 dark:bg-indigo-950/20">
-            <div className="hidden sm:flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/50">
-              <Zap className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-indigo-900 dark:text-indigo-100 flex items-center gap-2">
-                <span className="sm:hidden"><Zap className="h-4 w-4" /></span>
-                Cancellation Hack #1
-              </h3>
-              <p className="mt-1 text-indigo-800/80 dark:text-indigo-200/80">
-                Pro Tip: 84% of difficult cancellations can be bypassed by switching your billing address to <strong>California</strong> (where online cancellation is required by law).
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Global Platform Indicators */}
         <div className="mb-16 grid gap-6 md:grid-cols-3">
           <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
@@ -234,7 +277,7 @@ export default function TrustCenterPage() {
                 <span className="text-3xl font-bold tracking-tight">68 <span className="text-xl font-medium text-zinc-400">/ 100</span></span>
                 <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Moderate Risk</Badge>
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">Industry average across 1,200+ audited services.</p>
+              <p className="mt-2 text-xs text-muted-foreground">Industry average based on community data.</p>
             </CardContent>
           </Card>
 
@@ -282,8 +325,12 @@ export default function TrustCenterPage() {
               </h2>
             </div>
             <div className="space-y-3">
-              {TRUSTED_SERVICES.map((service) => (
-                <div key={service.name} className="flex items-center justify-between rounded-xl border border-zinc-100 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
+              {loadingLeaderboard ? (
+                [1, 2, 3].map(i => (
+                  <div key={i} className="h-16 w-full rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
+                ))
+              ) : trustedServices.map((service) => (
+                <div key={service.id} className="flex items-center justify-between rounded-xl border border-zinc-100 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center dark:bg-emerald-500/10">
                       <span className="text-emerald-700 font-bold dark:text-emerald-400">{service.name[0]}</span>
@@ -294,8 +341,9 @@ export default function TrustCenterPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="block text-lg font-black text-emerald-600 dark:text-emerald-400">{service.score}</span>
-                    <span className="text-[10px] font-bold uppercase text-zinc-400">Trust Score</span>
+                    <Badge variant="outline" className="border-emerald-200 text-emerald-600 dark:border-emerald-800 dark:text-emerald-400">
+                      {service.cancellation_difficulty}
+                    </Badge>
                   </div>
                 </div>
               ))}
@@ -310,8 +358,12 @@ export default function TrustCenterPage() {
               </h2>
             </div>
             <div className="space-y-3">
-              {RISKY_SERVICES.map((service) => (
-                <div key={service.name} className="flex items-center justify-between rounded-xl border border-rose-100 bg-rose-50/30 p-4 shadow-sm dark:border-rose-900/20 dark:bg-rose-950/10">
+              {loadingLeaderboard ? (
+                [1, 2, 3].map(i => (
+                  <div key={i} className="h-16 w-full rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
+                ))
+              ) : riskyServices.map((service) => (
+                <div key={service.id} className="flex items-center justify-between rounded-xl border border-rose-100 bg-rose-50/30 p-4 shadow-sm dark:border-rose-900/20 dark:bg-rose-950/10">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-rose-100 flex items-center justify-center dark:bg-rose-500/10">
                       <span className="text-rose-700 font-bold dark:text-rose-400">{service.name[0]}</span>
@@ -319,13 +371,14 @@ export default function TrustCenterPage() {
                     <div>
                       <p className="font-bold">{service.name}</p>
                       <Badge variant="outline" className="border-rose-200 text-rose-600 dark:border-rose-800 dark:text-rose-400 text-[10px] h-5">
-                        {service.difficulty}
+                        {service.cancellation_difficulty}
                       </Badge>
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="block text-lg font-black text-rose-600 dark:text-rose-400">{service.score}</span>
-                    <span className="text-[10px] font-bold uppercase text-zinc-400">Trust Score</span>
+                    {/* Placeholder for Score if we had it in DB, for now showing cost maybe? */}
+                    <span className="block font-bold text-rose-600 dark:text-rose-400">${service.average_cost}/mo</span>
+                    <span className="text-[10px] uppercase text-zinc-400">Avg Cost</span>
                   </div>
                 </div>
               ))}
@@ -465,11 +518,22 @@ export default function TrustCenterPage() {
                     </Badge>
                   </div>
                   <div className="p-6 text-center">
-                    <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Service Trend</p>
-                    <p className="text-sm font-bold text-zinc-800 dark:text-white flex items-center justify-center gap-1">
-                      <TrendingUp className="h-3 w-3 text-emerald-500" />
-                      {analysis.trend.toUpperCase()}
-                    </p>
+                    {analysis.cancellation_url && (
+                      <Button asChild size="sm" variant="outline" className="w-full">
+                        <a href={analysis.cancellation_url} target="_blank" rel="noopener noreferrer">
+                          Direct Cancel Link <ArrowRight className="ml-2 h-4 w-4" />
+                        </a>
+                      </Button>
+                    )}
+                    {!analysis.cancellation_url && (
+                      <div>
+                        <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Service Trend</p>
+                        <p className="text-sm font-bold text-zinc-800 dark:text-white flex items-center justify-center gap-1">
+                          <TrendingUp className="h-3 w-3 text-emerald-500" />
+                          {analysis.trend.toUpperCase()}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card>
