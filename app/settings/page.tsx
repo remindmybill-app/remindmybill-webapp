@@ -225,19 +225,19 @@ export default function SettingsPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="text-lg font-semibold">{getTierDisplayName(profile?.subscription_tier)} Plan</p>
-                      <Badge className={isPro(profile?.subscription_tier) 
-                        ? "bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0" 
+                      <Badge className={isPro(profile?.subscription_tier)
+                        ? "bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0"
                         : "bg-primary/20 text-primary"}>
                         Active
                       </Badge>
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
-                        {isPro(profile?.subscription_tier) 
-                            ? `${currency} 3.99/month, billed monthly`
-                            : "Free forever"}
+                      {isPro(profile?.subscription_tier)
+                        ? `${currency} 3.99/month, billed monthly`
+                        : "Free forever"}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                        {profile?.current_usage || 0} / {isPro(profile?.subscription_tier) ? 'Unlimited' : '3'} active subscriptions
+                      {profile?.current_usage || 0} / {isPro(profile?.subscription_tier) ? 'Unlimited' : '3'} active subscriptions
                     </p>
                   </div>
                   {isPro(profile?.subscription_tier) && (
@@ -345,15 +345,15 @@ export default function SettingsPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
-      <DowngradeConfirmationDialog 
-        open={showDowngradeDialog} 
+
+      <DowngradeConfirmationDialog
+        open={showDowngradeDialog}
         onOpenChange={setShowDowngradeDialog}
         onConfirm={onConfirmDowngradeInitial}
         onCancel={() => setShowDowngradeDialog(false)}
         subscriptionCount={subscriptions.filter(s => s.status === 'active').length}
       />
-      
+
       <SubscriptionSelectorModal
         open={showSubscriptionSelector}
         onOpenChange={setShowSubscriptionSelector}

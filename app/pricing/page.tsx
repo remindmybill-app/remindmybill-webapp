@@ -260,7 +260,7 @@ export default function PricingPage() {
         </div>
 
         {/* Downgrade Button for Premium Users */}
-        {((profile?.subscription_tier as string) === 'premium' || profile?.subscription_tier === 'pro') && (
+        {isPro(profile?.subscription_tier) && (
           <div className="flex justify-center mt-8">
             <Button variant="outline" size="sm" onClick={async () => {
               try {

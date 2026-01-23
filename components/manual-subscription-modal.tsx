@@ -19,6 +19,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import type { Subscription } from "@/lib/types"
 import { useProfile } from "@/lib/hooks/use-profile"
 import Link from "next/link"
+import { getTierDisplayName } from "@/lib/subscription-utils"
 
 const formSchema = z.object({
     name: z.string().min(1, "Service name is required"),
@@ -222,7 +223,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
 
                                 {/* Message */}
                                 <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                                    You've reached your <span className="font-semibold capitalize">{profile.subscription_tier || 'Free'}</span> plan limit of{' '}
+                                    You've reached your <span className="font-semibold capitalize">{getTierDisplayName(profile.subscription_tier)}</span> plan limit of{' '}
                                     <span className="font-bold text-foreground">{profile.subscription_limit}</span> subscriptions.
                                 </p>
 
