@@ -12,6 +12,7 @@ import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { upgradeUserToPro, downgradeUserToFree } from "@/app/actions/mock-upgrade"
+import { isPro, isFree } from "@/lib/subscription-utils"
 
 export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(false)
@@ -127,6 +128,15 @@ export default function PricingPage() {
               className={`relative overflow-hidden ${plan.highlight ? "border-primary/50 shadow-lg shadow-primary/20 ring-2 ring-primary/20" : ""
                 }`}
             >
+              {/* Current Plan Badge */}
+              {((plan.name === "Pro Plan" && isPro(profile?.subscription_tier)) ||
+                (plan.name === "Essential" && isFree(profile?.subscription_tier))) && (
+                  <div className="absolute top-4 right-4 z-10">
+                    <Badge className="bg-primary text-primary-foreground shadow-lg font-bold">
+                      ✓ CURRENT PLAN
+                    </Badge>
+                  </div>
+                )}
               {plan.highlight && (
                 <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/5 to-transparent" />
               )}
@@ -182,12 +192,12 @@ export default function PricingPage() {
                   variant={plan.highlight ? "default" : "outline"}
                   size="lg"
                   id={`checkout-${plan.name.toLowerCase().replace(/\s+/g, '-')}`}
-                  disabled={isUpdating || (plan.name === "Pro Plan" && profile?.subscription_tier === 'pro') || (plan.name === "Essential" && (!profile?.subscription_tier || profile.subscription_tier === 'free'))}
+                  disabled={isUpdating || (plan.name === "Pro Plan" && isPro(profile?.subscription_tier)) || (plan.name === "Essential" && isFree(profile?.subscription_tier))}
                   onClick={async () => {
                     if (plan.name === "Essential") {
-                      if (profile?.subscription_tier === 'pro') {
-                        toast.info("To downgrade, please contact support or manage via Settings.")
-                        // In a real app we might downgrade via API too, but focus is on Upgrade for now.
+                      if (isPro(profile?.subscription_tier)) {
+                        toast.info("To downgrade, go to Settings → Billing")
+                        router.push("/settings?tab=billing")
                         return
                       }
                       router.push("/dashboard")
@@ -195,7 +205,7 @@ export default function PricingPage() {
                     }
 
                     if (plan.name === "Pro Plan") {
-                      if (profile?.subscription_tier === 'pro') {
+                      if (isPro(profile?.subscription_tier)) {
                         handleManageSubscription()
                         return
                       }
@@ -216,9 +226,9 @@ export default function PricingPage() {
                   }}
                 >
                   {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {plan.name === "Pro Plan" && profile?.subscription_tier === 'pro'
+                  {plan.name === "Pro Plan" && isPro(profile?.subscription_tier)
                     ? "Current Plan"
-                    : plan.name === "Essential" && (!profile?.subscription_tier || profile.subscription_tier === 'free')
+                    : plan.name === "Essential" && isFree(profile?.subscription_tier)
                       ? "Current Plan"
                       : plan.cta}
                 </Button>

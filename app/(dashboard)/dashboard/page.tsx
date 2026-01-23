@@ -14,11 +14,12 @@ import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { useProfile } from "@/lib/hooks/use-profile"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { ManualSubscriptionModal } from "@/components/manual-subscription-modal"
+import { isPro } from "@/lib/subscription-utils"
 
 export default function DashboardPage() {
     const { isAuthenticated, signIn, isLoading: authLoading } = useAuth()
     const { subscriptions, refreshSubscriptions } = useSubscriptions()
-    const { refreshProfile } = useProfile()
+    const { profile, refreshProfile } = useProfile()
     const [isScanning, setIsScanning] = useState(false)
     const [lastSynced, setLastSynced] = useState<Date | null>(null)
 
@@ -154,18 +155,34 @@ export default function DashboardPage() {
                         {/* <SavingsAlerts /> */}
 
                         {/* Premium Feature Teaser */}
-                        <div className="rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 p-6 text-white shadow-xl shadow-indigo-500/20">
-                            <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
-                                <Bell className="h-5 w-5 text-white" />
+                        {/* Premium Feature Teaser - Only for Free Users */}
+                        {!isPro(profile?.subscription_tier) && (
+                            <div className="rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 p-6 text-white shadow-xl shadow-indigo-500/20">
+                                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
+                                    <Bell className="h-5 w-5 text-white" />
+                                </div>
+                                <h3 className="mb-2 text-lg font-bold">Remind My Bill Premium</h3>
+                                <p className="mb-4 text-sm text-indigo-100">
+                                    Get Legal Concierge to cancel hard-to-cancel subscriptions for you.
+                                </p>
+                                <Button variant="secondary" className="w-full bg-white text-indigo-600 hover:bg-indigo-50" asChild>
+                                    <Link href="/pricing">Upgrade Plan</Link>
+                                </Button>
                             </div>
-                            <h3 className="mb-2 text-lg font-bold">Remind My Bill Premium</h3>
-                            <p className="mb-4 text-sm text-indigo-100">
-                                Get Legal Concierge to cancel hard-to-cancel subscriptions for you.
-                            </p>
-                            <Button variant="secondary" className="w-full bg-white text-indigo-600 hover:bg-indigo-50" asChild>
-                                <Link href="/pricing">Upgrade Plan</Link>
-                            </Button>
-                        </div>
+                        )}
+
+                        {/* Pro User Thank You Card */}
+                        {isPro(profile?.subscription_tier) && (
+                            <div className="rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 p-6 text-white shadow-xl shadow-green-500/20">
+                                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
+                                    <Sparkles className="h-5 w-5 text-white" />
+                                </div>
+                                <h3 className="mb-2 text-lg font-bold">You're on Pro! 🎉</h3>
+                                <p className="mb-4 text-sm text-green-100">
+                                    Thanks for being a Pro member. Enjoy unlimited subscriptions and all premium features.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

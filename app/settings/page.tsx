@@ -9,20 +9,93 @@ import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Mail, Lock, Bell, CreditCard, Smartphone, DollarSign } from "lucide-react"
+import { Mail, Lock, Bell, CreditCard, Smartphone, DollarSign, AlertTriangle } from "lucide-react"
 import { useProfile } from "@/lib/hooks/use-profile"
+import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
+import { DowngradeConfirmationDialog } from "@/components/downgrade-confirmation-dialog"
+import { SubscriptionSelectorModal } from "@/components/subscription-selector-modal"
+import { isPro, getTierDisplayName, getTierLimit } from "@/lib/subscription-utils"
+import { downgradeUserToFree } from "@/app/actions/mock-upgrade"
+import { toast } from "sonner"
+import { createClient } from "@/lib/supabase"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useEffect } from "react"
 
 export default function SettingsPage() {
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [smsAlerts, setSmsAlerts] = useState(false)
   const [pushAlerts, setPushAlerts] = useState(true)
-  const { profile, updateProfile } = useProfile()
+  const { profile, updateProfile, mutate } = useProfile()
+  const { subscriptions, refreshSubscriptions } = useSubscriptions()
   const [currency, setCurrency] = useState(profile?.default_currency || "USD")
+
+  // Downgrade State
+  const [showDowngradeDialog, setShowDowngradeDialog] = useState(false)
+  const [showSubscriptionSelector, setShowSubscriptionSelector] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  const activeTab = searchParams.get('tab') || 'account'
 
   const handleCurrencyChange = async (newCurrency: string) => {
     setCurrency(newCurrency)
     await updateProfile({ default_currency: newCurrency })
     console.log("[v0] Currency updated to:", newCurrency)
+  }
+
+  const handleDowngrade = async (selectedIds?: string[]) => {
+    if (!profile) return
+    setIsProcessing(true)
+
+    try {
+      const supabase = createClient()
+
+      // If we have selected IDs (meaning user was over limit), cancel the unselected ones
+      if (selectedIds) {
+        const subscriptionsToCancel = subscriptions
+          .filter(sub => !selectedIds.includes(sub.id) && sub.status === 'active')
+          .map(sub => sub.id)
+
+        if (subscriptionsToCancel.length > 0) {
+          const { error } = await supabase
+            .from('subscriptions')
+            .update({ status: 'cancelled' })
+            .in('id', subscriptionsToCancel)
+
+          if (error) throw error
+        }
+      }
+
+      // Perform the downgrade
+      await downgradeUserToFree(profile.id)
+
+      // Refresh everything
+      await mutate()
+      await refreshSubscriptions()
+
+      toast.success("Plan downgraded to Free")
+      setShowDowngradeDialog(false)
+      setShowSubscriptionSelector(false)
+    } catch (error: any) {
+      console.error("Downgrade error:", error)
+      toast.error("Failed to downgrade: " + error.message)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const onConfirmDowngradeInitial = () => {
+    // Check if user is over the limit (3 for free)
+    // Filter effectively active subscriptions
+    const activeSubsCount = subscriptions.filter(s => s.status === 'active').length
+
+    if (activeSubsCount > 3) {
+      setShowDowngradeDialog(false)
+      setShowSubscriptionSelector(true)
+    } else {
+      handleDowngrade()
+    }
   }
 
   return (
@@ -35,7 +108,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Tabbed Interface */}
-        <Tabs defaultValue="account" className="space-y-6">
+        <Tabs defaultValue={activeTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="account">Account</TabsTrigger>
             <TabsTrigger value="billing">Billing</TabsTrigger>
@@ -151,15 +224,28 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between rounded-lg border bg-card/50 p-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-lg font-semibold">Automated (Pro)</p>
-                      <Badge className="bg-primary/20 text-primary">Active</Badge>
+                      <p className="text-lg font-semibold">{getTierDisplayName(profile?.subscription_tier)} Plan</p>
+                      <Badge className={isPro(profile?.subscription_tier) 
+                        ? "bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0" 
+                        : "bg-primary/20 text-primary"}>
+                        Active
+                      </Badge>
                     </div>
-                    <p className="mt-1 text-sm text-muted-foreground">{currency} 3.99/month, billed monthly</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        {isPro(profile?.subscription_tier) 
+                            ? `${currency} 3.99/month, billed monthly`
+                            : "Free forever"}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                        {profile?.current_usage || 0} / {isPro(profile?.subscription_tier) ? 'Unlimited' : '3'} active subscriptions
+                    </p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-primary">{currency} 3.99</p>
-                    <p className="text-xs text-muted-foreground">per month</p>
-                  </div>
+                  {isPro(profile?.subscription_tier) && (
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-primary">{currency} 3.99</p>
+                      <p className="text-xs text-muted-foreground">per month</p>
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Button variant="outline" className="w-full bg-transparent">
@@ -168,8 +254,10 @@ export default function SettingsPage() {
                   <Button
                     variant="ghost"
                     className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => setShowDowngradeDialog(true)}
+                    disabled={!isPro(profile?.subscription_tier) || isProcessing}
                   >
-                    Cancel Subscription
+                    {isPro(profile?.subscription_tier) ? "Cancel Subscription" : "Already on Free Plan"}
                   </Button>
                 </div>
               </CardContent>
@@ -258,5 +346,21 @@ export default function SettingsPage() {
         </Tabs>
       </div>
     </div>
+      <DowngradeConfirmationDialog 
+        open={showDowngradeDialog} 
+        onOpenChange={setShowDowngradeDialog}
+        onConfirm={onConfirmDowngradeInitial}
+        onCancel={() => setShowDowngradeDialog(false)}
+        subscriptionCount={subscriptions.filter(s => s.status === 'active').length}
+      />
+      
+      <SubscriptionSelectorModal
+        open={showSubscriptionSelector}
+        onOpenChange={setShowSubscriptionSelector}
+        subscriptions={subscriptions.filter(s => s.status === 'active')}
+        onConfirm={handleDowngrade}
+        isProcessing={isProcessing}
+      />
+    </div >
   )
 }

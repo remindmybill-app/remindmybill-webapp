@@ -3,9 +3,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Calendar, DollarSign, Shield, TrendingUp, CheckCircle2 } from "lucide-react"
+import { Calendar, DollarSign, Shield, TrendingUp, CheckCircle2, PackageCheck } from "lucide-react"
 import { useProfile } from "@/lib/hooks/use-profile"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
+import { isPro, getTierDisplayName } from "@/lib/subscription-utils"
 
 export default function ProfilePage() {
   const { profile, isLoading: profileLoading } = useProfile()
@@ -37,7 +38,11 @@ export default function ProfilePage() {
               <h1 className="mb-2 text-4xl font-bold tracking-tight">{profile?.full_name || "User"}</h1>
               <p className="text-lg text-muted-foreground">{profile?.email}</p>
               <div className="mt-2 flex items-center gap-2">
-                <Badge className="bg-primary/20 text-primary">Free Plan</Badge>
+                <Badge className={isPro(profile?.subscription_tier)
+                  ? "bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0"
+                  : "bg-primary/20 text-primary"}>
+                  {getTierDisplayName(profile?.subscription_tier)} Plan
+                </Badge>
                 <Badge variant="secondary">Member for {daysTracked} days</Badge>
               </div>
             </div>
