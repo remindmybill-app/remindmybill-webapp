@@ -15,8 +15,10 @@ import { useAuth } from "@/lib/hooks/use-auth"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { useProfile } from "@/lib/hooks/use-profile"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
-import { ManualSubscriptionModal } from "@/components/manual-subscription-modal"
-import { isPro } from "@/lib/subscription-utils"
+import { connectGmailAccount, getGmailToken } from "@/lib/utils/gmail-auth"
+import { ReviewSubscriptionsModal } from "@/components/review-subscriptions-modal"
+
+// ... imports remain the same
 
 export default function DashboardPage() {
     const { isAuthenticated, signIn, isLoading: authLoading } = useAuth()
@@ -26,6 +28,10 @@ export default function DashboardPage() {
     const [isScanning, setIsScanning] = useState(false)
     const [lastSynced, setLastSynced] = useState<Date | null>(null)
 
+    // New state for Review Modal
+    const [foundSubscriptions, setFoundSubscriptions] = useState<any[]>([])
+    const [isReviewOpen, setIsReviewOpen] = useState(false)
+
     // Force profile sync on mount to ensure latest subscription status
     useEffect(() => {
         if (isAuthenticated) {
@@ -34,14 +40,31 @@ export default function DashboardPage() {
     }, [isAuthenticated, refreshProfile])
 
     const handleScanInbox = async () => {
-        console.log("[v0] Scanning inbox for subscriptions...")
+        if (!isPro(profile?.subscription_tier)) {
+            router.push('/pricing')
+            return
+        }
+
+        console.log("[v0] Starting Gmail Sync flow...")
         setIsScanning(true)
 
         try {
+            // 1. Get Token
+            let token = await getGmailToken()
+
+            if (!token) {
+                console.log("[v0] No Gmail token found, initiating OAuth...")
+                toast.info("Connecting to Gmail...", { description: "Please approve read-only access to scan for receipts." })
+                await connectGmailAccount() // This will redirect away
+                return
+            }
+
+            console.log("[v0] Token found, scanning inbox...")
             const supabase = getSupabaseBrowserClient()
 
+            // 2. Call Edge Function with Token
             const { data, error } = await supabase.functions.invoke("scan-inbox", {
-                body: { action: "scan" },
+                body: { google_access_token: token },
             })
 
             if (error) {
@@ -50,15 +73,26 @@ export default function DashboardPage() {
             }
 
             console.log("[v0] Inbox scan complete:", data)
-            toast.success("Inbox sync complete!", {
-                description: "We've scanned your emails and updated your subscriptions."
-            })
+
+            // 3. Handle Results
+            if (Array.isArray(data) && data.length > 0) {
+                setFoundSubscriptions(data)
+                setIsReviewOpen(true)
+                toast.success(`Found ${data.length} potential subscriptions!`, {
+                    description: "Please review them to add to your dashboard."
+                })
+            } else if (data?.message === "No receipts found.") {
+                toast.info("Scan Complete", { description: "No new subscription receipts found in your recent emails." })
+            } else {
+                toast.success("Inbox sync complete!", { description: "Your subscriptions are up to date." })
+            }
+
             setLastSynced(new Date())
-            refreshSubscriptions()
+            // refreshSubscriptions() // Only refresh after import logic (in modal)
         } catch (error: any) {
             console.error("[v0] Failed to scan inbox:", error)
             toast.error("Sync failed", {
-                description: "Could not scan inbox. Please ensure you have connected your Gmail account in Settings."
+                description: "Could not scan inbox. Please try reconnecting Gmail."
             })
         } finally {
             setIsScanning(false)
@@ -116,7 +150,7 @@ export default function DashboardPage() {
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
                             <Button
-                                onClick={isPro(profile?.subscription_tier) ? handleScanInbox : () => router.push('/pricing')}
+                                onClick={handleScanInbox}
                                 disabled={isScanning}
                                 size="lg"
                                 className="flex-1 gap-2 bg-indigo-600 hover:bg-indigo-700 h-12 text-md shadow-lg shadow-indigo-500/20"
@@ -132,6 +166,16 @@ export default function DashboardPage() {
                         </p>
                     </div>
                 </div>
+
+                <ReviewSubscriptionsModal
+                    isOpen={isReviewOpen}
+                    onClose={() => setIsReviewOpen(false)}
+                    foundSubscriptions={foundSubscriptions}
+                    onImportComplete={() => {
+                        refreshSubscriptions()
+                        setFoundSubscriptions([])
+                    }}
+                />
             </div>
         )
     }
@@ -149,16 +193,27 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-3">
                         <ManualSubscriptionModal onSubscriptionAdded={refreshSubscriptions} />
                         <Button
-                            onClick={isPro(profile?.subscription_tier) ? handleScanInbox : () => router.push('/pricing')}
+                            onClick={handleScanInbox} // Updated to use new handler
                             disabled={isScanning}
                             variant="outline"
                             className="gap-2 bg-white dark:bg-zinc-900"
                         >
                             {isPro(profile?.subscription_tier) ? <Inbox className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-500" />}
-                            {isScanning ? "Syncing..." : isPro(profile?.subscription_tier) ? "Sync Gmail" : "Sync Gmail (Pro)"}
+                            {isScanning ? "Scanning..." : isPro(profile?.subscription_tier) ? "Sync Gmail" : "Sync Gmail (Pro)"}
                         </Button>
                     </div>
                 </div>
+
+                {/* Review Modal for Found Subscriptions */}
+                <ReviewSubscriptionsModal
+                    isOpen={isReviewOpen}
+                    onClose={() => setIsReviewOpen(false)}
+                    foundSubscriptions={foundSubscriptions}
+                    onImportComplete={() => {
+                        refreshSubscriptions()
+                        setFoundSubscriptions([])
+                    }}
+                />
 
                 <div className="grid w-full gap-6 xl:grid-cols-[1fr_380px]">
                     <div className="w-full space-y-6">
