@@ -17,8 +17,8 @@ import { useProfile } from "@/lib/hooks/use-profile"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { connectGmailAccount, getGmailToken } from "@/lib/utils/gmail-auth"
 import { ReviewSubscriptionsModal } from "@/components/review-subscriptions-modal"
-
-// ... imports remain the same
+import { ManualSubscriptionModal } from "@/components/manual-subscription-modal"
+import { isPro } from "@/lib/subscription-utils"
 
 export default function DashboardPage() {
     const { isAuthenticated, signIn, isLoading: authLoading } = useAuth()
