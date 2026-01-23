@@ -217,13 +217,29 @@ function SettingsContent() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Gmail Integration</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  Gmail Integration
+                  {!isPro(profile?.subscription_tier) && <Badge variant="secondary" className="bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0">PRO</Badge>}
+                </CardTitle>
                 <CardDescription>Connect your Gmail account for AI Inbox Hunter</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full bg-transparent" onClick={handleConnectGmail}>
-                  <Mail className="mr-2 h-4 w-4" />
-                  Link Gmail Account
+                <Button
+                  variant="outline"
+                  className="w-full bg-transparent"
+                  onClick={isPro(profile?.subscription_tier) ? handleConnectGmail : () => router.push('/pricing')}
+                >
+                  {isPro(profile?.subscription_tier) ? (
+                    <>
+                      <Mail className="mr-2 h-4 w-4" />
+                      Link Gmail Account
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="mr-2 h-4 w-4 text-amber-500" />
+                      Upgrade to Link Gmail
+                    </>
+                  )}
                 </Button>
                 <p className="mt-3 text-xs text-muted-foreground">
                   We'll scan your inbox for subscription confirmations and hidden charges. Your emails remain private

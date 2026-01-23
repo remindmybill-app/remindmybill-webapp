@@ -1,4 +1,3 @@
-
 "use client"
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -49,25 +48,33 @@ export function SubscriptionsTable() {
     }
   }
 
-  const getScoreColorClass = (score: number) => {
-    if (score >= 80) return "text-emerald-500 dark:text-emerald-400"
-    if (score >= 60) return "text-amber-500 dark:text-amber-400"
-    return "text-rose-500 dark:text-rose-400"
-  }
-
-  const getRenewalText = (dateStr: string, frequency: string) => {
+  const getRenewalDetails = (dateStr: string, frequency: string) => {
     try {
       let date = parseISO(dateStr)
-      if (isPast(date)) {
-        const today = new Date()
-        while (isPast(date)) {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      if (isPast(date) && date < today) {
+        // Logic to find next payment date if it's in the past
+        while (date < today) {
           if (frequency === 'yearly') date = addYears(date, 1)
           else date = addMonths(date, 1)
         }
       }
-      return `${formatDistanceToNow(date)}`
+
+      const daysLeft = Math.ceil((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+
+      let statusColor = "text-zinc-800 dark:text-zinc-300"
+      if (daysLeft < 0) statusColor = "text-rose-500 font-bold"
+      else if (daysLeft <= 3) statusColor = "text-amber-500 font-bold"
+
+      let label = `${daysLeft} days`
+      if (daysLeft === 0) label = "Today"
+      if (daysLeft === 1) label = "Tomorrow"
+
+      return { label, daysLeft, statusColor }
     } catch (e) {
-      return "N/A"
+      return { label: "N/A", daysLeft: 0, statusColor: "text-muted-foreground" }
     }
   }
 
@@ -99,7 +106,7 @@ export function SubscriptionsTable() {
   return (
     <>
       <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 overflow-hidden">
-        <CardHeader className="p-8 border-b border-zinc-100 dark:border-zinc-800 flex flex-row items-center justify-between">
+        <CardHeader className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex flex-row items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-500/10">
               <TrendingUp className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
@@ -136,50 +143,64 @@ export function SubscriptionsTable() {
             <>
               <div className="hidden md:block">
                 <table className="w-full">
-                  <thead>
-                    <tr className="bg-zinc-50/50 dark:bg-zinc-800/20 text-xs font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100 dark:border-zinc-800">
-                      <th className="p-6 text-left">Service</th>
-                      <th className="p-6 text-right">Price</th>
-                      <th className="p-6 text-right">Billing</th>
-                      <th className="p-6 text-right">Next Renewal</th>
-                      <th className="p-6 text-right">Status</th>
-                      <th className="p-6 text-right">Actions</th>
+                  <thead className="bg-zinc-50/50 dark:bg-zinc-800/20 text-xs font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100 dark:border-zinc-800">
+                    <tr>
+                      <th className="p-4 pl-6 text-left">Service</th>
+                      <th className="p-4 text-right">Price</th>
+                      <th className="p-4 text-right">Billing</th>
+                      <th className="p-4 text-right">Next Renewal</th>
+                      <th className="p-4 text-right">Status</th>
+                      <th className="p-4 pr-6 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
                     {subscriptions.map((sub) => {
                       const Icon = categoryIcons[sub.category] || Package
+                      const { label, daysLeft, statusColor } = getRenewalDetails(sub.renewal_date, sub.frequency)
+
+                      const logoUrl = `https://logo.clearbit.com/${sub.name.toLowerCase().replace(/\s+/g, '')}.com`
+
                       return (
                         <tr key={sub.id} className="group transition-all hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 cursor-default">
-                          <td className="p-6">
+                          <td className="p-4 pl-6">
                             <div className="flex items-center gap-4">
-                              <div className="h-12 w-12 flex items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-zinc-200 group-hover:ring-indigo-500/30 transition-all dark:bg-zinc-800 dark:ring-zinc-700">
-                                <Icon className="h-5 w-5 text-zinc-600 dark:text-zinc-300" />
+                              <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 group-hover:ring-indigo-500/30 transition-all dark:bg-zinc-800 dark:ring-zinc-700 overflow-hidden relative">
+                                <Icon className="h-5 w-5 text-zinc-600 dark:text-zinc-300 absolute" />
+                                <img
+                                  src={logoUrl}
+                                  alt={sub.name}
+                                  className="h-full w-full object-cover relative z-10 bg-white"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.opacity = '0';
+                                  }}
+                                />
                               </div>
                               <div>
-                                <span className="block text-md font-bold text-zinc-900 dark:text-zinc-50">{sub.name}</span>
-                                <span className="text-[11px] font-medium text-muted-foreground uppercase">{sub.category}</span>
+                                <span className="block text-sm font-bold text-zinc-900 dark:text-zinc-50">{sub.name}</span>
+                                <span className="text-[10px] font-medium text-muted-foreground uppercase">{sub.category}</span>
                               </div>
                             </div>
                           </td>
-                          <td className="p-6 text-right">
-                            <div className="font-black text-lg tracking-tighter text-zinc-900 dark:text-zinc-50">{formatCurrency(sub.cost, sub.currency)}</div>
+                          <td className="p-4 text-right">
+                            <div className="font-black text-sm tracking-tighter text-zinc-900 dark:text-zinc-50">{formatCurrency(sub.cost, sub.currency)}</div>
                           </td>
-                          <td className="p-6 text-right">
+                          <td className="p-4 text-right">
                             <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{sub.frequency || 'Monthly'}</div>
                           </td>
-                          <td className="p-6 text-right">
-                            <div className="inline-flex items-center gap-2">
+                          <td className="p-4 text-right">
+                            <div className="inline-flex items-center gap-2 justify-end">
                               <Calendar className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-sm font-bold text-zinc-800 dark:text-zinc-300">{getRenewalText(sub.renewal_date, sub.frequency)}</span>
+                              <span className={`text-sm ${statusColor}`}>
+                                {daysLeft < 0 ? "Overdue" : label}
+                              </span>
                             </div>
                           </td>
-                          <td className="p-6 text-right">
-                            <Badge variant="outline" className="h-6 text-[10px] font-black uppercase tracking-widest bg-emerald-50/50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50">
+                          <td className="p-4 text-right">
+                            <Badge variant="outline" className="h-5 text-[10px] font-black uppercase tracking-widest bg-emerald-50/50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50">
                               {sub.status || 'Active'}
                             </Badge>
                           </td>
-                          <td className="p-6 text-right">
+                          <td className="p-4 pr-6 text-right">
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-zinc-200 dark:hover:bg-zinc-700">
@@ -220,6 +241,7 @@ export function SubscriptionsTable() {
               <div className="space-y-4 p-4 md:hidden">
                 {subscriptions.map((sub) => {
                   const Icon = categoryIcons[sub.category] || Package
+                  const { label, daysLeft, statusColor } = getRenewalDetails(sub.renewal_date, sub.frequency)
                   return (
                     <div key={sub.id} className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                       <div className="mb-4 flex items-center justify-between">
@@ -229,7 +251,7 @@ export function SubscriptionsTable() {
                           </div>
                           <div>
                             <p className="text-sm font-bold text-zinc-900 dark:text-white">{sub.name}</p>
-                            <p className="text-[10px] font-medium text-muted-foreground">Renews in {getRenewalText(sub.renewal_date, sub.frequency)}</p>
+                            <p className={`text-[10px] font-medium ${statusColor}`}>Renews in {label}</p>
                           </div>
                         </div>
                         <DropdownMenu>
@@ -271,7 +293,6 @@ export function SubscriptionsTable() {
         </CardContent>
       </Card>
 
-      {/* Editing Modal */}
       <ManualSubscriptionModal
         open={!!editingSubscription}
         onOpenChange={(open) => !open && setEditingSubscription(null)}

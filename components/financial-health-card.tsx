@@ -71,7 +71,13 @@ export function FinancialHealthCard() {
                   <div className="text-xs font-medium text-muted-foreground sm:text-sm">Health Score</div>
                 </div>
               </>
+
             )}
+          </div>
+          <div className="text-center">
+            <p className="text-xs font-medium text-muted-foreground">
+              {score < 100 ? "Optimize: You have inactive subscriptions." : "Excellent! Your portfolio is fully optimized."}
+            </p>
           </div>
 
           {/* Optimization Info */}
@@ -90,6 +96,6 @@ export function FinancialHealthCard() {
           </div>
         </div>
       </CardContent>
-    </Card>
+    </Card >
   )
 }

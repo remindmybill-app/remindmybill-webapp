@@ -2,13 +2,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { toast } from "sonner"
 import { FinancialHealthCard } from "@/components/financial-health-card"
 import { QuickStats } from "@/components/quick-stats"
 import { SubscriptionsTable } from "@/components/subscriptions-table"
 import { SavingsAlerts } from "@/components/savings-alerts"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Inbox, Bell, Sparkles, Plus } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Inbox, Bell, Sparkles, Plus, Lock } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { useProfile } from "@/lib/hooks/use-profile"
@@ -18,6 +20,7 @@ import { isPro } from "@/lib/subscription-utils"
 
 export default function DashboardPage() {
     const { isAuthenticated, signIn, isLoading: authLoading } = useAuth()
+    const router = useRouter()
     const { subscriptions, refreshSubscriptions } = useSubscriptions()
     const { profile, refreshProfile } = useProfile()
     const [isScanning, setIsScanning] = useState(false)
@@ -47,10 +50,16 @@ export default function DashboardPage() {
             }
 
             console.log("[v0] Inbox scan complete:", data)
+            toast.success("Inbox sync complete!", {
+                description: "We've scanned your emails and updated your subscriptions."
+            })
             setLastSynced(new Date())
             refreshSubscriptions()
-        } catch (error) {
+        } catch (error: any) {
             console.error("[v0] Failed to scan inbox:", error)
+            toast.error("Sync failed", {
+                description: "Could not scan inbox. Please ensure you have connected your Gmail account in Settings."
+            })
         } finally {
             setIsScanning(false)
         }
@@ -106,9 +115,14 @@ export default function DashboardPage() {
                             Add your first one to start tracking your recurring expenses and optimization potential.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
-                            <Button onClick={handleScanInbox} disabled={isScanning} size="lg" className="flex-1 gap-2 bg-indigo-600 hover:bg-indigo-700 h-12 text-md shadow-lg shadow-indigo-500/20">
-                                <Inbox className="h-5 w-5" />
-                                {isScanning ? "Scanning Gmail..." : "Connect Gmail"}
+                            <Button
+                                onClick={isPro(profile?.subscription_tier) ? handleScanInbox : () => router.push('/pricing')}
+                                disabled={isScanning}
+                                size="lg"
+                                className="flex-1 gap-2 bg-indigo-600 hover:bg-indigo-700 h-12 text-md shadow-lg shadow-indigo-500/20"
+                            >
+                                {isPro(profile?.subscription_tier) ? <Inbox className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
+                                {isScanning ? "Scanning Gmail..." : isPro(profile?.subscription_tier) ? "Connect Gmail" : "Connect Gmail (Pro)"}
                             </Button>
 
                             <ManualSubscriptionModal onSubscriptionAdded={refreshSubscriptions} />
@@ -134,9 +148,14 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-3">
                         <ManualSubscriptionModal onSubscriptionAdded={refreshSubscriptions} />
-                        <Button onClick={handleScanInbox} disabled={isScanning} variant="outline" className="gap-2 bg-white dark:bg-zinc-900">
-                            <Inbox className="h-4 w-4" />
-                            {isScanning ? "Syncing..." : "Sync Gmail"}
+                        <Button
+                            onClick={isPro(profile?.subscription_tier) ? handleScanInbox : () => router.push('/pricing')}
+                            disabled={isScanning}
+                            variant="outline"
+                            className="gap-2 bg-white dark:bg-zinc-900"
+                        >
+                            {isPro(profile?.subscription_tier) ? <Inbox className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-500" />}
+                            {isScanning ? "Syncing..." : isPro(profile?.subscription_tier) ? "Sync Gmail" : "Sync Gmail (Pro)"}
                         </Button>
                     </div>
                 </div>
@@ -171,15 +190,20 @@ export default function DashboardPage() {
                             </div>
                         )}
 
-                        {/* Pro User Thank You Card */}
+                        {/* Smart Alert / Forecast Card */}
                         {isPro(profile?.subscription_tier) && (
-                            <div className="rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 p-6 text-white shadow-xl shadow-green-500/20">
-                                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
-                                    <Sparkles className="h-5 w-5 text-white" />
+                            <div className="rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-800 p-6 text-white shadow-xl shadow-zinc-500/10 dark:from-zinc-800 dark:to-zinc-900">
+                                <div className="mb-4 flex items-center justify-between">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm">
+                                        <TrendingUp className="h-5 w-5 text-emerald-400" />
+                                    </div>
+                                    <span className="rounded-full bg-emerald-500/20 px-2 py-1 text-xs font-bold text-emerald-300 backdrop-blur-sm">
+                                        Forecast
+                                    </span>
                                 </div>
-                                <h3 className="mb-2 text-lg font-bold">You're on Pro! 🎉</h3>
-                                <p className="mb-4 text-sm text-green-100">
-                                    Thanks for being a Pro member. Enjoy unlimited subscriptions and all premium features.
+                                <h3 className="mb-1 text-lg font-bold">Monthly Forecast</h3>
+                                <p className="mb-4 text-sm text-zinc-400">
+                                    Based on your active subscriptions, your next month's bill is estimated to be <span className="text-white font-bold">${subscriptions.reduce((acc, sub) => acc + sub.cost, 0).toFixed(2)}</span>.
                                 </p>
                             </div>
                         )}

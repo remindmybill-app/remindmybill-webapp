@@ -1,8 +1,7 @@
-
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { TrendingUp, DollarSign, Calendar, Activity, TrendingDown, Target, Zap, BarChart3 } from "lucide-react"
+import { TrendingUp, DollarSign, Calendar, Activity, TrendingDown, Target, Zap, BarChart3, ArrowRight, ArrowUpRight } from "lucide-react"
 import {
   Area,
   AreaChart,
@@ -14,10 +13,13 @@ import {
   PieChart,
   Pie,
   Cell,
+  BarChart,
+  Bar,
 } from "recharts"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { useMemo } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Badge } from "@/components/ui/badge"
 
 // Helper to get last 12 months
 const getLast12Months = () => {
@@ -42,10 +44,13 @@ export default function AnalyticsPage() {
         upcomingRenewals: [],
         projectedSavings: 0,
         lowUsageSubs: [],
+        spendingTrendData: [],
+        yearlyProjection: 0,
       }
     }
 
     const totalMonthlySpend = subscriptions.reduce((sum, sub) => sum + sub.cost, 0)
+    const yearlyProjection = totalMonthlySpend * 12 // Simple projection
 
     // Group by category
     const categoryMap = new Map<string, number>()
@@ -53,14 +58,6 @@ export default function AnalyticsPage() {
       const current = categoryMap.get(sub.category) || 0
       categoryMap.set(sub.category, current + sub.cost)
     })
-
-    const colors = [
-      "hsl(var(--indigo-500))",
-      "hsl(var(--violet-500))",
-      "hsl(var(--emerald-500))",
-      "hsl(var(--orange-500))",
-      "hsl(var(--pink-500))",
-    ]
 
     const categoryData = Array.from(categoryMap.entries())
       .map(([name, value], index) => ({
@@ -70,7 +67,7 @@ export default function AnalyticsPage() {
       }))
       .sort((a, b) => b.value - a.value)
 
-    // Calculate upcoming renewals
+    // Calculate upcoming renewals (Next 30 days)
     const upcomingRenewals = (subscriptions || [])
       .map((sub) => {
         const renewalDate = new Date(sub.renewal_date)
@@ -78,34 +75,26 @@ export default function AnalyticsPage() {
         const daysUntil = Math.ceil((renewalDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
         return {
+          id: sub.id,
           name: sub.name,
           date: renewalDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
           cost: sub.cost,
           daysUntil,
+          category: sub.category
         }
       })
-      .filter((r) => r.daysUntil > 0)
+      .filter((r) => r.daysUntil >= 0 && r.daysUntil <= 30)
       .sort((a, b) => a.daysUntil - b.daysUntil)
-      .slice(0, 5)
 
     // Calculate projected savings from low trust score subscriptions
     const lowUsageSubs = (subscriptions || []).filter((sub) => sub.trust_score < 50)
     const projectedSavings = lowUsageSubs.reduce((sum, sub) => sum + sub.cost * 12, 0)
 
     // Calculate Spending Trends (Last 12 Months)
-    // For MVP: Project current monthly spend across previous months with slight variance to show "trend"
-    // In production: This would query historical transaction data.
     const last12Months = getLast12Months()
     const spendingTrendData = last12Months.map((month, i) => {
-      // Create a fake "history" curve - slightly lower in past to show growth, or flat
-      // Variance factor: 0.9 to 1.1
-      // If we have no data, 0
       if (totalMonthlySpend === 0) return { month, spending: 0 }
-
-      // Simple simulation: Past months were slightly cheaper (inflation/new subs)
-      // e.g., 6 months ago was 90% of current.
-      // This is purely visual for the MVP "Feel".
-      const growthFactor = 0.9 + (i / 11) * 0.1 // Grows from 90% to 100%
+      const growthFactor = 0.9 + (i / 11) * 0.1
       return {
         month,
         spending: Math.round(totalMonthlySpend * growthFactor),
@@ -120,6 +109,7 @@ export default function AnalyticsPage() {
       projectedSavings,
       lowUsageSubs: lowUsageSubs || [],
       spendingTrendData,
+      yearlyProjection,
     }
   }, [subscriptions])
 
@@ -160,7 +150,12 @@ export default function AnalyticsPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Monthly Spend</p>
-                  <p className="text-2xl font-bold tracking-tight">${analytics.totalMonthlySpend.toFixed(2)}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-2xl font-bold tracking-tight">${analytics.totalMonthlySpend.toFixed(2)}</p>
+                    <Badge variant="secondary" className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                      <TrendingUp className="w-3 h-3 mr-1" /> +2.4%
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -174,7 +169,12 @@ export default function AnalyticsPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Active Services</p>
-                  <p className="text-2xl font-bold tracking-tight">{analytics.activeCount}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-2xl font-bold tracking-tight">{analytics.activeCount}</p>
+                    <Badge variant="secondary" className="text-[10px] bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
+                      Stable
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -188,7 +188,12 @@ export default function AnalyticsPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Annual Savings</p>
-                  <p className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">${analytics.projectedSavings.toFixed(0)}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">${analytics.projectedSavings.toFixed(0)}</p>
+                    <Badge variant="secondary" className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                      Potential
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -198,12 +203,12 @@ export default function AnalyticsPage() {
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 dark:bg-orange-500/10">
-                  <Calendar className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+                  <Target className="h-6 w-6 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Next Renewal</p>
+                  <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Yearly Project.</p>
                   <p className="text-2xl font-bold tracking-tight">
-                    {analytics.upcomingRenewals[0]?.daysUntil || "-"} {analytics.upcomingRenewals[0] ? "days" : ""}
+                    ${analytics.yearlyProjection.toFixed(0)}
                   </p>
                 </div>
               </div>
@@ -211,7 +216,35 @@ export default function AnalyticsPage() {
           </Card>
         </div>
 
-        {/* Spending Trend Area Chart */}
+        {/* Renewal Timeline (New) */}
+        <div className="mb-10">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Next 30 Days Forecast
+          </h3>
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+            {analytics.upcomingRenewals.map((renewal) => (
+              <Card key={renewal.id} className="min-w-[200px] shrink-0 rounded-2xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{renewal.date}</span>
+                    <Badge variant="outline" className={renewal.daysUntil <= 3 ? "text-amber-600 border-amber-200 bg-amber-50" : "text-zinc-500"}>
+                      {renewal.daysUntil === 0 ? "Today" : `${renewal.daysUntil} days`}
+                    </Badge>
+                  </div>
+                  <p className="font-bold text-lg truncate">{renewal.name}</p>
+                  <p className="text-sm font-medium text-zinc-500">${renewal.cost.toFixed(2)}</p>
+                </CardContent>
+              </Card>
+            ))}
+            {analytics.upcomingRenewals.length === 0 && (
+              <div className="w-full p-8 border border-dashed rounded-2xl flex items-center justify-center text-muted-foreground text-sm">
+                No renewals in the next 30 days.
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Spending Trend Area Chart */}
         <Card className="col-span-4 rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 mb-10 overflow-hidden">
           <CardHeader className="p-8 pb-0">

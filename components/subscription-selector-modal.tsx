@@ -37,7 +37,7 @@ export function SubscriptionSelectorModal({
     }
 
     const remainingSlots = 3 - selectedIds.length
-    const isValid = selectedIds.length === 3 || (subscriptions.length < 3 && selectedIds.length === subscriptions.length)
+    const isValid = selectedIds.length > 0 && selectedIds.length <= 3
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -45,8 +45,8 @@ export function SubscriptionSelectorModal({
                 <DialogHeader>
                     <DialogTitle>Select Subscriptions to Keep</DialogTitle>
                     <DialogDescription>
-                        The Free plan allows up to 3 active subscriptions. Please select which ones you want to keep tracking.
-                        The others will be marked as cancelled in your history.
+                        The Free plan allows up to 3 active subscriptions. Please select 1 to 3 subscriptions you want to keep tracking.
+                        The others will be permanently deleted.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -60,7 +60,7 @@ export function SubscriptionSelectorModal({
                         ) : (
                             <>
                                 <CheckCircle2 className="h-4 w-4 text-green-500" />
-                                <span className="text-green-600">Selection complete</span>
+                                <span className="text-green-600">Selection valid</span>
                             </>
                         )}
                     </div>
