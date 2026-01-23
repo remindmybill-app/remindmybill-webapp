@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,9 +19,8 @@ import { downgradeUserToFree } from "@/app/actions/mock-upgrade"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useEffect } from "react"
 
-export default function SettingsPage() {
+function SettingsContent() {
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [smsAlerts, setSmsAlerts] = useState(false)
   const [pushAlerts, setPushAlerts] = useState(true)
@@ -262,16 +261,6 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
-
-            {/* Billing History - HIDDEN FOR MVP (Mock Data)
-            <Card>
-              <CardHeader>
-                <CardTitle>Billing History</CardTitle>
-                <CardDescription>View your past invoices and payments</CardDescription>
-              </CardHeader>
-              ...
-            </Card> 
-            */}
           </TabsContent>
 
           {/* Notifications Tab */}
@@ -361,6 +350,14 @@ export default function SettingsPage() {
         onConfirm={handleDowngrade}
         isProcessing={isProcessing}
       />
-    </div >
+    </div>
+  )
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="p-10 text-center">Loading settings...</div>}>
+      <SettingsContent />
+    </Suspense>
   )
 }
