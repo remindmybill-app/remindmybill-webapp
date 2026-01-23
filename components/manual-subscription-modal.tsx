@@ -10,13 +10,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Plus, Check } from "lucide-react"
+import { CalendarIcon, Plus, Check, Lock, Sparkles } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase"
 import { toast } from "sonner"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import type { Subscription } from "@/lib/types"
+import { useProfile } from "@/lib/hooks/use-profile"
+import Link from "next/link"
 
 const formSchema = z.object({
     name: z.string().min(1, "Service name is required"),
@@ -60,6 +62,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
     const [loading, setLoading] = useState(false)
     const [date, setDate] = useState<Date>()
     const [serviceOpen, setServiceOpen] = useState(false)
+    const { profile } = useProfile()
 
     // Derived state for controlled/uncontrolled
     const isOpen = controlledOpen ?? internalOpen
@@ -201,154 +204,204 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6 relative z-10">
+                {/* Limit Enforcement - Show "Limit Reached" Card if at capacity */}
+                {!subscriptionToEdit && profile && profile.current_usage >= profile.subscription_limit ? (
+                    <div className="p-6 space-y-6 relative z-10">
+                        {/* Limit Reached Card */}
+                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500/10 via-orange-500/5 to-amber-500/10 border border-rose-200/50 dark:border-rose-500/20 p-8 text-center">
+                            <div className="absolute inset-0 bg-white/40 dark:bg-black/20 backdrop-blur-sm" />
 
-                    {/* Main Input - Service Name */}
-                    <div className="space-y-3">
-                        <Label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Service Name</Label>
-                        <div className="relative flex items-center group">
-                            <div className="absolute left-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/20 font-bold text-lg select-none">
-                                {watch("name") ? watch("name").charAt(0).toUpperCase() : <Plus className="h-6 w-6 opacity-50" />}
-                            </div>
+                            <div className="relative z-10 space-y-4">
+                                {/* Lock Icon */}
+                                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-orange-500 shadow-lg shadow-rose-500/30">
+                                    <Lock className="h-8 w-8 text-white" />
+                                </div>
 
-                            <Popover open={serviceOpen} onOpenChange={setServiceOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        role="combobox"
-                                        aria-expanded={serviceOpen}
-                                        className={cn(
-                                            "w-full h-16 pl-16 pr-4 text-left justify-start text-lg font-semibold bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/5 transition-all shadow-sm",
-                                            errors.name && "border-rose-500 ring-rose-500/20"
-                                        )}
-                                    >
-                                        {watch("name") ? watch("name") : <span className="text-muted-foreground font-normal">e.g. Netflix</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[400px] p-0" align="start">
-                                    <Command>
-                                        <CommandInput placeholder="Search services..." onValueChange={(val) => {
-                                            setValue("name", val, { shouldValidate: true })
-                                        }} />
-                                        <CommandList>
-                                            <CommandEmpty>Custom service "{watch("name")}"</CommandEmpty>
-                                            <CommandGroup heading="Popular Services">
-                                                {popularServices.map((service) => (
-                                                    <CommandItem
-                                                        key={service}
-                                                        value={service}
-                                                        onSelect={(currentValue) => {
-                                                            setValue("name", currentValue, { shouldValidate: true })
-                                                            setServiceOpen(false)
-                                                        }}
-                                                    >
-                                                        {service}
-                                                        <Check
-                                                            className={cn(
-                                                                "ml-auto h-4 w-4",
-                                                                watch("name") === service ? "opacity-100" : "opacity-0"
-                                                            )}
-                                                        />
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-                        {errors.name && <p className="text-xs font-medium text-rose-500 ml-1">{errors.name.message}</p>}
-                    </div>
+                                {/* Title */}
+                                <h3 className="text-xl font-bold tracking-tight">Subscription Limit Reached</h3>
 
-                    {/* Cost & Cycle Grid */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="cost" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Cost</Label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium text-lg">
-                                    {watch("currency") === "USD" ? "$" : watch("currency") === "EUR" ? "€" : "£"}
-                                </span>
-                                <Input
-                                    id="cost"
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    {...register("cost")}
-                                    className={cn("h-12 pl-8 text-lg font-medium bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10", errors.cost && "border-rose-500")}
-                                />
+                                {/* Message */}
+                                <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                                    You've reached your <span className="font-semibold capitalize">{profile.subscription_tier || 'Free'}</span> plan limit of{' '}
+                                    <span className="font-bold text-foreground">{profile.subscription_limit}</span> subscriptions.
+                                </p>
+
+                                {/* Usage Stats */}
+                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-black/5 dark:bg-white/5 text-sm font-medium">
+                                    <Sparkles className="h-4 w-4 text-orange-500" />
+                                    <span>{profile.current_usage} / {profile.subscription_limit} subscriptions tracked</span>
+                                </div>
+
+                                {/* CTA Button */}
+                                <Button
+                                    asChild
+                                    size="lg"
+                                    className="w-full mt-4 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-bold shadow-lg shadow-rose-500/30 hover:shadow-rose-500/40 transition-all"
+                                    onClick={() => setIsOpen(false)}
+                                >
+                                    <Link href="/pricing">
+                                        <Sparkles className="h-5 w-5 mr-2" />
+                                        Upgrade to Add More
+                                    </Link>
+                                </Button>
+
+                                {/* Small help text */}
+                                <p className="text-xs text-muted-foreground mt-2">
+                                    Upgrade to Pro for unlimited subscriptions
+                                </p>
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="frequency" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Billing</Label>
-                            <Select onValueChange={(val) => setValue("frequency", val, { shouldValidate: true })} defaultValue={subscriptionToEdit?.frequency || "monthly"}>
-                                <SelectTrigger className="h-12 bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10 font-medium">
-                                    <SelectValue placeholder="Monthly" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="monthly">Monthly</SelectItem>
-                                    <SelectItem value="yearly">Yearly</SelectItem>
-                                    <SelectItem value="weekly">Weekly</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
                     </div>
+                ) : (
+                    <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6 relative z-10">
 
-                    {/* Date & Category */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{isTrial ? "Trial Ends" : "Next Payment"}</Label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant={"outline"}
-                                        className={cn(
-                                            "w-full h-12 justify-start text-left font-normal bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10",
-                                            !date && "text-muted-foreground",
-                                            errors.renewalDate && "border-rose-500"
-                                        )}
-                                    >
-                                        <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
-                                        {date ? format(date, "MMM do, yyyy") : <span>Pick date</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={date}
-                                        onSelect={handleDateSelect}
-                                        initialFocus
+                        {/* Main Input - Service Name */}
+                        <div className="space-y-3">
+                            <Label htmlFor="name" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Service Name</Label>
+                            <div className="relative flex items-center group">
+                                <div className="absolute left-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/20 font-bold text-lg select-none">
+                                    {watch("name") ? watch("name").charAt(0).toUpperCase() : <Plus className="h-6 w-6 opacity-50" />}
+                                </div>
+
+                                <Popover open={serviceOpen} onOpenChange={setServiceOpen}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={serviceOpen}
+                                            className={cn(
+                                                "w-full h-16 pl-16 pr-4 text-left justify-start text-lg font-semibold bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/5 transition-all shadow-sm",
+                                                errors.name && "border-rose-500 ring-rose-500/20"
+                                            )}
+                                        >
+                                            {watch("name") ? watch("name") : <span className="text-muted-foreground font-normal">e.g. Netflix</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-[400px] p-0" align="start">
+                                        <Command>
+                                            <CommandInput placeholder="Search services..." onValueChange={(val) => {
+                                                setValue("name", val, { shouldValidate: true })
+                                            }} />
+                                            <CommandList>
+                                                <CommandEmpty>Custom service "{watch("name")}"</CommandEmpty>
+                                                <CommandGroup heading="Popular Services">
+                                                    {popularServices.map((service) => (
+                                                        <CommandItem
+                                                            key={service}
+                                                            value={service}
+                                                            onSelect={(currentValue) => {
+                                                                setValue("name", currentValue, { shouldValidate: true })
+                                                                setServiceOpen(false)
+                                                            }}
+                                                        >
+                                                            {service}
+                                                            <Check
+                                                                className={cn(
+                                                                    "ml-auto h-4 w-4",
+                                                                    watch("name") === service ? "opacity-100" : "opacity-0"
+                                                                )}
+                                                            />
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                            {errors.name && <p className="text-xs font-medium text-rose-500 ml-1">{errors.name.message}</p>}
+                        </div>
+
+                        {/* Cost & Cycle Grid */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="cost" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Cost</Label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium text-lg">
+                                        {watch("currency") === "USD" ? "$" : watch("currency") === "EUR" ? "€" : "£"}
+                                    </span>
+                                    <Input
+                                        id="cost"
+                                        type="number"
+                                        step="0.01"
+                                        placeholder="0.00"
+                                        {...register("cost")}
+                                        className={cn("h-12 pl-8 text-lg font-medium bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10", errors.cost && "border-rose-500")}
                                     />
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-                        <div className="space-y-2">
-                            <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Category</Label>
-                            <Select onValueChange={(val) => setValue("category", val)} defaultValue={subscriptionToEdit?.category || "Entertainment"}>
-                                <SelectTrigger className="h-12 bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10">
-                                    <SelectValue placeholder="Select" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {categories.map(cat => (
-                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    {/* Footer Actions */}
-                    <div className="pt-2 flex items-center justify-between gap-4">
-                        <div className="flex items-center space-x-2">
-                            <Checkbox id="trial" checked={isTrial} onCheckedChange={(checked) => setValue("isTrial", checked === true)} className="border-muted-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
-                            <Label htmlFor="trial" className="text-sm font-medium cursor-pointer select-none">Free Trial?</Label>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="frequency" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Billing</Label>
+                                <Select onValueChange={(val) => setValue("frequency", val, { shouldValidate: true })} defaultValue={subscriptionToEdit?.frequency || "monthly"}>
+                                    <SelectTrigger className="h-12 bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10 font-medium">
+                                        <SelectValue placeholder="Monthly" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="monthly">Monthly</SelectItem>
+                                        <SelectItem value="yearly">Yearly</SelectItem>
+                                        <SelectItem value="weekly">Weekly</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
 
-                        <Button type="submit" disabled={loading || !isValid} className="px-8 h-12 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-black font-bold shadow-lg shadow-zinc-500/20 hover:scale-[1.02] active:scale-95 transition-all">
-                            {loading ? "Saving..." : subscriptionToEdit ? "Save Changes" : "Add Subscription"}
-                        </Button>
-                    </div>
+                        {/* Date & Category */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">{isTrial ? "Trial Ends" : "Next Payment"}</Label>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant={"outline"}
+                                            className={cn(
+                                                "w-full h-12 justify-start text-left font-normal bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10",
+                                                !date && "text-muted-foreground",
+                                                errors.renewalDate && "border-rose-500"
+                                            )}
+                                        >
+                                            <CalendarIcon className="mr-2 h-4 w-4 opacity-50" />
+                                            {date ? format(date, "MMM do, yyyy") : <span>Pick date</span>}
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            selected={date}
+                                            onSelect={handleDateSelect}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Category</Label>
+                                <Select onValueChange={(val) => setValue("category", val)} defaultValue={subscriptionToEdit?.category || "Entertainment"}>
+                                    <SelectTrigger className="h-12 bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10">
+                                        <SelectValue placeholder="Select" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {categories.map(cat => (
+                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
 
-                </form>
+                        {/* Footer Actions */}
+                        <div className="pt-2 flex items-center justify-between gap-4">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="trial" checked={isTrial} onCheckedChange={(checked) => setValue("isTrial", checked === true)} className="border-muted-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
+                                <Label htmlFor="trial" className="text-sm font-medium cursor-pointer select-none">Free Trial?</Label>
+                            </div>
+
+                            <Button type="submit" disabled={loading || !isValid} className="px-8 h-12 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-black font-bold shadow-lg shadow-zinc-500/20 hover:scale-[1.02] active:scale-95 transition-all">
+                                {loading ? "Saving..." : subscriptionToEdit ? "Save Changes" : "Add Subscription"}
+                            </Button>
+                        </div>
+
+                    </form>
+                )}
             </DialogContent>
         </Dialog>
     )

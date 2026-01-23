@@ -15,7 +15,7 @@ import { upgradeUserToPro, downgradeUserToFree } from "@/app/actions/mock-upgrad
 
 export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(false)
-  const { profile, updateProfile } = useProfile()
+  const { profile, mutate } = useProfile()
   const [isUpdating, setIsUpdating] = useState(false)
   const router = useRouter()
 
@@ -204,8 +204,10 @@ export default function PricingPage() {
                       setIsUpdating(true)
                       try {
                         await upgradeUserToPro(profile!.id)
-                        toast.success("Successfully upgraded to Pro!")
-                        window.location.reload()
+                        // Trigger SWR revalidation globally (instant state sync)
+                        await mutate()
+                        toast.success("Welcome to Pro! 🎉")
+                        setIsUpdating(false)
                       } catch (err: any) {
                         toast.error(err.message || "Upgrade failed")
                         setIsUpdating(false)
@@ -247,14 +249,33 @@ export default function PricingPage() {
           </div>
         </div>
 
+        {/* Downgrade Button for Premium Users */}
+        {((profile?.subscription_tier as string) === 'premium' || profile?.subscription_tier === 'pro') && (
+          <div className="flex justify-center mt-8">
+            <Button variant="outline" size="sm" onClick={async () => {
+              try {
+                setIsUpdating(true)
+                await downgradeUserToFree(profile!.id)
+                toast.success("Downgraded to Free plan")
+                router.refresh()
+              } catch (e) {
+                toast.error("Downgrade failed")
+                setIsUpdating(false)
+              }
+            }}>
+              Downgrade to Free
+            </Button>
+          </div>
+        )}
+
         {/* Dev Tools - Reset Subscription */}
         {process.env.NODE_ENV === 'development' || (typeof window !== 'undefined' && window.location.hostname === 'localhost') ? (
-          <div className="flex justify-center mt-8 opacity-50 hover:opacity-100 transition-opacity">
+          <div className="flex justify-center mt-4 opacity-50 hover:opacity-100 transition-opacity">
             <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={async () => {
               try {
                 setIsUpdating(true)
                 await downgradeUserToFree(profile!.id)
-                window.location.reload()
+                router.refresh()
               } catch (e) {
                 toast.error("Reset failed")
                 setIsUpdating(false)

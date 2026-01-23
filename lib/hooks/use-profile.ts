@@ -1,52 +1,71 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import useSWR from "swr"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import type { Profile } from "@/lib/types"
 
-export function useProfile() {
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+/**
+ * Fetches user profile with current subscription usage count
+ * This is the SINGLE SOURCE OF TRUTH for user profile data
+ */
+async function getUserProfileWithUsage(): Promise<Profile | null> {
   const supabase = getSupabaseBrowserClient()
 
-  useEffect(() => {
-    fetchProfile()
-  }, [])
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  const fetchProfile = async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        setProfile(null)
-        setIsLoading(false)
-        return
-      }
-
-      const { data, error: fetchError } = await supabase.from("profiles").select("*").eq("id", user.id).single()
-
-      if (fetchError) {
-        throw fetchError
-      }
-
-      setProfile(data)
-    } catch (err) {
-      console.error("[v0] Error fetching profile:", err)
-      setError(err instanceof Error ? err.message : "Failed to fetch profile")
-      setProfile(null)
-    } finally {
-      setIsLoading(false)
-    }
+  if (!user) {
+    return null
   }
+
+  // Fetch profile data
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single()
+
+  if (profileError) {
+    throw profileError
+  }
+
+  // Fetch current subscription count
+  const { count, error: countError } = await supabase
+    .from("subscriptions")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", user.id)
+
+  if (countError) {
+    console.error("[useProfile] Error fetching subscription count:", countError)
+  }
+
+  // Return profile with current usage
+  return {
+    ...profile,
+    current_usage: count || 0,
+  } as Profile
+}
+
+export function useProfile() {
+  const {
+    data: profile,
+    error,
+    isLoading,
+    mutate,
+  } = useSWR<Profile | null>("user-profile", getUserProfileWithUsage, {
+    // Revalidate on window focus to keep data fresh
+    revalidateOnFocus: true,
+    // Revalidate on reconnect
+    revalidateOnReconnect: true,
+    // Deduplicate requests within 2 seconds
+    dedupingInterval: 2000,
+  })
 
   const updateProfile = async (updates: Partial<Profile>) => {
     try {
+      const supabase = getSupabaseBrowserClient()
+
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -61,20 +80,25 @@ export function useProfile() {
         throw updateError
       }
 
+      // Optimistically update the local cache
       if (profile) {
-        setProfile({ ...profile, ...updates })
+        await mutate({ ...profile, ...updates }, false)
       }
+
+      // Revalidate to get fresh data from server
+      await mutate()
     } catch (err) {
-      console.error("[v0] Error updating profile:", err)
-      setError(err instanceof Error ? err.message : "Failed to update profile")
+      console.error("[useProfile] Error updating profile:", err)
+      throw err
     }
   }
 
   return {
-    profile,
+    profile: profile || null,
     isLoading,
-    error,
+    error: error ? (error instanceof Error ? error.message : "Failed to fetch profile") : null,
     updateProfile,
-    refreshProfile: fetchProfile,
+    refreshProfile: mutate, // Alias for backward compatibility
+    mutate, // Expose mutate for manual revalidation
   }
 }

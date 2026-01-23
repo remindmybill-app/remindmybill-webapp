@@ -30,7 +30,7 @@ export async function downgradeUserToFree(userId: string) {
         .from('profiles')
         .update({
             subscription_tier: 'free',
-            subscription_limit: 10,
+            subscription_limit: 3,
             subscription_status: 'active'
         })
         .eq('id', userId)

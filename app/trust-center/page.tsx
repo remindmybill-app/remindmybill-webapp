@@ -22,7 +22,6 @@ interface Platform {
   cancellation_url?: string
   logo_url?: string
   created_at?: string
-  // Add derived properties for compatibility if needed, though we will map them
 }
 
 interface TrustAnalysis {
@@ -57,14 +56,12 @@ export default function TrustCenterPage() {
   useEffect(() => {
     const fetchLeaderboards = async () => {
       try {
-        // Fetch "Trusted" (Easy)
         const { data: trusted } = await supabase
           .from('platform_directory')
           .select('*')
           .eq('cancellation_difficulty', 'Easy')
           .limit(10)
 
-        // Fetch "Risky" (Hard)
         const { data: risky } = await supabase
           .from('platform_directory')
           .select('*')
@@ -117,8 +114,6 @@ export default function TrustCenterPage() {
   }
 
   const handleSelectService = (service: Platform) => {
-    // Generate a deterministically random score based on the name char codes if we don't have one in DB
-    // Or just map difficulty to a score range for this mock view
     let baseScore = 50
     if (service.cancellation_difficulty === 'Easy') baseScore = 85 + (service.name.length % 15)
     if (service.cancellation_difficulty === 'Medium') baseScore = 50 + (service.name.length % 20)
@@ -126,7 +121,7 @@ export default function TrustCenterPage() {
 
     setAnalysis({
       service_name: service.name,
-      trust_score: Math.min(100, Math.max(0, baseScore)), // Ensure within 0-100
+      trust_score: Math.min(100, Math.max(0, baseScore)),
       category: service.category || "Subscription",
       cancellation_difficulty: service.cancellation_difficulty.toLowerCase() as any,
       dark_patterns: service.cancellation_difficulty === "Hard" ? ["Forced Phone Call", "Hidden Cancellation Link", "Confirm Shaming"] : [],
@@ -141,16 +136,12 @@ export default function TrustCenterPage() {
     setIsAnalyzing(false)
   }
 
-
   const handleAnalyze = async () => {
     if (!searchQuery) return
     setIsAnalyzing(true)
     setAnalysis(null)
     setError(null)
 
-    // Check if we have a direct match in our DB first? 
-    // For now we'll stick to the existing behavior or just mock it if not found locally
-    // Use the API route as fallback
     try {
       const response = await fetch("/api/trust", {
         method: "POST",
@@ -159,7 +150,6 @@ export default function TrustCenterPage() {
       })
 
       if (!response.ok) {
-        // If API fails, mock a not found response or generic analysis
         throw new Error("Failed to analyze domain")
       }
 
@@ -186,84 +176,99 @@ export default function TrustCenterPage() {
   }
 
   return (
-    <div className="bg-zinc-50/50 dark:bg-black py-12 sm:py-20">
+    <div className="bg-zinc-50/50 dark:bg-black py-12 sm:py-20 min-h-screen">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-16 text-center">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-900 shadow-xl shadow-zinc-500/20 dark:bg-zinc-800">
-            <Shield className="h-8 w-8 text-white" />
-          </div>
-          <h1 className="mb-4 text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-5xl">Trust Center</h1>
-          <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-            Exposing hidden dark patterns and cancellation traps using Gemini AI.
-          </p>
-        </div>
 
-        {/* Search Section */}
-        <div className="mx-auto mb-16 max-w-2xl">
-          <div className="group relative flex flex-col sm:flex-row gap-3 rounded-3xl bg-white p-2 shadow-2xl shadow-zinc-200 dark:bg-zinc-900 dark:shadow-none ring-1 ring-zinc-200 dark:ring-zinc-800 focus-within:ring-2 focus-within:ring-indigo-500/50 transition-all">
-            <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Check any service (e.g. Netflix, Adobe)"
-                className="h-14 border-none bg-transparent pl-12 text-lg focus-visible:ring-0 shadow-none outline-none"
-                value={searchQuery}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
-              />
-              {/* Search Dropdown */}
-              {searchQuery.length > 1 && (
-                <div className="absolute top-full left-0 mt-2 w-full rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 z-50 max-h-[300px] overflow-y-auto">
-                  {isSearching ? (
-                    <div className="p-4 flex justify-center text-muted-foreground">
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    </div>
-                  ) : searchResults.length > 0 ? (
-                    searchResults.map((result) => (
-                      <button
-                        key={result.id}
-                        onClick={() => handleSelectService(result)}
-                        className="flex w-full items-center justify-between rounded-xl p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left"
-                      >
-                        <div className="flex items-center gap-3">
-                          {/* Add Logo if available or fallback */}
-                          <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 font-bold text-xs uppercase">
-                            {result.name.substring(0, 2)}
-                          </div>
-                          <div>
-                            <span className="font-medium text-zinc-900 dark:text-zinc-50 block">{result.name}</span>
-                            <span className="text-xs text-muted-foreground">{result.category}</span>
-                          </div>
-                        </div>
-                        <Badge variant="outline" className={`${result.cancellation_difficulty === 'Easy' ? "text-emerald-500 border-emerald-200"
-                          : result.cancellation_difficulty === 'Medium' ? "text-amber-500 border-amber-200"
-                            : "text-rose-500 border-rose-200"
-                          }`}>
-                          {result.cancellation_difficulty}
-                        </Badge>
-                      </button>
-                    ))
-                  ) : (
-                    <div className="p-4 text-center text-sm text-muted-foreground">
-                      No matches found for "{searchQuery}". <button onClick={handleAnalyze} className="text-primary underline">Run AI Audit?</button>
-                    </div>
-                  )}
-                </div>
-              )}
+        {/* HERO SECTION */}
+        <div className="mb-16">
+          {/* Header */}
+          <div className="mb-12 text-center">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-900 shadow-xl shadow-zinc-500/20 dark:bg-zinc-800">
+              <Shield className="h-8 w-8 text-white" />
             </div>
-            <Button
-              onClick={handleAnalyze}
-              disabled={isAnalyzing || !searchQuery}
-              size="lg"
-              className="h-14 rounded-2xl bg-zinc-900 px-8 text-md font-semibold dark:bg-indigo-600 dark:hover:bg-indigo-700 hover:bg-zinc-800 transition-colors"
-            >
-              {isAnalyzing ? "Analyzing..." : "Analyze Now"}
-            </Button>
+            <h1 className="mb-4 text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-5xl">Trust Center</h1>
+            <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+              Exposing hidden dark patterns and cancellation traps using Gemini AI.
+            </p>
           </div>
-          <p className="mt-4 text-center text-xs font-medium text-muted-foreground uppercase tracking-widest">
-            T&C Audit &bull; UX Review &bull; Fee Transparency
-          </p>
 
-          {/* MOVED: Analysis Result - Now inside hero section, directly below search */}
+          {/* Search Section */}
+          <div className="mx-auto max-w-2xl relative z-20">
+            <div className="group relative flex flex-col sm:flex-row gap-3 rounded-3xl bg-white p-2 shadow-2xl shadow-zinc-200 dark:bg-zinc-900 dark:shadow-none ring-1 ring-zinc-200 dark:ring-zinc-800 focus-within:ring-2 focus-within:ring-indigo-500/50 transition-all">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Check any service (e.g. Netflix, Adobe)"
+                  className="h-14 border-none bg-transparent pl-12 text-lg focus-visible:ring-0 shadow-none outline-none"
+                  value={searchQuery}
+                  onChange={(e) => handleSearchChange(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
+                />
+                {/* Search Dropdown */}
+                {searchQuery.length > 1 && (
+                  <div className="absolute top-full left-0 mt-2 w-full rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 z-50 max-h-[300px] overflow-y-auto">
+                    {isSearching ? (
+                      <div className="p-4 flex justify-center text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      </div>
+                    ) : searchResults.length > 0 ? (
+                      searchResults.map((result) => (
+                        <button
+                          key={result.id}
+                          onClick={() => handleSelectService(result)}
+                          className="flex w-full items-center justify-between rounded-xl p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 font-bold text-xs uppercase">
+                              {result.name.substring(0, 2)}
+                            </div>
+                            <div>
+                              <span className="font-medium text-zinc-900 dark:text-zinc-50 block">{result.name}</span>
+                              <span className="text-xs text-muted-foreground">{result.category}</span>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className={`${result.cancellation_difficulty === 'Easy' ? "text-emerald-500 border-emerald-200"
+                            : result.cancellation_difficulty === 'Medium' ? "text-amber-500 border-amber-200"
+                              : "text-rose-500 border-rose-200"
+                            }`}>
+                            {result.cancellation_difficulty}
+                          </Badge>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="p-4 text-center text-sm text-muted-foreground">
+                        No matches found for "{searchQuery}". <button onClick={handleAnalyze} className="text-primary underline">Run AI Audit?</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <Button
+                onClick={handleAnalyze}
+                disabled={isAnalyzing || !searchQuery}
+                size="lg"
+                className="h-14 rounded-2xl bg-zinc-900 px-8 text-md font-semibold dark:bg-indigo-600 dark:hover:bg-indigo-700 hover:bg-zinc-800 transition-colors"
+              >
+                {isAnalyzing ? "Analyzing..." : "Analyze Now"}
+              </Button>
+            </div>
+            <p className="mt-4 text-center text-xs font-medium text-muted-foreground uppercase tracking-widest">
+              T&C Audit &bull; UX Review &bull; Fee Transparency
+            </p>
+          </div>
+
+          {/* Error Alert */}
+          {error && (
+            <div className="mx-auto max-w-2xl mt-8">
+              <Alert variant="destructive" className="rounded-2xl border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-200">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle className="font-bold">Analysis Failed</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            </div>
+          )}
+
+          {/* ANALYSIS RESULT - MOVED HERE */}
           <AnimatePresence>
             {analysis && (
               <motion.div
@@ -271,7 +276,7 @@ export default function TrustCenterPage() {
                 animate={{ opacity: 1, height: 'auto', y: 0 }}
                 exit={{ opacity: 0, height: 0, y: -20 }}
                 transition={{ type: "spring", bounce: 0.3, duration: 0.6 }}
-                className="mt-8 overflow-hidden"
+                className="mt-12 overflow-hidden"
               >
                 <div className="grid gap-8 lg:grid-cols-12">
                   {/* Score Card */}
@@ -419,177 +424,168 @@ export default function TrustCenterPage() {
           </AnimatePresence>
         </div>
 
-        {/* Global Platform Indicators */}
-        <div className="mb-16 grid gap-6 md:grid-cols-3">
-          <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
-            <CardHeader className="pb-2">
-              <div className="flex items-center gap-2 text-zinc-500 mb-1">
-                <Globe className="h-4 w-4" />
-                <span className="text-xs font-bold uppercase tracking-wider">Market Benchmark</span>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-3">
-                <span className="text-3xl font-bold tracking-tight">68 <span className="text-xl font-medium text-zinc-400">/ 100</span></span>
-                <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Moderate Risk</Badge>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">Industry average based on community data.</p>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
-            <CardHeader className="pb-2">
-              <div className="flex items-center gap-2 text-zinc-500 mb-1">
-                <Fingerprint className="h-4 w-4" />
-                <span className="text-xs font-bold uppercase tracking-wider">Pattern Alert</span>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-3">
-                <span className="text-3xl font-bold tracking-tight">Hard</span>
-                <Badge variant="outline" className="text-rose-500 border-rose-200 bg-rose-50 dark:border-rose-900/50 dark:bg-rose-950/20">Trend: Rising</Badge>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">84% of premium services use "Intentional Friction".</p>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
-            <CardHeader className="pb-2">
-              <div className="flex items-center gap-2 text-zinc-500 mb-1">
-                <Zap className="h-4 w-4" />
-                <span className="text-xs font-bold uppercase tracking-wider">Safe Sectors</span>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {["Music", "Cloud", "SaaS"].map(tag => (
-                  <Badge key={tag} className="bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border-none">{tag}</Badge>
-                ))}
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">Categories with highest transparency scores.</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Trust Leaderboards */}
-        <div className="grid gap-8 lg:grid-cols-2 mb-16">
-          {/* Top Trusted */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <span className="text-2xl">🏆</span> Top Trusted Services
-              </h2>
-            </div>
-            <div className="space-y-3">
-              {loadingLeaderboard ? (
-                [1, 2, 3].map(i => (
-                  <div key={i} className="h-16 w-full rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
-                ))
-              ) : trustedServices.map((service) => (
-                <div key={service.id} className="flex items-center justify-between rounded-xl border border-zinc-100 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center dark:bg-emerald-500/10">
-                      <span className="text-emerald-700 font-bold dark:text-emerald-400">{service.name[0]}</span>
-                    </div>
-                    <div>
-                      <p className="font-bold">{service.name}</p>
-                      <p className="text-xs text-muted-foreground">Verified Easy Cancel</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <Badge variant="outline" className="border-emerald-200 text-emerald-600 dark:border-emerald-800 dark:text-emerald-400">
-                      {service.cancellation_difficulty}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Hall of Shame */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <span className="text-2xl">⚠️</span> High Risk / Hard to Cancel
-              </h2>
-            </div>
-            <div className="space-y-3">
-              {loadingLeaderboard ? (
-                [1, 2, 3].map(i => (
-                  <div key={i} className="h-16 w-full rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
-                ))
-              ) : riskyServices.map((service) => (
-                <div key={service.id} className="flex items-center justify-between rounded-xl border border-rose-100 bg-rose-50/30 p-4 shadow-sm dark:border-rose-900/20 dark:bg-rose-950/10">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-rose-100 flex items-center justify-center dark:bg-rose-500/10">
-                      <span className="text-rose-700 font-bold dark:text-rose-400">{service.name[0]}</span>
-                    </div>
-                    <div>
-                      <p className="font-bold">{service.name}</p>
-                      <Badge variant="outline" className="border-rose-200 text-rose-600 dark:border-rose-800 dark:text-rose-400 text-[10px] h-5">
-                        {service.cancellation_difficulty}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    {/* Placeholder for Score if we had it in DB, for now showing cost maybe? */}
-                    <span className="block font-bold text-rose-600 dark:text-rose-400">${service.average_cost}/mo</span>
-                    <span className="text-[10px] uppercase text-zinc-400">Avg Cost</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {error && (
-          <div className="mx-auto max-w-2xl mb-8">
-            <Alert variant="destructive" className="rounded-2xl border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-200">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle className="font-bold">Analysis Failed</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          </div>
-        )}
-
-
-        {/* Educational Content */}
+        {/* ONLY SHOW THESE IF NO ANALYSIS ACTIVE */}
         {!analysis && (
-          <div className="mt-20 grid gap-10 md:grid-cols-3">
-            {[
-              {
-                icon: AlertTriangle,
-                title: "Dark Patterns",
-                desc: "We scan for fake countdowns, hidden exit buttons, and monthly traps.",
-                color: "text-rose-500",
-                bg: "bg-rose-50 dark:bg-rose-500/10"
-              },
-              {
-                icon: Lock,
-                title: "Verified Audit",
-                desc: "AI scans 50+ pages of T&Cs to find the small print that costs you money.",
-                color: "text-indigo-500",
-                bg: "bg-indigo-50 dark:bg-indigo-500/10"
-              },
-              {
-                icon: Shield,
-                title: "User Shield",
-                desc: "Data is crowdsourced and validated against real manual cancellation attempts.",
-                color: "text-emerald-500",
-                bg: "bg-emerald-50 dark:bg-emerald-500/10"
-              }
-            ].map((feature, i) => (
-              <div key={i} className="flex flex-col items-center text-center group transition-transform hover:-translate-y-1">
-                <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl ${feature.bg} shadow-sm transition-all group-hover:shadow-md`}>
-                  <feature.icon className={`h-6 w-6 ${feature.color}`} />
+          <>
+            {/* Global Platform Indicators */}
+            <div className="mb-16 grid gap-6 md:grid-cols-3">
+              <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2 text-zinc-500 mb-1">
+                    <Globe className="h-4 w-4" />
+                    <span className="text-xs font-bold uppercase tracking-wider">Market Benchmark</span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl font-bold tracking-tight">68 <span className="text-xl font-medium text-zinc-400">/ 100</span></span>
+                    <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Moderate Risk</Badge>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">Industry average based on community data.</p>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2 text-zinc-500 mb-1">
+                    <Fingerprint className="h-4 w-4" />
+                    <span className="text-xs font-bold uppercase tracking-wider">Pattern Alert</span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl font-bold tracking-tight">Hard</span>
+                    <Badge variant="outline" className="text-rose-500 border-rose-200 bg-rose-50 dark:border-rose-900/50 dark:bg-rose-950/20">Trend: Rising</Badge>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">84% of premium services use "Intentional Friction".</p>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2 text-zinc-500 mb-1">
+                    <Zap className="h-4 w-4" />
+                    <span className="text-xs font-bold uppercase tracking-wider">Safe Sectors</span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {["Music", "Cloud", "SaaS"].map(tag => (
+                      <Badge key={tag} className="bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border-none">{tag}</Badge>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">Categories with highest transparency scores.</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Trust Leaderboards */}
+            <div className="grid gap-8 lg:grid-cols-2 mb-16">
+              {/* Top Trusted */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <span className="text-2xl">🏆</span> Top Trusted Services
+                  </h2>
                 </div>
-                <h3 className="mb-2 text-lg font-bold text-zinc-900 dark:text-zinc-50">{feature.title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground px-4">
-                  {feature.desc}
-                </p>
+                <div className="space-y-3">
+                  {loadingLeaderboard ? (
+                    [1, 2, 3].map(i => (
+                      <div key={i} className="h-16 w-full rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
+                    ))
+                  ) : trustedServices.map((service) => (
+                    <div key={service.id} className="flex items-center justify-between rounded-xl border border-zinc-100 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-emerald-100 flex items-center justify-center dark:bg-emerald-500/10">
+                          <span className="text-emerald-700 font-bold dark:text-emerald-400">{service.name[0]}</span>
+                        </div>
+                        <div>
+                          <p className="font-bold">{service.name}</p>
+                          <p className="text-xs text-muted-foreground">Verified Easy Cancel</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant="outline" className="border-emerald-200 text-emerald-600 dark:border-emerald-800 dark:text-emerald-400">
+                          {service.cancellation_difficulty}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
-          </div>
+
+              {/* Hall of Shame */}
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-bold flex items-center gap-2">
+                    <span className="text-2xl">⚠️</span> High Risk / Hard to Cancel
+                  </h2>
+                </div>
+                <div className="space-y-3">
+                  {loadingLeaderboard ? (
+                    [1, 2, 3].map(i => (
+                      <div key={i} className="h-16 w-full rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
+                    ))
+                  ) : riskyServices.map((service) => (
+                    <div key={service.id} className="flex items-center justify-between rounded-xl border border-rose-100 bg-rose-50/30 p-4 shadow-sm dark:border-rose-900/20 dark:bg-rose-950/10">
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-rose-100 flex items-center justify-center dark:bg-rose-500/10">
+                          <span className="text-rose-700 font-bold dark:text-rose-400">{service.name[0]}</span>
+                        </div>
+                        <div>
+                          <p className="font-bold">{service.name}</p>
+                          <Badge variant="outline" className="border-rose-200 text-rose-600 dark:border-rose-800 dark:text-rose-400 text-[10px] h-5">
+                            {service.cancellation_difficulty}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="block font-bold text-rose-600 dark:text-rose-400">${service.average_cost}/mo</span>
+                        <span className="text-[10px] uppercase text-zinc-400">Avg Cost</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Educational Content */}
+            <div className="mt-20 grid gap-10 md:grid-cols-3">
+              {[
+                {
+                  icon: AlertTriangle,
+                  title: "Dark Patterns",
+                  desc: "We scan for fake countdowns, hidden exit buttons, and monthly traps.",
+                  color: "text-rose-500",
+                  bg: "bg-rose-50 dark:bg-rose-500/10"
+                },
+                {
+                  icon: Lock,
+                  title: "Verified Audit",
+                  desc: "AI scans 50+ pages of T&Cs to find the small print that costs you money.",
+                  color: "text-indigo-500",
+                  bg: "bg-indigo-50 dark:bg-indigo-500/10"
+                },
+                {
+                  icon: Shield,
+                  title: "User Shield",
+                  desc: "Data is crowdsourced and validated against real manual cancellation attempts.",
+                  color: "text-emerald-500",
+                  bg: "bg-emerald-50 dark:bg-emerald-500/10"
+                }
+              ].map((feature, i) => (
+                <div key={i} className="flex flex-col items-center text-center group transition-transform hover:-translate-y-1">
+                  <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl ${feature.bg} shadow-sm transition-all group-hover:shadow-md`}>
+                    <feature.icon className={`h-6 w-6 ${feature.color}`} />
+                  </div>
+                  <h3 className="mb-2 text-lg font-bold text-zinc-900 dark:text-zinc-50">{feature.title}</h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground px-4">
+                    {feature.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
