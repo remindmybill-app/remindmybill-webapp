@@ -59,7 +59,7 @@ function SettingsContent() {
         if (subscriptionsToCancel.length > 0) {
           const { error } = await supabase
             .from('subscriptions')
-            .update({ status: 'cancelled' })
+            .delete()
             .in('id', subscriptionsToCancel)
 
           if (error) throw error
@@ -81,6 +81,30 @@ function SettingsContent() {
       toast.error("Failed to downgrade: " + error.message)
     } finally {
       setIsProcessing(false)
+    }
+  }
+
+  const handleConnectGmail = async () => {
+    try {
+      const supabase = createClient()
+
+      console.log("Starting Gmail OAuth flow...")
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          scopes: 'https://www.googleapis.com/auth/gmail.readonly',
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      })
+
+      if (error) throw error
+    } catch (error: any) {
+      console.error("Gmail connect error:", error)
+      toast.error("Failed to connect Gmail: " + error.message)
     }
   }
 
@@ -197,7 +221,7 @@ function SettingsContent() {
                 <CardDescription>Connect your Gmail account for AI Inbox Hunter</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="outline" className="w-full bg-transparent">
+                <Button variant="outline" className="w-full bg-transparent" onClick={handleConnectGmail}>
                   <Mail className="mr-2 h-4 w-4" />
                   Link Gmail Account
                 </Button>
