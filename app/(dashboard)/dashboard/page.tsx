@@ -231,7 +231,7 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                <ReviewSubscriptionsModal
+                <GmailImportModal
                     isOpen={isReviewOpen}
                     onClose={() => setIsReviewOpen(false)}
                     foundSubscriptions={foundSubscriptions}
