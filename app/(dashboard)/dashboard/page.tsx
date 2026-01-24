@@ -19,6 +19,7 @@ import { connectGmailAccount, getGmailToken } from "@/lib/utils/gmail-auth"
 import { ReviewSubscriptionsModal } from "@/components/review-subscriptions-modal"
 import { ManualSubscriptionModal } from "@/components/manual-subscription-modal"
 import { isPro } from "@/lib/subscription-utils"
+import { CheckCircle2 } from "lucide-react"
 
 export default function DashboardPage() {
     const { isAuthenticated, signIn, isLoading: authLoading } = useAuth()
@@ -28,10 +29,20 @@ export default function DashboardPage() {
     const [isScanning, setIsScanning] = useState(false)
     const [lastSynced, setLastSynced] = useState<Date | null>(null)
     const searchParams = useSearchParams()
+    const [isGmailConnected, setIsGmailConnected] = useState(false)
 
     // New state for Review Modal
     const [foundSubscriptions, setFoundSubscriptions] = useState<any[]>([])
     const [isReviewOpen, setIsReviewOpen] = useState(false)
+
+    // Check Gmail connection status on mount and when profile changes
+    useEffect(() => {
+        const checkGmailStatus = async () => {
+            const token = await getGmailToken()
+            setIsGmailConnected(!!token)
+        }
+        checkGmailStatus()
+    }, [isAuthenticated, profile])
 
     // Force profile sync on mount to ensure latest subscription status
     useEffect(() => {
@@ -40,18 +51,35 @@ export default function DashboardPage() {
         }
     }, [isAuthenticated, refreshProfile])
 
-    // Verbose Error Reporting from Callback
+    // Handle Post-Sync Success & Error Reporting
     useEffect(() => {
         const error = searchParams.get('error')
         const message = searchParams.get('message')
+        const success = searchParams.get('success')
 
         if (error === 'TRUE' && message) {
             console.error('[Dashboard] Auth Error received:', message)
             toast.error("Gmail Connection Failed", {
                 description: decodeURIComponent(message),
-                duration: 8000, // Show for longer so user can read it
+                duration: 8000,
             })
-            // Clear params from URL
+            router.replace('/dashboard')
+        }
+
+        if (success === 'gmail_connected') {
+            toast.success("Gmail Connected Successfully!", {
+                description: "Scanning your inbox for subscriptions...",
+                duration: 5000,
+            })
+            setIsGmailConnected(true)
+
+            // Auto-trigger scan
+            // We use a small timeout to allow the toast to appear and state to settle
+            setTimeout(() => {
+                handleScanInbox()
+            }, 1000)
+
+            // Clear params
             router.replace('/dashboard')
         }
     }, [searchParams, router])
@@ -173,13 +201,21 @@ export default function DashboardPage() {
                                 className="flex-1 gap-2 bg-indigo-600 hover:bg-indigo-700 h-12 text-md shadow-lg shadow-indigo-500/20"
                             >
                                 {isPro(profile?.subscription_tier) ? <Inbox className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
-                                {isScanning ? "Scanning Gmail..." : isPro(profile?.subscription_tier) ? "Connect Gmail" : "Connect Gmail (Pro)"}
+                                {isScanning ? "Scanning Gmail..." :
+                                    isGmailConnected ? "Re-scan Gmail" :
+                                        isPro(profile?.subscription_tier) ? "Connect Gmail" : "Connect Gmail (Pro)"}
                             </Button>
 
                             <ManualSubscriptionModal onSubscriptionAdded={refreshSubscriptions} />
                         </div>
                         <p className="mt-6 text-xs text-muted-foreground max-w-xs mx-auto">
-                            We use read-only permissions to find receipts. Your data is never sold.
+                            {isGmailConnected ? (
+                                <span className="flex items-center justify-center gap-1 text-emerald-600 font-medium">
+                                    <CheckCircle2 className="h-3 w-3" /> Gmail Account Linked
+                                </span>
+                            ) : (
+                                "We use read-only permissions to find receipts. Your data is never sold."
+                            )}
                         </p>
                     </div>
                 </div>
@@ -209,14 +245,17 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-3">
                         <ManualSubscriptionModal onSubscriptionAdded={refreshSubscriptions} />
+                        <ManualSubscriptionModal onSubscriptionAdded={refreshSubscriptions} />
                         <Button
-                            onClick={handleScanInbox} // Updated to use new handler
+                            onClick={handleScanInbox}
                             disabled={isScanning}
-                            variant="outline"
-                            className="gap-2 bg-white dark:bg-zinc-900"
+                            variant={isGmailConnected ? "outline" : "outline"}
+                            className={`gap-2 ${isGmailConnected ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400" : "bg-white dark:bg-zinc-900"}`}
                         >
-                            {isPro(profile?.subscription_tier) ? <Inbox className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-500" />}
-                            {isScanning ? "Scanning..." : isPro(profile?.subscription_tier) ? "Sync Gmail" : "Sync Gmail (Pro)"}
+                            {isGmailConnected ? <CheckCircle2 className="h-4 w-4" /> : (isPro(profile?.subscription_tier) ? <Inbox className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-500" />)}
+                            {isScanning ? "Scanning..." :
+                                isGmailConnected ? "Synced" :
+                                    isPro(profile?.subscription_tier) ? "Sync Gmail" : "Sync Gmail (Pro)"}
                         </Button>
                     </div>
                 </div>

@@ -36,6 +36,10 @@ export async function GET(request: Request) {
         redirectUrl = `https://${forwardedHost}${next}`
       }
 
+      // Add success parameter to indicate successful connection
+      const separator = redirectUrl.includes('?') ? '&' : '?'
+      redirectUrl = `${redirectUrl}${separator}success=gmail_connected`
+
       console.log('[Auth Callback] Redirecting to:', redirectUrl)
       return NextResponse.redirect(redirectUrl)
     }
