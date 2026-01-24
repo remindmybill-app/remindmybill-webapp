@@ -63,12 +63,21 @@ export async function scanGmailReceipts(accessToken: string) {
         }
 
         // 2. Fetch details for first 10
-        const emailData = await Promise.all(messages.slice(0, 10).map(async (m: any) => {
+        const emailDetails = await Promise.all(messages.slice(0, 10).map(async (m: any) => {
             const detail = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}`, {
                 headers: { Authorization: `Bearer ${accessToken}` }
             })
             const data = await detail.json()
-            return data.snippet
+
+            // Extract Date from headers
+            const dateHeader = data.payload.headers.find((h: any) => h.name === 'Date')?.value
+            const date = dateHeader ? new Date(dateHeader).toISOString() : new Date().toISOString()
+
+            return {
+                id: m.id,
+                snippet: data.snippet,
+                date: date
+            }
         }))
 
         // 3. AI Extraction
@@ -76,20 +85,22 @@ export async function scanGmailReceipts(accessToken: string) {
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
 
         const prompt = `
-        Analyze these email snippets for subscription receipts: ${JSON.stringify(emailData)}.
+        Analyze these email details for subscription receipts: ${JSON.stringify(emailDetails)}.
         
         CRITICAL INSTRUCTIONS:
         1. Look for explicit keywords: "Total", "Amount Charged", "Billing Period", "Invoice".
         2. High Priority Services: "Google Cloud", "AWS", "Netflix", "Spotify", "Hulu", "Adobe".
-        3. If snippet contains "Test Receipt", "Netflix", or "Invoice", ALWAYS extract it.
-        4. Ignore one-off purchases only if clearly stated (e.g. "flight ticket", "one-time").
+        3. Associate each found subscription with the correct "id", "date", and "snippet" from the input.
         
         Return a Strict JSON array of objects:
         [{
+            "id": "original_email_id",
             "name": "Service Name",
             "cost": 0.00,
             "currency": "USD",
             "frequency": "monthly" | "yearly",
+            "date": "ISO_DATE",
+            "snippet": "Short snippet of the email",
             "confidence": 0-100
         }]
         `
@@ -130,7 +141,7 @@ export async function scanGmailReceipts(accessToken: string) {
                         status: 'active',
                         trust_score: 100, // Default for auto-added
                         category: 'Software',
-                        renewal_date: new Date().toISOString() // Default to today
+                        renewal_date: sub.date || new Date().toISOString()
                     })
                     addedCount++
                 }
@@ -141,7 +152,7 @@ export async function scanGmailReceipts(accessToken: string) {
             success: true,
             count: addedCount,
             found: subscriptions.length,
-            scanned: emailData.length,
+            scanned: emailDetails.length,
             subs: subscriptions
         }
 
