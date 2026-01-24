@@ -38,10 +38,6 @@ export default function DashboardPage() {
     const [foundSubscriptions, setFoundSubscriptions] = useState<any[]>([])
     const [isReviewOpen, setIsReviewOpen] = useState(false)
 
-    // Debug State
-    const [isDebugOpen, setIsDebugOpen] = useState(false)
-    const [debugData, setDebugData] = useState<any>(null)
-    const [isDebugLoading, setIsDebugLoading] = useState(false)
 
     // Check Gmail connection status on mount and when profile changes
     useEffect(() => {
@@ -275,41 +271,6 @@ export default function DashboardPage() {
                     </div>
 
 
-                    {/* Debug Button (Bottom Left or temporarily visible) */}
-                    {isGmailConnected && (
-                        <div className="mt-4">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={async () => {
-                                    setIsDebugOpen(true)
-                                    setIsDebugLoading(true)
-                                    const token = await getGmailToken()
-                                    if (token) {
-                                        const res = await debugFetchLast5Emails(token)
-                                        setDebugData(res)
-                                    }
-                                    setIsDebugLoading(false)
-                                }}
-                                className="text-xs text-muted-foreground hover:text-foreground"
-                            >
-                                🐞 Debug Gmail
-                            </Button>
-                        </div>
-                    )}
-
-                    {/* Debug Modal */}
-                    <Dialog open={isDebugOpen} onOpenChange={setIsDebugOpen}>
-                        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                            <DialogHeader>
-                                <DialogTitle>Gmail Debugger</DialogTitle>
-                                <DialogDescription>Raw fetch of last 5 emails (No filters)</DialogDescription>
-                            </DialogHeader>
-                            <div className="bg-zinc-950 text-zinc-50 p-4 rounded-md font-mono text-xs whitespace-pre-wrap overflow-auto">
-                                {isDebugLoading ? "Fetching raw data..." : JSON.stringify(debugData, null, 2)}
-                            </div>
-                        </DialogContent>
-                    </Dialog>
                 </div>
 
                 {/* Review Modal for Found Subscriptions */}

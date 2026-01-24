@@ -166,104 +166,122 @@ export function GmailImportModal({ isOpen, onClose, foundSubscriptions, onImport
                             <div
                                 key={sub.id}
                                 className={`
-                                    group relative flex flex-col p-4 rounded-2xl border transition-all duration-300
-                                    ${sub.status === 'duplicate' ? 'opacity-70 bg-zinc-900/40 border-zinc-800/50' :
-                                        selectedIds.has(sub.id) ? 'bg-zinc-900/80 border-indigo-500/40 shadow-lg shadow-indigo-500/5' : 'bg-zinc-900/20 border-zinc-800'}
+                                    group relative flex flex-col p-5 rounded-3xl border transition-all duration-300
+                                    ${sub.status === 'duplicate' ? 'opacity-70 bg-zinc-900/20 border-white/5' :
+                                        selectedIds.has(sub.id) ? 'bg-zinc-900 ring-1 ring-indigo-500/50 border-transparent shadow-2xl shadow-indigo-500/10' : 'bg-zinc-900/40 border-white/5'}
                                 `}
                             >
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex items-start gap-4 flex-1">
-                                        <div className="mt-1">
+                                <div className="flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-5 flex-1 min-w-0">
+                                        <div className="shrink-0">
                                             <Checkbox
+                                                id={`cb-${sub.id}`}
                                                 checked={selectedIds.has(sub.id)}
                                                 onCheckedChange={() => toggleSelection(sub.id, sub.status)}
-                                                className="h-5 w-5 rounded-md border-zinc-700 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500 shadow-sm"
+                                                className="h-6 w-6 rounded-lg border-zinc-700 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 shadow-lg transition-transform active:scale-90"
                                             />
                                         </div>
-                                        <div className="space-y-2 flex-1 min-w-0">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <h4 className="font-bold text-lg text-zinc-100 truncate max-w-[200px]">{sub.name}</h4>
 
-                                                {/* Status Badges */}
-                                                {sub.status === 'duplicate' && (
-                                                    <Badge variant="secondary" className="text-[10px] h-5 bg-zinc-800/50 border-zinc-700 text-zinc-400 font-medium">
-                                                        <ShieldCheck className="w-3 h-3 mr-1" /> Already Tracking
-                                                    </Badge>
-                                                )}
-                                                {sub.status === 'new' && (
-                                                    <Badge variant="outline" className="text-[10px] h-5 bg-indigo-500/10 border-indigo-500/20 text-indigo-400 font-medium">
-                                                        New Subscription
-                                                    </Badge>
-                                                )}
-                                                {sub.status === 'conflict' && (
-                                                    <Badge variant="outline" className="text-[10px] h-5 bg-amber-500/10 border-amber-500/20 text-amber-500 font-medium">
-                                                        <AlertTriangle className="w-3 h-3 mr-1" /> Price Changed
-                                                    </Badge>
-                                                )}
+                                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                                            <div className="h-12 w-12 shrink-0 flex items-center justify-center rounded-2xl bg-white shadow-xl ring-1 ring-white/10 overflow-hidden">
+                                                <img
+                                                    src={`https://logo.clearbit.com/${sub.name.toLowerCase().replace(/\s+/g, '')}.com`}
+                                                    alt={sub.name}
+                                                    className="h-full w-full object-contain p-2"
+                                                    onError={(e) => {
+                                                        const target = e.target as HTMLImageElement;
+                                                        target.style.display = 'none';
+                                                        target.parentElement!.innerHTML = `<div class="h-full w-full flex items-center justify-center bg-zinc-800 text-zinc-400 font-black text-xl">${sub.name[0]}</div>`;
+                                                    }}
+                                                />
                                             </div>
 
-                                            <p className="text-xs text-zinc-500 bg-black/30 p-2.5 rounded-xl border border-white/5 line-clamp-2 leading-relaxed">
-                                                <span className="text-zinc-600 font-mono mr-1">SNIPPET:</span>
-                                                "{sub.snippet}"
-                                            </p>
-
-                                            {/* Conflict Resolution Details */}
-                                            {sub.status === 'conflict' && (
-                                                <div className="mt-3 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 space-y-3">
-                                                    <div className="flex items-center justify-between text-xs">
-                                                        <div className="flex items-center gap-2 text-zinc-400">
-                                                            <span>Was:</span>
-                                                            <span className="line-through">{formatCurrency(sub.existing_data!.cost, sub.existing_data!.currency)}</span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-zinc-500 font-medium">Now:</span>
-                                                            <span className="font-black text-amber-500 text-sm">{formatCurrency(sub.cost, sub.currency)}</span>
-                                                        </div>
-                                                    </div>
-
-                                                    {selectedIds.has(sub.id) && (
-                                                        <div className="flex gap-2">
-                                                            <Button
-                                                                size="sm"
-                                                                variant={conflictResolutions[sub.id] === 'update' ? 'default' : 'outline'}
-                                                                className={`h-8 text-[11px] flex-1 rounded-lg transition-all ${conflictResolutions[sub.id] === 'update' ? 'bg-amber-600 hover:bg-amber-700 border-none' : 'border-amber-500/20 text-amber-500/70 hover:bg-amber-500/10'}`}
-                                                                onClick={(e) => { e.stopPropagation(); setConflictResolutions(prev => ({ ...prev, [sub.id]: 'update' })) }}
-                                                            >
-                                                                <RefreshCcw className="w-3 h-3 mr-1.5" /> Update Existing
-                                                            </Button>
-                                                            <Button
-                                                                size="sm"
-                                                                variant={conflictResolutions[sub.id] === 'new' ? 'default' : 'outline'}
-                                                                className={`h-8 text-[11px] flex-1 rounded-lg transition-all ${conflictResolutions[sub.id] === 'new' ? 'bg-zinc-800 border-none' : 'border-zinc-700 text-zinc-400 hover:bg-zinc-800'}`}
-                                                                onClick={(e) => { e.stopPropagation(); setConflictResolutions(prev => ({ ...prev, [sub.id]: 'new' })) }}
-                                                            >
-                                                                Add as New
-                                                            </Button>
-                                                            <Button
-                                                                size="sm"
-                                                                variant="outline"
-                                                                className="h-8 text-[11px] px-3 rounded-lg border-zinc-700 text-zinc-500 hover:bg-zinc-900"
-                                                                onClick={(e) => { e.stopPropagation(); toggleSelection(sub.id, sub.status) }}
-                                                            >
-                                                                Skip
-                                                            </Button>
-                                                        </div>
+                                            <div className="space-y-1 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <label htmlFor={`cb-${sub.id}`} className="font-heavy text-lg text-white truncate cursor-pointer select-none">
+                                                        {sub.name}
+                                                    </label>
+                                                    {sub.status === 'new' && (
+                                                        <Badge className="bg-indigo-500/10 text-indigo-400 border-none px-2 py-0 text-[10px] uppercase font-black tracking-widest h-5">
+                                                            New
+                                                        </Badge>
+                                                    )}
+                                                    {sub.status === 'duplicate' && (
+                                                        <Badge variant="outline" className="text-zinc-500 border-zinc-800 px-2 py-0 text-[10px] uppercase font-black tracking-widest h-5">
+                                                            Tracked
+                                                        </Badge>
+                                                    )}
+                                                    {sub.status === 'conflict' && (
+                                                        <Badge className="bg-amber-500 text-amber-950 border-none px-2 py-0 text-[10px] uppercase font-black tracking-widest h-5 ring-4 ring-amber-500/20">
+                                                            Action Required
+                                                        </Badge>
                                                     )}
                                                 </div>
-                                            )}
+                                                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                                                    <Calendar className="h-3 w-3" />
+                                                    Detected on {format(new Date(sub.date), 'MMM dd, yyyy')}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="text-right shrink-0">
-                                        <div className="text-xl font-black text-zinc-100 font-mono tracking-tighter">
+                                    <div className="text-right shrink-0 pl-4 border-l border-white/5">
+                                        <div className="text-2xl font-black text-white tracking-tighter">
                                             {formatCurrency(sub.cost, sub.currency)}
                                         </div>
-                                        <div className="flex items-center justify-end gap-1.5 text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-1">
-                                            <Calendar className="w-3 h-3" />
-                                            {format(new Date(sub.date), 'MMM dd, yyyy')}
+                                        <div className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mt-0.5">
+                                            {sub.frequency || 'Monthly'} Bill
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Conflict Resolution Section */}
+                                {sub.status === 'conflict' && selectedIds.has(sub.id) && (
+                                    <div className="mt-5 p-5 rounded-3xl bg-amber-500/10 border border-amber-500/20 shadow-inner">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-full bg-amber-500/20 flex items-center justify-center">
+                                                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-black uppercase tracking-widest text-amber-500">Price Conflict Detected</p>
+                                                    <p className="text-[11px] text-zinc-400">Previous: {formatCurrency(sub.existing_data!.cost, sub.existing_data!.currency)}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-black text-white">{formatCurrency(sub.cost, sub.currency)}</p>
+                                                <p className="text-[10px] text-zinc-500 uppercase font-bold">New Detected Price</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-3">
+                                            <Button
+                                                size="sm"
+                                                variant={conflictResolutions[sub.id] === 'update' ? 'default' : 'outline'}
+                                                className={`h-10 text-xs font-black uppercase tracking-widest flex-1 rounded-2xl transition-all ${conflictResolutions[sub.id] === 'update' ? 'bg-amber-500 hover:bg-amber-600 border-none text-amber-950' : 'border-amber-500/30 text-amber-500 hover:bg-amber-500/10'}`}
+                                                onClick={(e) => { e.stopPropagation(); setConflictResolutions(prev => ({ ...prev, [sub.id]: 'update' })) }}
+                                            >
+                                                <RefreshCcw className="w-3.5 h-3.5 mr-2" /> Update Portfolio
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant={conflictResolutions[sub.id] === 'new' ? 'default' : 'outline'}
+                                                className={`h-10 text-xs font-black uppercase tracking-widest flex-1 rounded-2xl transition-all ${conflictResolutions[sub.id] === 'new' ? 'bg-white text-black hover:bg-zinc-200 border-none' : 'border-zinc-700 text-zinc-400 hover:bg-zinc-800'}`}
+                                                onClick={(e) => { e.stopPropagation(); setConflictResolutions(prev => ({ ...prev, [sub.id]: 'new' })) }}
+                                            >
+                                                Add Separate
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-10 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-zinc-500 hover:text-white"
+                                                onClick={(e) => { e.stopPropagation(); toggleSelection(sub.id, sub.status) }}
+                                            >
+                                                Ignore
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
