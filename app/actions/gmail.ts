@@ -44,11 +44,21 @@ export async function scanGmailReceipts(accessToken: string) {
     console.log('[GmailAction] Scanning inbox with token...')
 
     try {
-        // 1. Fetch from Gmail
-        // Broader query: searches full text, last 90 days, includes loose terms
-        const query = "newer_than:90d (receipt OR invoice OR bill OR subscription OR payment OR renewal OR order OR confirmation OR \"Test Receipt\" OR \"Netflix\")"
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) throw new Error("No user found")
 
-        const listRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=20`, {
+        // 1. Fetch Existing Subscriptions for matching
+        const { data: existingSubs } = await supabase
+            .from('subscriptions')
+            .select('*')
+            .eq('user_id', user.id)
+
+        // 2. Fetch from Gmail
+        // Broader query: searches full text, last 90 days
+        const query = "newer_than:90d (receipt OR invoice OR bill OR subscription OR payment OR renewal OR order OR confirmation OR \"Test Receipt\")"
+
+        const listRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=25`, {
             headers: { Authorization: `Bearer ${accessToken}` }
         })
 
@@ -59,11 +69,11 @@ export async function scanGmailReceipts(accessToken: string) {
         const { messages } = await listRes.json()
 
         if (!messages || messages.length === 0) {
-            return { success: true, count: 0, found: 0, scanned: 0, message: "No receipts found." }
+            return { success: true, count: 0, found: 0, scanned: 0, items: [], message: "No receipts found." }
         }
 
-        // 2. Fetch details for first 10
-        const emailDetails = await Promise.all(messages.slice(0, 10).map(async (m: any) => {
+        // 3. Fetch details for first 15
+        const emailDetails = await Promise.all(messages.slice(0, 15).map(async (m: any) => {
             const detail = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}`, {
                 headers: { Authorization: `Bearer ${accessToken}` }
             })
@@ -80,7 +90,7 @@ export async function scanGmailReceipts(accessToken: string) {
             }
         }))
 
-        // 3. AI Extraction
+        // 4. AI Extraction
         const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
 
@@ -90,7 +100,8 @@ export async function scanGmailReceipts(accessToken: string) {
         CRITICAL INSTRUCTIONS:
         1. Look for explicit keywords: "Total", "Amount Charged", "Billing Period", "Invoice".
         2. High Priority Services: "Google Cloud", "AWS", "Netflix", "Spotify", "Hulu", "Adobe".
-        3. Associate each found subscription with the correct "id", "date", and "snippet" from the input.
+        3. If the subject/snippet is messy (e.g., "Fwd: Your invoice #123"), extract the "merchant_name" as the primary title (e.g., "Netflix").
+        4. Associate each found subscription with the correct "id", "date", and "snippet" from the input.
         
         Return a Strict JSON array of objects:
         [{
@@ -111,49 +122,46 @@ export async function scanGmailReceipts(accessToken: string) {
 
         // Clean markdown
         const cleanedText = text.replace(/```json|```/g, '').trim()
-        const subscriptions = JSON.parse(cleanedText)
+        const detectedSubscriptions = JSON.parse(cleanedText)
 
-        // 4. Auto-Add High Confidence Logic
-        const supabase = await createClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        // 5. Duplicate & Conflict Detection
+        const processedSubs = detectedSubscriptions.map((sub: any) => {
+            // Find existing sub with same name (fuzzy)
+            const match = existingSubs?.find(e =>
+                e.name.toLowerCase().includes(sub.name.toLowerCase()) ||
+                sub.name.toLowerCase().includes(e.name.toLowerCase())
+            )
 
-        if (!user) throw new Error("No user found")
-
-        let addedCount = 0
-
-        for (const sub of subscriptions) {
-            if (sub.confidence > 90) {
-                // Check if already exists to avoid dupes (simple name check)
-                const { data: existing } = await supabase
-                    .from('subscriptions')
-                    .select('id')
-                    .eq('user_id', user.id)
-                    .ilike('name', sub.name)
-                    .single()
-
-                if (!existing) {
-                    await supabase.from('subscriptions').insert({
-                        user_id: user.id,
-                        name: sub.name,
-                        cost: sub.cost,
-                        currency: sub.currency,
-                        frequency: sub.frequency,
-                        status: 'active',
-                        trust_score: 100, // Default for auto-added
-                        category: 'Software',
-                        renewal_date: sub.date || new Date().toISOString()
-                    })
-                    addedCount++
+            if (match) {
+                const samePrice = Math.abs(match.cost - sub.cost) < 0.01
+                // Same name + Same price = Duplicate
+                if (samePrice) {
+                    return { ...sub, status: 'duplicate', existing_id: match.id }
+                }
+                // Same name + Different price = Conflict
+                else {
+                    return {
+                        ...sub,
+                        status: 'conflict',
+                        existing_id: match.id,
+                        existing_data: {
+                            name: match.name,
+                            cost: match.cost,
+                            currency: match.currency
+                        }
+                    }
                 }
             }
-        }
+
+            // No match found = New
+            return { ...sub, status: 'new' }
+        })
 
         return {
             success: true,
-            count: addedCount,
-            found: subscriptions.length,
+            found: processedSubs.length,
             scanned: emailDetails.length,
-            subs: subscriptions
+            subs: processedSubs
         }
 
     } catch (error: any) {
