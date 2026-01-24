@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Loader2, Receipt, CheckCircle2, AlertCircle } from "lucide-react"
-import { createClientComponentClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase'
 import { toast } from "sonner"
 
 interface DetectedSubscription {
@@ -46,7 +46,7 @@ export function GmailImportModal({ isOpen, onClose, foundSubscriptions, onImport
         }
 
         setIsImporting(true)
-        const supabase = createClientComponentClient()
+        const supabase = createClient()
 
         try {
             const { data: { user } } = await supabase.auth.getUser()
