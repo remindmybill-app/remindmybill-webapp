@@ -135,7 +135,13 @@ export default function DashboardPage() {
                     description: "Please review them to add to your dashboard."
                 })
             } else {
-                toast.info("Scan Complete", { description: "No new subscription receipts found in your recent emails." })
+                if (result.scanned && result.scanned > 0) {
+                    toast.info("Scan Complete", {
+                        description: `Scanned ${result.scanned} emails. No subscriptions found. Try sending a receipt with 'Invoice' in the subject.`
+                    })
+                } else {
+                    toast.info("Scan Complete", { description: "No new subscription receipts found in your recent emails." })
+                }
             }
 
             setLastSynced(new Date())

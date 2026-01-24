@@ -45,7 +45,9 @@ export async function scanGmailReceipts(accessToken: string) {
 
     try {
         // 1. Fetch from Gmail
-        const query = "subject:(subscription OR receipt OR invoice OR \"order confirmation\" OR \"Test Receipt\" OR \"Netflix\")"
+        // Broader query: searches full text, last 90 days, includes loose terms
+        const query = "newer_than:90d (receipt OR invoice OR bill OR subscription OR payment OR renewal OR order OR confirmation OR \"Test Receipt\" OR \"Netflix\")"
+
         const listRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=20`, {
             headers: { Authorization: `Bearer ${accessToken}` }
         })
@@ -57,7 +59,7 @@ export async function scanGmailReceipts(accessToken: string) {
         const { messages } = await listRes.json()
 
         if (!messages || messages.length === 0) {
-            return { success: true, count: 0, message: "No receipts found." }
+            return { success: true, count: 0, found: 0, scanned: 0, message: "No receipts found." }
         }
 
         // 2. Fetch details for first 10
@@ -76,10 +78,11 @@ export async function scanGmailReceipts(accessToken: string) {
         const prompt = `
         Analyze these email snippets for subscription receipts: ${JSON.stringify(emailData)}.
         
-        CRITICAL INSTRUCTION:
-        - If the snippet contains "Test Receipt" or "Netflix", ALWAYS extract it as a valid subscription.
-        - Extract real subscriptions (Netflix, Spotify, AWS, default Bills).
-        - Ignore one-time purchases if clear.
+        CRITICAL INSTRUCTIONS:
+        1. Look for explicit keywords: "Total", "Amount Charged", "Billing Period", "Invoice".
+        2. High Priority Services: "Google Cloud", "AWS", "Netflix", "Spotify", "Hulu", "Adobe".
+        3. If snippet contains "Test Receipt", "Netflix", or "Invoice", ALWAYS extract it.
+        4. Ignore one-off purchases only if clearly stated (e.g. "flight ticket", "one-time").
         
         Return a Strict JSON array of objects:
         [{
@@ -138,6 +141,7 @@ export async function scanGmailReceipts(accessToken: string) {
             success: true,
             count: addedCount,
             found: subscriptions.length,
+            scanned: emailData.length,
             subs: subscriptions
         }
 
