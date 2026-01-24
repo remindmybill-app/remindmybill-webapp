@@ -9,7 +9,7 @@ import { SubscriptionsTable } from "@/components/subscriptions-table"
 import { SavingsAlerts } from "@/components/savings-alerts"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Inbox, Bell, Sparkles, Plus, Lock, TrendingUp } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
@@ -27,6 +27,7 @@ export default function DashboardPage() {
     const { profile, refreshProfile } = useProfile()
     const [isScanning, setIsScanning] = useState(false)
     const [lastSynced, setLastSynced] = useState<Date | null>(null)
+    const searchParams = useSearchParams()
 
     // New state for Review Modal
     const [foundSubscriptions, setFoundSubscriptions] = useState<any[]>([])
@@ -38,6 +39,22 @@ export default function DashboardPage() {
             refreshProfile()
         }
     }, [isAuthenticated, refreshProfile])
+
+    // Verbose Error Reporting from Callback
+    useEffect(() => {
+        const error = searchParams.get('error')
+        const message = searchParams.get('message')
+
+        if (error === 'TRUE' && message) {
+            console.error('[Dashboard] Auth Error received:', message)
+            toast.error("Gmail Connection Failed", {
+                description: decodeURIComponent(message),
+                duration: 8000, // Show for longer so user can read it
+            })
+            // Clear params from URL
+            router.replace('/dashboard')
+        }
+    }, [searchParams, router])
 
     const handleScanInbox = async () => {
         if (!isPro(profile?.subscription_tier)) {
