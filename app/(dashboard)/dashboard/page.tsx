@@ -16,6 +16,7 @@ import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { useProfile } from "@/lib/hooks/use-profile"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { connectGmailAccount, getGmailToken } from "@/lib/utils/gmail-auth"
+import { scanGmailReceipts } from "@/app/actions/gmail"
 import { ReviewSubscriptionsModal } from "@/components/review-subscriptions-modal"
 import { ManualSubscriptionModal } from "@/components/manual-subscription-modal"
 import { isPro } from "@/lib/subscription-utils"
@@ -105,35 +106,32 @@ export default function DashboardPage() {
             }
 
             console.log("[v0] Token found, scanning inbox...")
-            const supabase = getSupabaseBrowserClient()
 
-            // 2. Call Edge Function with Token
-            const { data, error } = await supabase.functions.invoke("scan-inbox", {
-                body: { google_access_token: token },
-            })
+            // 2. Call Server Action
+            const result = await scanGmailReceipts(token)
 
-            if (error) {
-                console.error("[v0] Error scanning inbox:", error)
-                throw error
+            if (!result.success) {
+                console.error("[v0] Error scanning inbox:", result.error)
+                throw new Error(result.error)
             }
 
-            console.log("[v0] Inbox scan complete:", data)
-
             // 3. Handle Results
-            if (Array.isArray(data) && data.length > 0) {
-                setFoundSubscriptions(data)
+            if (result.count > 0) {
+                toast.success(`✨ Added ${result.count} new subscriptions!`, {
+                    description: "High-confidence receipts were automatically added to your dashboard."
+                })
+                refreshSubscriptions()
+            } else if (result.found > 0) {
+                setFoundSubscriptions(result.subs)
                 setIsReviewOpen(true)
-                toast.success(`Found ${data.length} potential subscriptions!`, {
+                toast.success(`Found ${result.found} potential subscriptions!`, {
                     description: "Please review them to add to your dashboard."
                 })
-            } else if (data?.message === "No receipts found.") {
-                toast.info("Scan Complete", { description: "No new subscription receipts found in your recent emails." })
             } else {
-                toast.success("Inbox sync complete!", { description: "Your subscriptions are up to date." })
+                toast.info("Scan Complete", { description: "No new subscription receipts found in your recent emails." })
             }
 
             setLastSynced(new Date())
-            // refreshSubscriptions() // Only refresh after import logic (in modal)
         } catch (error: any) {
             console.error("[v0] Failed to scan inbox:", error)
             toast.error("Sync failed", {
@@ -245,7 +243,6 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-3">
                         <ManualSubscriptionModal onSubscriptionAdded={refreshSubscriptions} />
-                        <ManualSubscriptionModal onSubscriptionAdded={refreshSubscriptions} />
                         <Button
                             onClick={handleScanInbox}
                             disabled={isScanning}
@@ -254,7 +251,7 @@ export default function DashboardPage() {
                         >
                             {isGmailConnected ? <CheckCircle2 className="h-4 w-4" /> : (isPro(profile?.subscription_tier) ? <Inbox className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-500" />)}
                             {isScanning ? "Scanning..." :
-                                isGmailConnected ? "Synced" :
+                                isGmailConnected ? "Re-scan Inbox" :
                                     isPro(profile?.subscription_tier) ? "Sync Gmail" : "Sync Gmail (Pro)"}
                         </Button>
                     </div>
