@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Receipt, CheckCircle2, AlertCircle, Calendar, CreditCard, ArrowRight } from "lucide-react"
+import { Loader2, Receipt, CheckCircle2, AlertCircle, Calendar, CreditCard, ArrowRight, ShieldCheck, AlertTriangle, RefreshCcw } from "lucide-react"
 import { toast } from "sonner"
-import { addSubscription } from '@/app/actions/subscriptions'
+import { addSubscription, updateSubscription } from '@/app/actions/subscriptions'
 import { format } from 'date-fns'
 
 interface DetectedSubscription {
@@ -20,6 +20,13 @@ interface DetectedSubscription {
     date: string
     snippet: string
     confidence: number
+    status: 'new' | 'duplicate' | 'conflict' | 'auto_added'
+    existing_id?: string
+    existing_data?: {
+        name: string
+        cost: number
+        currency: string
+    }
 }
 
 interface GmailImportModalProps {
@@ -31,17 +38,33 @@ interface GmailImportModalProps {
 
 export function GmailImportModal({ isOpen, onClose, foundSubscriptions, onImportComplete }: GmailImportModalProps) {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+    const [conflictResolutions, setConflictResolutions] = useState<Record<string, 'update' | 'new'>>({})
     const [isImporting, setIsImporting] = useState(false)
 
-    // Select all high-confidence by default when modal opens
-    useMemo(() => {
-        if (isOpen && foundSubscriptions.length > 0 && selectedIds.size === 0) {
-            const initialSelection = new Set(foundSubscriptions.map(s => s.id))
+    // Select all "new" and "conflict" items by default
+    useEffect(() => {
+        if (isOpen && foundSubscriptions.length > 0) {
+            const initialSelection = new Set(
+                foundSubscriptions
+                    .filter(s => s.status === 'new' || s.status === 'conflict')
+                    .map(s => s.id)
+            )
             setSelectedIds(initialSelection)
+
+            // Default conflicts to 'update'
+            const initialResolutions: Record<string, 'update' | 'new'> = {}
+            foundSubscriptions.forEach(s => {
+                if (s.status === 'conflict') {
+                    initialResolutions[s.id] = 'update'
+                }
+            })
+            setConflictResolutions(initialResolutions)
         }
     }, [isOpen, foundSubscriptions])
 
-    const toggleSelection = (id: string) => {
+    const toggleSelection = (id: string, status: string) => {
+        if (status === 'duplicate' || status === 'auto_added') return
+
         const next = new Set(selectedIds)
         if (next.has(id)) {
             next.delete(id)
@@ -51,9 +74,21 @@ export function GmailImportModal({ isOpen, onClose, foundSubscriptions, onImport
         setSelectedIds(next)
     }
 
+    const handleImportAllNew = async () => {
+        const onlyNew = foundSubscriptions.filter(s => s.status === 'new').map(s => s.id)
+        setSelectedIds(new Set(onlyNew))
+        // We'll call handleImport after state update in a real app, 
+        // but here we can just compute and pass to the logic.
+        await startImport(foundSubscriptions.filter(s => s.status === 'new'))
+    }
+
     const handleImport = async () => {
-        const toImport = foundSubscriptions.filter(s => selectedIds.has(s.id))
-        if (toImport.length === 0) {
+        const toProcess = foundSubscriptions.filter(s => selectedIds.has(s.id))
+        await startImport(toProcess)
+    }
+
+    const startImport = async (items: DetectedSubscription[]) => {
+        if (items.length === 0) {
             onClose()
             return
         }
@@ -62,20 +97,30 @@ export function GmailImportModal({ isOpen, onClose, foundSubscriptions, onImport
         let successCount = 0
 
         try {
-            for (const sub of toImport) {
-                const result = await addSubscription({
-                    name: sub.name,
-                    cost: sub.cost,
-                    currency: sub.currency,
-                    frequency: sub.frequency,
-                    renewal_date: sub.date,
-                    category: 'Software'
-                })
-                if (result.success) successCount++
+            for (const sub of items) {
+                if (sub.status === 'conflict' && conflictResolutions[sub.id] === 'update' && sub.existing_id) {
+                    // UPDATE EXISTING
+                    const result = await updateSubscription(sub.existing_id, {
+                        cost: sub.cost,
+                        renewal_date: sub.date
+                    })
+                    if (result.success) successCount++
+                } else {
+                    // ADD AS NEW (for 'new' or 'conflict' resolved as 'new')
+                    const result = await addSubscription({
+                        name: sub.name,
+                        cost: sub.cost,
+                        currency: sub.currency,
+                        frequency: sub.frequency,
+                        renewal_date: sub.date,
+                        category: 'Software'
+                    })
+                    if (result.success) successCount++
+                }
             }
 
-            toast.success(`Successfully imported ${successCount} subscriptions`, {
-                description: "Your dashboard has been updated.",
+            toast.success(`Processed ${successCount} subscriptions`, {
+                description: "Your dashboard has been refreshed.",
                 icon: <CheckCircle2 className="w-5 h-5 text-emerald-500" />
             })
 
@@ -98,141 +143,164 @@ export function GmailImportModal({ isOpen, onClose, foundSubscriptions, onImport
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !isImporting && !open && onClose()}>
-            <DialogContent className="sm:max-w-2xl bg-zinc-950/95 backdrop-blur-2xl border-zinc-800 text-zinc-50 overflow-hidden p-0 gap-0 shadow-2xl">
-                {/* Decorative Background */}
-                <div className="absolute inset-0 z-0 bg-gradient-to-br from-indigo-500/5 via-emerald-500/5 to-purple-500/5 pointer-events-none" />
-
-                <div className="relative z-10">
-                    <DialogHeader className="p-6 border-b border-white/10">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
-                                <Receipt className="w-5 h-5 text-emerald-400" />
+            <DialogContent className="sm:max-w-2xl bg-zinc-950 border-zinc-800 text-zinc-50 overflow-hidden p-0 gap-0 shadow-2xl">
+                <DialogHeader className="p-6 border-b border-white/10 bg-zinc-900/50">
+                    <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
+                                <Receipt className="w-5 h-5 text-indigo-400" />
                             </div>
                             <div>
-                                <DialogTitle className="text-2xl font-bold tracking-tight">Review Subscriptions</DialogTitle>
+                                <DialogTitle className="text-2xl font-bold">Smart Import Review</DialogTitle>
                                 <DialogDescription className="text-zinc-400">
-                                    We found {foundSubscriptions.length} potential subscriptions in your Gmail.
+                                    Review detections and resolve conflicts before importing.
                                 </DialogDescription>
                             </div>
                         </div>
-                    </DialogHeader>
+                    </div>
+                </DialogHeader>
 
-                    <ScrollArea className="max-h-[60vh] px-6 py-4">
-                        <div className="space-y-4 py-2">
-                            {foundSubscriptions.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-12 text-center">
-                                    <div className="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center mb-4 border border-zinc-800">
-                                        <AlertCircle className="w-8 h-8 text-zinc-600" />
-                                    </div>
-                                    <h3 className="text-lg font-semibold text-zinc-300">No subscriptions found</h3>
-                                    <p className="text-zinc-500 max-w-[280px] mt-1 text-sm">
-                                        We couldn't detect any subscription receipts in your recent emails.
-                                    </p>
-                                </div>
-                            ) : (
-                                foundSubscriptions.map((sub) => (
-                                    <div
-                                        key={sub.id}
-                                        onClick={() => toggleSelection(sub.id)}
-                                        className={`
-                                            group relative flex flex-col p-4 rounded-2xl border transition-all duration-300 cursor-pointer
-                                            ${selectedIds.has(sub.id)
-                                                ? 'bg-emerald-500/5 border-emerald-500/40 shadow-[0_0_20px_-5px_rgba(16,185,129,0.1)]'
-                                                : 'bg-zinc-900/40 border-zinc-800/50 hover:bg-zinc-900/60 hover:border-zinc-700'}
-                                        `}
-                                    >
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div className="flex items-start gap-4 flex-1">
-                                                <div className="mt-1">
-                                                    <Checkbox
-                                                        checked={selectedIds.has(sub.id)}
-                                                        className="h-5 w-5 rounded-md border-zinc-700 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 transition-colors"
-                                                    />
-                                                </div>
-                                                <div className="space-y-1.5 flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <h4 className="font-bold text-lg text-zinc-100 group-hover:text-white transition-colors">
-                                                            {sub.name}
-                                                        </h4>
-                                                        {sub.confidence > 95 && (
-                                                            <Badge variant="secondary" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px] uppercase font-bold tracking-wider py-0 px-1.5">
-                                                                High Accuracy
-                                                            </Badge>
-                                                        )}
-                                                    </div>
+                <ScrollArea className="max-h-[60vh] px-6">
+                    <div className="space-y-4 py-6">
+                        {foundSubscriptions.map((sub) => (
+                            <div
+                                key={sub.id}
+                                className={`
+                                    group relative flex flex-col p-4 rounded-2xl border transition-all duration-300
+                                    ${sub.status === 'duplicate' || sub.status === 'auto_added' ? 'opacity-60 grayscale-[0.5] bg-zinc-900/20 border-zinc-800' :
+                                        selectedIds.has(sub.id) ? 'bg-zinc-900/80 border-indigo-500/50 shadow-lg shadow-indigo-500/5' : 'bg-zinc-900/40 border-zinc-800'}
+                                `}
+                            >
+                                <div className="flex items-start justify-between gap-4">
+                                    <div className="flex items-start gap-3 flex-1">
+                                        <div className="mt-1">
+                                            <Checkbox
+                                                checked={selectedIds.has(sub.id)}
+                                                disabled={sub.status === 'duplicate' || sub.status === 'auto_added'}
+                                                onCheckedChange={() => toggleSelection(sub.id, sub.status)}
+                                                className="h-5 w-5 rounded-md border-zinc-700 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
+                                            />
+                                        </div>
+                                        <div className="space-y-1.5 flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="font-bold text-lg text-zinc-100">{sub.name}</h4>
 
-                                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-400">
-                                                        <span className="flex items-center gap-1.5 font-medium">
-                                                            <Calendar className="w-3.5 h-3.5 opacity-60" />
-                                                            {format(new Date(sub.date), 'MMMM dd, yyyy')}
-                                                        </span>
-                                                        <span className="flex items-center gap-1.5 font-medium capitalize">
-                                                            <CreditCard className="w-3.5 h-3.5 opacity-60" />
-                                                            {sub.frequency}
-                                                        </span>
-                                                    </div>
-
-                                                    <p className="text-xs text-zinc-500 line-clamp-1 italic bg-black/20 p-2 rounded-lg border border-white/5 mt-2">
-                                                        "{sub.snippet}"
-                                                    </p>
-                                                </div>
+                                                {/* Status Badges */}
+                                                {sub.status === 'duplicate' && (
+                                                    <Badge variant="outline" className="text-[10px] bg-zinc-800 border-zinc-700 text-zinc-400">
+                                                        <ShieldCheck className="w-3 h-3 mr-1" /> Already Tracking
+                                                    </Badge>
+                                                )}
+                                                {sub.status === 'auto_added' && (
+                                                    <Badge variant="outline" className="text-[10px] bg-emerald-500/10 border-emerald-500/20 text-emerald-400">
+                                                        <CheckCircle2 className="w-3 h-3 mr-1" /> Auto-Added
+                                                    </Badge>
+                                                )}
+                                                {sub.status === 'new' && (
+                                                    <Badge variant="outline" className="text-[10px] bg-blue-500/10 border-blue-500/20 text-blue-400">
+                                                        New Subscription
+                                                    </Badge>
+                                                )}
+                                                {sub.status === 'conflict' && (
+                                                    <Badge variant="outline" className="text-[10px] bg-amber-500/10 border-amber-500/20 text-amber-500">
+                                                        <AlertTriangle className="w-3 h-3 mr-1" /> Conflict Detected
+                                                    </Badge>
+                                                )}
                                             </div>
 
-                                            <div className="text-right">
-                                                <div className="text-xl font-black text-emerald-400 font-mono tracking-tight">
-                                                    {formatCurrency(sub.cost, sub.currency)}
+                                            <p className="text-xs text-zinc-500 italic bg-black/20 p-2 rounded-lg border border-white/5 truncate">
+                                                "{sub.snippet}"
+                                            </p>
+
+                                            {/* Conflict Resolution Options */}
+                                            {sub.status === 'conflict' && selectedIds.has(sub.id) && (
+                                                <div className="mt-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-2">
+                                                    <div className="flex items-center justify-between text-xs">
+                                                        <span className="text-zinc-400">Price changed from <span className="line-through">{formatCurrency(sub.existing_data!.cost, sub.existing_data!.currency)}</span></span>
+                                                        <span className="font-bold text-amber-500">{"->"} {formatCurrency(sub.cost, sub.currency)}</span>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <Button
+                                                            size="sm"
+                                                            variant={conflictResolutions[sub.id] === 'update' ? 'default' : 'outline'}
+                                                            className={`h-7 text-[10px] flex-1 ${conflictResolutions[sub.id] === 'update' ? 'bg-amber-600 hover:bg-amber-700 border-none' : 'border-amber-500/30 text-amber-500'}`}
+                                                            onClick={(e) => { e.stopPropagation(); setConflictResolutions(prev => ({ ...prev, [sub.id]: 'update' })) }}
+                                                        >
+                                                            <RefreshCcw className="w-3 h-3 mr-1" /> Update Existing
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant={conflictResolutions[sub.id] === 'new' ? 'default' : 'outline'}
+                                                            className={`h-7 text-[10px] flex-1 ${conflictResolutions[sub.id] === 'new' ? 'bg-zinc-700 border-none' : 'border-zinc-700 text-zinc-400'}`}
+                                                            onClick={(e) => { e.stopPropagation(); setConflictResolutions(prev => ({ ...prev, [sub.id]: 'new' })) }}
+                                                        >
+                                                            Add as New
+                                                        </Button>
+                                                    </div>
                                                 </div>
-                                                <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1">
-                                                    {sub.currency}
-                                                </div>
-                                            </div>
+                                            )}
                                         </div>
                                     </div>
-                                ))
+
+                                    <div className="text-right">
+                                        <div className="text-xl font-black text-zinc-100 font-mono">
+                                            {formatCurrency(sub.cost, sub.currency)}
+                                        </div>
+                                        <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">
+                                            {format(new Date(sub.date), 'MMM dd')}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </ScrollArea>
+
+                <DialogFooter className="p-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 bg-zinc-900/50">
+                    <div className="flex items-center gap-3">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs h-9 border-zinc-800 text-zinc-400 hover:text-zinc-100"
+                            onClick={handleImportAllNew}
+                            disabled={isImporting}
+                        >
+                            Import All New
+                        </Button>
+                        <div className="h-4 w-px bg-white/10 hidden sm:block" />
+                        <span className="text-xs font-medium text-zinc-500">
+                            {selectedIds.size} Selected
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <Button
+                            variant="ghost"
+                            onClick={onClose}
+                            disabled={isImporting}
+                            className="text-zinc-500 hover:text-white"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleImport}
+                            disabled={isImporting || selectedIds.size === 0}
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold h-11 px-6 rounded-xl min-w-[140px]"
+                        >
+                            {isImporting ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Processing...
+                                </>
+                            ) : (
+                                <>
+                                    Confirm Review
+                                    <ArrowRight className="w-4 h-4 ml-2" />
+                                </>
                             )}
-                        </div>
-                    </ScrollArea>
-
-                    <DialogFooter className="p-6 border-t border-white/10 flex-col sm:flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-zinc-900 rounded-full border border-white/5">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">
-                                {selectedIds.size} Selected for Import
-                            </span>
-                        </div>
-
-                        <div className="flex items-center gap-3 w-full sm:w-auto">
-                            <Button
-                                variant="ghost"
-                                onClick={onClose}
-                                disabled={isImporting}
-                                className="text-zinc-500 hover:text-white hover:bg-white/5 font-bold"
-                            >
-                                Cancel
-                            </Button>
-                            <Button
-                                onClick={handleImport}
-                                disabled={isImporting || selectedIds.size === 0}
-                                size="lg"
-                                className="relative overflow-hidden group bg-emerald-600 hover:bg-emerald-500 text-white font-bold h-12 px-8 rounded-xl transition-all shadow-lg shadow-emerald-600/20 min-w-[180px]"
-                            >
-                                {isImporting ? (
-                                    <>
-                                        <Loader2 className="w-5 h-5 mr-3 animate-spin" />
-                                        Importing...
-                                    </>
-                                ) : (
-                                    <>
-                                        <span className="relative z-10 flex items-center gap-2">
-                                            Import Selected
-                                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                        </span>
-                                    </>
-                                )}
-                            </Button>
-                        </div>
-                    </DialogFooter>
-                </div>
+                        </Button>
+                    </div>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     )

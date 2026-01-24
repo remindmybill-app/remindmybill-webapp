@@ -123,24 +123,29 @@ export default function DashboardPage() {
             }
 
             // 3. Handle Results
-            if (result.count > 0) {
-                toast.success(`✨ Added ${result.count} new subscriptions!`, {
-                    description: "High-confidence receipts were automatically added to your dashboard."
+            const addedCount = result.count || 0
+            if (addedCount > 0) {
+                toast.success(`✨ Auto-added ${addedCount} high-confidence subscriptions!`, {
+                    description: "Check your dashboard for new entries."
                 })
                 refreshSubscriptions()
-            } else if (result.found > 0) {
+            }
+
+            if (result.found && result.found > 0) {
                 setFoundSubscriptions(result.subs)
                 setIsReviewOpen(true)
-                toast.success(`Found ${result.found} potential subscriptions!`, {
-                    description: "Please review them to add to your dashboard."
-                })
+                if (addedCount === 0) {
+                    toast.success(`Found ${result.found} potential subscriptions!`, {
+                        description: "Please review them to add to your dashboard."
+                    })
+                }
             } else {
                 if (result.scanned && result.scanned > 0) {
                     toast.info("Scan Complete", {
-                        description: `Scanned ${result.scanned} emails. No subscriptions found. Try sending a receipt with 'Invoice' in the subject.`
+                        description: `Scanned ${result.scanned} emails. No new subscriptions found.`
                     })
                 } else {
-                    toast.info("Scan Complete", { description: "No new subscription receipts found in your recent emails." })
+                    toast.info("Scan Complete", { description: "No subscription receipts found in your recent emails." })
                 }
             }
 
