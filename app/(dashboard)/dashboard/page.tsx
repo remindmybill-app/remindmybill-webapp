@@ -18,7 +18,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { connectGmailAccount, getGmailToken } from "@/lib/utils/gmail-auth"
 import { scanGmailReceipts } from "@/app/actions/gmail"
 import { debugFetchLast5Emails } from "@/app/actions/debug-gmail"
-import { ReviewSubscriptionsModal } from "@/components/review-subscriptions-modal"
+import { GmailImportModal } from "@/components/GmailImportModal"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { ManualSubscriptionModal } from "@/components/manual-subscription-modal"
 import { isPro } from "@/lib/subscription-utils"
@@ -308,7 +308,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Review Modal for Found Subscriptions */}
-                <ReviewSubscriptionsModal
+                <GmailImportModal
                     isOpen={isReviewOpen}
                     onClose={() => setIsReviewOpen(false)}
                     foundSubscriptions={foundSubscriptions}
