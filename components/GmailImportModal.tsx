@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, Receipt, CheckCircle2, AlertCircle, Calendar, CreditCard, ArrowRight, ShieldCheck, AlertTriangle, RefreshCcw } from "lucide-react"
+import { Loader2, Receipt, CheckCircle2, AlertCircle, Calendar, CreditCard, ArrowRight, ShieldCheck, AlertTriangle, RefreshCcw, ChevronDown, Mail } from "lucide-react"
 import { toast } from "sonner"
 import { addSubscription, updateSubscription } from '@/app/actions/subscriptions'
 import { format } from 'date-fns'
@@ -18,6 +18,7 @@ interface DetectedSubscription {
     currency: string
     frequency: string
     date: string
+    subject?: string
     snippet: string
     confidence: number
     status: 'new' | 'duplicate' | 'conflict' | 'auto_added'
@@ -38,8 +39,16 @@ interface GmailImportModalProps {
 
 export function GmailImportModal({ isOpen, onClose, foundSubscriptions, onImportComplete }: GmailImportModalProps) {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+    const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
     const [conflictResolutions, setConflictResolutions] = useState<Record<string, 'update' | 'new' | 'skip'>>({})
     const [isImporting, setIsImporting] = useState(false)
+
+    const toggleExpand = (id: string) => {
+        const next = new Set(expandedIds)
+        if (next.has(id)) next.delete(id)
+        else next.add(id)
+        setExpandedIds(next)
+    }
 
     // Select "new" and "conflict" items by default
     useEffect(() => {
@@ -153,7 +162,7 @@ export function GmailImportModal({ isOpen, onClose, foundSubscriptions, onImport
                             <div>
                                 <DialogTitle className="text-2xl font-bold tracking-tight">Smart Import Review</DialogTitle>
                                 <DialogDescription className="text-zinc-400">
-                                    We found {foundSubscriptions.length} items. Review and resolve before importing.
+                                    We found {foundSubscriptions.length} detections. Click chevron to see email source.
                                 </DialogDescription>
                             </div>
                         </div>
@@ -217,9 +226,19 @@ export function GmailImportModal({ isOpen, onClose, foundSubscriptions, onImport
                                                         </Badge>
                                                     )}
                                                 </div>
-                                                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500">
-                                                    <Calendar className="h-3 w-3" />
-                                                    Detected on {format(new Date(sub.date), 'MMM dd, yyyy')}
+                                                <div className="flex items-center gap-4">
+                                                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                                                        <Calendar className="h-3 w-3" />
+                                                        {format(new Date(sub.date), 'MMM dd, yyyy')}
+                                                    </div>
+                                                    <button
+                                                        onClick={() => toggleExpand(sub.id)}
+                                                        className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors"
+                                                    >
+                                                        <Mail className="h-3 w-3" />
+                                                        Email Source
+                                                        <ChevronDown className={`h-3 w-3 transition-transform duration-300 ${expandedIds.has(sub.id) ? 'rotate-180' : ''}`} />
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -234,6 +253,24 @@ export function GmailImportModal({ isOpen, onClose, foundSubscriptions, onImport
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Email Context Preview */}
+                                {expandedIds.has(sub.id) && (
+                                    <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <div className="rounded-2xl bg-black/40 border border-white/5 p-4 space-y-3">
+                                            <div>
+                                                <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-1">Subject</p>
+                                                <p className="text-xs font-bold text-zinc-200 line-clamp-1 italic">"{sub.subject || 'No Subject'}"</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-1">Snippet</p>
+                                                <p className="text-[11px] text-zinc-400 leading-relaxed font-medium">
+                                                    {sub.snippet}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Conflict Resolution Section */}
                                 {sub.status === 'conflict' && selectedIds.has(sub.id) && (

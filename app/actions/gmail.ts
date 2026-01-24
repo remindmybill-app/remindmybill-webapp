@@ -79,13 +79,16 @@ export async function scanGmailReceipts(accessToken: string) {
             })
             const data = await detail.json()
 
-            // Extract Date from headers
+            // Extract Date and Subject from headers
             const dateHeader = data.payload.headers.find((h: any) => h.name === 'Date')?.value
+            const subjectHeader = data.payload.headers.find((h: any) => h.name === 'Subject')?.value
             const date = dateHeader ? new Date(dateHeader).toISOString() : new Date().toISOString()
+            const subject = subjectHeader || '(No Subject)'
 
             return {
                 id: m.id,
                 snippet: data.snippet,
+                subject: subject,
                 date: date
             }
         }))
@@ -101,7 +104,7 @@ export async function scanGmailReceipts(accessToken: string) {
         1. Look for explicit keywords: "Total", "Amount Charged", "Billing Period", "Invoice".
         2. High Priority Services: "Google Cloud", "AWS", "Netflix", "Spotify", "Hulu", "Adobe".
         3. If the subject/snippet is messy (e.g., "Fwd: Your invoice #123"), extract the "merchant_name" as the primary title (e.g., "Netflix").
-        4. Associate each found subscription with the correct "id", "date", and "snippet" from the input.
+        4. Associate each found subscription with the correct "id", "date", "subject", and "snippet" from the input.
         
         Return a Strict JSON array of objects:
         [{
@@ -111,6 +114,7 @@ export async function scanGmailReceipts(accessToken: string) {
             "currency": "USD",
             "frequency": "monthly" | "yearly",
             "date": "ISO_DATE",
+            "subject": "The original email subject",
             "snippet": "Short snippet of the email",
             "confidence": 0-100
         }]
