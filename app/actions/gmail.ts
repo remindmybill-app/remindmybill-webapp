@@ -55,10 +55,10 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
             .eq('user_id', user.id)
 
         // 2. Fetch from Gmail
-        // Dynamic query based on days parameter
-        const query = `newer_than:${days}d (receipt OR invoice OR bill OR subscription OR payment OR renewal OR order OR confirmation OR "Test Receipt")`
+        // RELAXED QUERY for debugging: just the time range
+        const query = `newer_than:${days}d`
 
-        const listRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=25`, {
+        const listRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=20`, {
             headers: { Authorization: `Bearer ${accessToken}` }
         })
 
@@ -69,11 +69,11 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
         const { messages } = await listRes.json()
 
         if (!messages || messages.length === 0) {
-            return { success: true, count: 0, found: 0, scanned: 0, items: [], message: "No receipts found." }
+            return { success: true, count: 0, found: 0, scanned: 0, items: [], message: "No recently received emails found." }
         }
 
-        // 3. Fetch details for first 15
-        const emailDetails = await Promise.all(messages.slice(0, 15).map(async (m: any) => {
+        // 3. Fetch details for found messages (up to 20)
+        const emailDetails = await Promise.all(messages.slice(0, 20).map(async (m: any) => {
             const detail = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}`, {
                 headers: { Authorization: `Bearer ${accessToken}` }
             })
@@ -93,72 +93,43 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
             }
         }))
 
-        // 4. AI Extraction
-        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
-
-        const prompt = `
-        Analyze these email details for subscription receipts: ${JSON.stringify(emailDetails)}.
-        
-        CRITICAL INSTRUCTIONS:
-        1. Look for explicit keywords: "Total", "Amount Charged", "Billing Period", "Invoice".
-        2. High Priority Services: "Google Cloud", "AWS", "Netflix", "Spotify", "Hulu", "Adobe".
-        3. If the subject/snippet is messy (e.g., "Fwd: Your invoice #123"), extract the "merchant_name" as the primary title (e.g., "Netflix").
-        4. Associate each found subscription with the correct "id", "date", "subject", and "snippet" from the input.
-        
-        Return a Strict JSON array of objects:
-        [{
-            "id": "original_email_id",
-            "name": "Service Name",
-            "cost": 0.00,
-            "currency": "USD",
-            "frequency": "monthly" | "yearly",
-            "date": "ISO_DATE",
-            "subject": "The original email subject",
-            "snippet": "Short snippet of the email",
-            "confidence": 0-100
-        }]
-        `
-
-        const result = await model.generateContent(prompt)
-        const response = await result.response
-        const text = response.text()
-
-        // Clean markdown
-        const cleanedText = text.replace(/```json|```/g, '').trim()
-        const detectedSubscriptions = JSON.parse(cleanedText)
-
-        // 5. Intelligent Pre-Processing: Compare against existing subscriptions
-        const processedSubs = detectedSubscriptions.map((sub: any) => {
-            // Find existing sub with same name (fuzzy)
+        // 4. Map ALL emails directly to UI format for verification
+        const processedSubs = emailDetails.map((email: any) => {
+            // Find existing sub with same name (fuzzy) - just in case for debugging
             const match = existingSubs?.find(e =>
-                e.name.toLowerCase().includes(sub.name.toLowerCase()) ||
-                sub.name.toLowerCase().includes(e.name.toLowerCase())
+                e.name.toLowerCase().includes(email.subject.toLowerCase()) ||
+                email.subject.toLowerCase().includes(e.name.toLowerCase())
             )
 
-            if (match) {
-                const samePrice = Math.abs(match.cost - sub.cost) < 0.01
+            // Calculate status
+            let status: 'NEW' | 'EXISTS' | 'UPDATE' = 'NEW'
+            let existing_id = undefined
+            let existing_data = undefined
 
-                if (samePrice) {
-                    // Exact match on Name and Price
-                    return { ...sub, status: 'EXISTS', existing_id: match.id }
-                } else {
-                    // Name matches, but Price is different
-                    return {
-                        ...sub,
-                        status: 'UPDATE',
-                        existing_id: match.id,
-                        existing_data: {
-                            name: match.name,
-                            cost: match.cost,
-                            currency: match.currency
-                        }
-                    }
+            if (match) {
+                status = 'EXISTS'
+                existing_id = match.id
+                existing_data = {
+                    name: match.name,
+                    cost: match.cost,
+                    currency: match.currency
                 }
             }
 
-            // No match found
-            return { ...sub, status: 'NEW' }
+            return {
+                id: email.id,
+                name: email.subject, // Use subject as name for now
+                cost: 0.00, // Default to 0.00
+                currency: 'USD',
+                frequency: 'monthly',
+                date: email.date,
+                subject: email.subject,
+                snippet: email.snippet,
+                confidence: 100,
+                status: status,
+                existing_id,
+                existing_data
+            }
         })
 
         return {

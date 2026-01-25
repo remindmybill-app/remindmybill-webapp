@@ -108,6 +108,8 @@ export default function DashboardPage() {
                 return
             }
 
+            // [FIX] Open modal immediately so user sees the "Scanning" state inside the modal
+            setIsReviewOpen(true)
             console.log("[v0] Token found, scanning inbox...")
 
             // 2. Call Server Action with days
@@ -119,20 +121,15 @@ export default function DashboardPage() {
             }
 
             // 3. Handle Results
+            // We always update the found subscriptions if the call succeeded
+            setFoundSubscriptions(result.subs || [])
+
             if (result.found && result.found > 0) {
-                setFoundSubscriptions(result.subs)
-                setIsReviewOpen(true)
-                toast.success(`Found ${result.found} potential subscriptions!`, {
-                    description: "Please review them to add to your dashboard."
+                toast.success(`Found ${result.found} emails!`, {
+                    description: "Reviewing your recent inbox activity."
                 })
             } else {
-                if (result.scanned && result.scanned > 0) {
-                    toast.info("Scan Complete", {
-                        description: `Scanned ${result.scanned} emails. No new subscriptions found.`
-                    })
-                } else {
-                    toast.info("Scan Complete", { description: "No subscription receipts found in your recent emails." })
-                }
+                toast.info("Scan Complete", { description: "No emails found for the selected time range." })
             }
 
             setLastSynced(new Date())
@@ -141,6 +138,7 @@ export default function DashboardPage() {
             toast.error("Sync failed", {
                 description: "Could not scan inbox. Please try reconnecting Gmail."
             })
+            setIsReviewOpen(false) // Close modal on error
         } finally {
             setIsScanning(false)
         }
