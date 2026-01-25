@@ -244,31 +244,32 @@ export function GmailImportModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !isImporting && !isScanning && !open && onClose()}>
-            <DialogContent className="sm:max-w-4xl bg-zinc-950/90 backdrop-blur-3xl border-white/10 text-zinc-50 overflow-hidden p-0 gap-0 shadow-2xl">
-                <DialogHeader className="p-6 border-b border-white/5 bg-white/5">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.1)]">
-                                <Receipt className="w-7 h-7 text-indigo-400" />
+            <DialogContent className="sm:max-w-4xl bg-zinc-950 border-white/10 text-zinc-50 overflow-hidden p-0 gap-0 shadow-2xl flex flex-col h-[80vh] max-h-[750px] rounded-[2.5rem]">
+                {/* Fixed Header */}
+                <div className="p-8 border-b border-white/5 bg-white/5 shrink-0">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                        <div className="flex items-center gap-5">
+                            <div className="w-16 h-16 rounded-[1.5rem] bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-[0_0_30px_rgba(99,102,241,0.15)]">
+                                <Receipt className="w-8 h-8 text-indigo-400" />
                             </div>
                             <div>
-                                <DialogTitle className="text-2xl font-black tracking-tight bg-gradient-to-br from-white to-zinc-400 bg-clip-text text-transparent">Subscription Import Manager</DialogTitle>
-                                <DialogDescription className="text-zinc-500 font-medium">
-                                    Review and import detected bills from your inbox.
+                                <DialogTitle className="text-3xl font-black tracking-tight bg-gradient-to-br from-white to-zinc-400 bg-clip-text text-transparent">Import Hub</DialogTitle>
+                                <DialogDescription className="text-zinc-500 font-bold text-base mt-0.5">
+                                    Review and sync detections from your inbox.
                                 </DialogDescription>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" size="sm" className="bg-zinc-900/50 border-white/5 text-zinc-400 hover:text-white rounded-xl h-10 px-4 gap-2">
+                                    <Button variant="outline" size="sm" className="bg-zinc-900/50 border-white/5 text-zinc-400 hover:text-white rounded-2xl h-11 px-6 gap-3 font-bold text-sm">
                                         <Clock className="w-4 h-4" />
                                         Last {timeRange} Days
                                         <ChevronDown className="w-4 h-4" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10">
+                                <DropdownMenuContent align="end" className="bg-zinc-900 border-white/10 p-2 rounded-2xl">
                                     {[30, 60, 90].map((days) => (
                                         <DropdownMenuItem
                                             key={days}
@@ -276,7 +277,7 @@ export function GmailImportModal({
                                                 setTimeRange(days)
                                                 onRescan(days)
                                             }}
-                                            className="text-zinc-400 focus:text-white"
+                                            className="text-zinc-400 focus:text-white rounded-xl h-10 px-4 cursor-pointer"
                                         >
                                             Last {days} Days
                                         </DropdownMenuItem>
@@ -285,46 +286,50 @@ export function GmailImportModal({
                             </DropdownMenu>
                         </div>
                     </div>
-                </DialogHeader>
+                </div>
 
-                <div className="px-8 py-4 border-b border-white/5 bg-black/20 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                {/* Sticky Selection Bar */}
+                <div className="px-8 py-5 border-b border-white/5 bg-black/40 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-4">
                         <Checkbox
                             id="select-all"
                             checked={isAllSelected}
                             onCheckedChange={(checked) => handleSelectAll(!!checked)}
-                            className="h-5 w-5 rounded-md border-zinc-800 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                            className="h-6 w-6 rounded-lg border-zinc-800 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 shadow-xl"
                         />
-                        <label htmlFor="select-all" className="text-xs font-black uppercase tracking-widest text-zinc-400 cursor-pointer select-none">
+                        <label htmlFor="select-all" className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400 cursor-pointer select-none hover:text-zinc-200 transition-colors">
                             Select All Detections
                         </label>
                     </div>
-                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600">
-                        {visibleSubscriptions.length} Transactions Found
+                    <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-900/50 border border-white/5">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">
+                            {visibleSubscriptions.length} Found
+                        </span>
                     </div>
                 </div>
 
-                <ScrollArea className="max-h-[60vh] px-8">
+                {/* Scrollable List Container */}
+                <div className="flex-1 overflow-y-auto px-8 custom-scrollbar">
                     <div className="space-y-4 py-8">
                         {isScanning ? (
-                            <div className="flex flex-col items-center justify-center py-24 gap-6">
+                            <div className="flex flex-col items-center justify-center py-32 gap-8">
                                 <div className="relative">
-                                    <div className="absolute inset-0 bg-indigo-500/20 blur-2xl rounded-full" />
-                                    <Loader2 className="w-12 h-12 text-indigo-500 animate-spin relative" />
+                                    <div className="absolute inset-0 bg-indigo-500/30 blur-3xl rounded-full animate-pulse" />
+                                    <Loader2 className="w-16 h-16 text-indigo-500 animate-spin relative" />
                                 </div>
-                                <div className="text-center">
-                                    <p className="text-white font-heavy text-xl">Scanning your inbox...</p>
-                                    <p className="text-zinc-500 text-sm mt-1">Analyzing emails for subscription patterns</p>
+                                <div className="text-center space-y-2">
+                                    <p className="text-white font-heavy text-2xl">Syncing Inbox...</p>
+                                    <p className="text-zinc-500 text-sm">Identifying your subscription patterns</p>
                                 </div>
                             </div>
                         ) : visibleSubscriptions.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-24 gap-6">
-                                <div className="w-20 h-20 rounded-full bg-zinc-900 flex items-center justify-center border border-white/5 shadow-inner">
-                                    <ShieldCheck className="w-10 h-10 text-zinc-600" />
+                            <div className="flex flex-col items-center justify-center py-32 gap-8">
+                                <div className="w-24 h-24 rounded-full bg-zinc-900 flex items-center justify-center border border-white/5 shadow-2xl">
+                                    <ShieldCheck className="w-12 h-12 text-zinc-600" />
                                 </div>
-                                <div className="text-center">
-                                    <p className="text-white font-heavy text-xl">No new bills found</p>
-                                    <p className="text-zinc-500 text-sm mt-1">We couldn't find any recent subscription receipts.</p>
+                                <div className="text-center space-y-2">
+                                    <p className="text-white font-heavy text-2xl uppercase tracking-tight">No Detections</p>
+                                    <p className="text-zinc-500 text-sm">We couldn't find any recent receipts in this range.</p>
                                 </div>
                             </div>
                         ) : (
@@ -333,40 +338,40 @@ export function GmailImportModal({
                                     key={sub.id}
                                     className={cn(
                                         "group relative flex flex-col p-6 rounded-[2.5rem] border transition-all duration-500",
-                                        sub.status === 'EXISTS' && !selectedIds.has(sub.id) ? 'bg-zinc-950/40 border-white/5' :
-                                            selectedIds.has(sub.id) ? 'bg-zinc-900/90 border-indigo-500/40 shadow-[0_0_40px_rgba(99,102,241,0.08)] ring-1 ring-indigo-500/30' :
+                                        sub.status === 'EXISTS' && !selectedIds.has(sub.id) ? 'bg-zinc-950/40 border-white/5 opacity-60' :
+                                            selectedIds.has(sub.id) ? 'bg-zinc-900/95 border-indigo-500/40 shadow-[0_0_50px_rgba(99,102,241,0.12)] ring-1 ring-indigo-500/30' :
                                                 'bg-zinc-900/40 border-zinc-900 hover:bg-zinc-900/60 hover:border-white/5'
                                     )}
                                 >
                                     <div className="flex items-center justify-between gap-6">
                                         <div className="flex items-center gap-6 flex-1 min-w-0">
-                                            <div className="shrink-0">
+                                            <div className="shrink-0 flex items-center justify-center">
                                                 {sub.status === 'EXISTS' ? (
                                                     <Button
                                                         size="sm"
                                                         variant="outline"
                                                         onClick={() => toggleSelection(sub.id)}
                                                         className={cn(
-                                                            "h-10 px-4 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all",
+                                                            "h-11 px-5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all",
                                                             selectedIds.has(sub.id)
                                                                 ? "bg-amber-500 border-amber-500 text-amber-950 hover:bg-amber-400 shadow-lg shadow-amber-500/20"
                                                                 : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300"
                                                         )}
                                                     >
-                                                        {selectedIds.has(sub.id) ? 'Updating' : 'Update'}
+                                                        {selectedIds.has(sub.id) ? 'Syncing' : 'Sync'}
                                                     </Button>
                                                 ) : (
                                                     <Checkbox
                                                         id={`cb-${sub.id}`}
                                                         checked={selectedIds.has(sub.id)}
                                                         onCheckedChange={() => toggleSelection(sub.id)}
-                                                        className="h-7 w-7 rounded-xl border-zinc-800 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 shadow-2xl transition-all active:scale-90"
+                                                        className="h-8 w-8 rounded-xl border-zinc-800 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600 shadow-2xl transition-all active:scale-90"
                                                     />
                                                 )}
                                             </div>
 
                                             <div className="flex items-center gap-5 flex-1 min-w-0">
-                                                <div className="h-16 w-16 shrink-0 flex items-center justify-center rounded-[1.25rem] bg-white shadow-2xl ring-1 ring-white/10 overflow-hidden group-hover:scale-105 transition-transform">
+                                                <div className="h-16 w-16 shrink-0 flex items-center justify-center rounded-[1.25rem] bg-white shadow-2xl ring-1 ring-white/10 overflow-hidden group-hover:scale-110 transition-transform duration-500">
                                                     <img
                                                         src={`https://logo.clearbit.com/${getName(sub).toLowerCase().replace(/\s+/g, '')}.com`}
                                                         alt={getName(sub)}
@@ -381,33 +386,28 @@ export function GmailImportModal({
 
                                                 <div className="space-y-1.5 min-w-0">
                                                     <div className="flex items-center gap-2">
-                                                        <span className="font-heavy text-xl text-white truncate">
+                                                        <span className="font-heavy text-xl text-white truncate drop-shadow-sm">
                                                             {getName(sub)}
                                                         </span>
                                                         {sub.status === 'NEW' && (
-                                                            <Badge className="bg-emerald-500/10 text-emerald-400 border-none px-2 py-0.5 text-[10px] uppercase font-black tracking-widest h-5">
-                                                                New Detection
-                                                            </Badge>
-                                                        )}
-                                                        {sub.status === 'EXISTS' && (
-                                                            <Badge className="bg-zinc-500/10 text-zinc-500 border-none px-2 py-0.5 text-[10px] uppercase font-black tracking-widest h-5">
-                                                                Already Tracking
+                                                            <Badge className="bg-emerald-500/10 text-emerald-400 border-none px-2.5 py-0.5 text-[10px] uppercase font-black tracking-widest h-5">
+                                                                New
                                                             </Badge>
                                                         )}
                                                         {sub.status === 'UPDATE' && (
-                                                            <Badge className="bg-amber-500/10 text-amber-500 border-none px-2 py-0.5 text-[10px] uppercase font-black tracking-widest h-5 ring-1 ring-amber-500/20">
-                                                                Price Changed
+                                                            <Badge className="bg-amber-500/10 text-amber-500 border-none px-2.5 py-0.5 text-[10px] uppercase font-black tracking-widest h-5 ring-1 ring-amber-500/20">
+                                                                Updated
                                                             </Badge>
                                                         )}
                                                     </div>
-                                                    <div className="flex items-center gap-5">
-                                                        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-zinc-500">
+                                                    <div className="flex items-center gap-6">
+                                                        <div className="flex items-center gap-2.5 text-[10px] font-black uppercase tracking-widest text-zinc-500">
                                                             <Calendar className="h-4 w-4 text-zinc-600" />
                                                             {format(new Date(getDate(sub)), 'MMM dd, yyyy')}
                                                         </div>
                                                         <button
                                                             onClick={() => toggleExpand(sub.id)}
-                                                            className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors"
+                                                            className="flex items-center gap-2.5 text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors"
                                                         >
                                                             <Mail className="h-4 w-4" />
                                                             Details
@@ -420,7 +420,7 @@ export function GmailImportModal({
 
                                         <div className="flex items-center gap-8 flex-1 justify-end">
                                             <div className="text-right shrink-0">
-                                                <div className="text-3xl font-black text-white tracking-tighter">
+                                                <div className="text-3xl font-black text-white tracking-tighter drop-shadow-md">
                                                     {formatCurrency(getCost(sub), getCurrency(sub))}
                                                 </div>
                                                 <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mt-0.5">
@@ -428,9 +428,8 @@ export function GmailImportModal({
                                                 </div>
                                             </div>
 
-                                            {/* Force Action Buttons */}
-                                            <div className="flex items-center gap-2 ml-auto shrink-0 bg-black/40 p-1.5 rounded-xl border border-white/5 shadow-inner">
-                                                {/* Edit Button */}
+                                            {/* Hard-coded Row Actions */}
+                                            <div className="flex items-center gap-2 ml-4 shrink-0 bg-black/60 p-2 rounded-2xl border border-white/10 shadow-2xl">
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
@@ -439,14 +438,13 @@ export function GmailImportModal({
                                                         setEditingId(editingId === sub.id ? null : sub.id)
                                                     }}
                                                     className={cn(
-                                                        "h-9 w-9 text-zinc-400 hover:text-white transition-colors",
-                                                        editingId === sub.id && "bg-indigo-500 text-white"
+                                                        "h-10 w-10 rounded-xl transition-all duration-300",
+                                                        editingId === sub.id ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/30" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
                                                     )}
                                                 >
-                                                    <Pencil className="h-4 w-4" />
+                                                    <Pencil className="h-5 w-5" />
                                                 </Button>
 
-                                                {/* Delete Button */}
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
@@ -454,80 +452,80 @@ export function GmailImportModal({
                                                         e.stopPropagation()
                                                         removeRow(sub.id)
                                                     }}
-                                                    className="h-9 w-9 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                                                    className="h-10 w-10 rounded-xl text-zinc-500 hover:bg-red-500/10 hover:text-red-500 transition-all duration-300"
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    <Trash2 className="h-5 w-5" />
                                                 </Button>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Edit Form */}
+                                    {/* Edit Hub */}
                                     {editingId === sub.id && (
-                                        <div className="mt-8 p-8 rounded-[2rem] bg-black/60 border border-white/5 space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                                                <div className="space-y-2">
-                                                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Service Name</label>
+                                        <div className="mt-8 p-10 rounded-[3rem] bg-black border border-white/10 space-y-8 animate-in fade-in zoom-in-95 duration-500 shadow-inner">
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+                                                <div className="space-y-3">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Merchant Name</label>
                                                     <Input
                                                         value={getName(sub)}
                                                         onChange={(e) => handleEditChange(sub.id, 'name', e.target.value)}
-                                                        className="bg-black/40 border-white/5 rounded-2xl h-12 focus:ring-indigo-500 text-sm font-bold"
+                                                        className="bg-zinc-900/50 border-white/5 rounded-2xl h-14 focus:ring-indigo-500 text-base font-bold px-6"
                                                     />
                                                 </div>
-                                                <div className="space-y-2">
+                                                <div className="space-y-3">
                                                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Price</label>
                                                     <div className="relative">
-                                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500 font-heavy text-sm">$</span>
+                                                        <span className="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-500 font-heavy text-lg">$</span>
                                                         <Input
                                                             type="number"
                                                             value={getCost(sub)}
                                                             onChange={(e) => handleEditChange(sub.id, 'cost', parseFloat(e.target.value))}
-                                                            className="bg-black/40 border-white/5 rounded-2xl h-12 pl-8 focus:ring-indigo-500 text-sm font-bold"
+                                                            className="bg-zinc-900/50 border-white/5 rounded-2xl h-14 pl-12 focus:ring-indigo-500 text-base font-bold"
                                                         />
                                                     </div>
                                                 </div>
-                                                <div className="space-y-2">
+                                                <div className="space-y-3">
                                                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Billing Date</label>
                                                     <Input
                                                         type="date"
                                                         value={getDate(sub).split('T')[0]}
                                                         onChange={(e) => handleEditChange(sub.id, 'date', new Date(e.target.value).toISOString())}
-                                                        className="bg-black/40 border-white/5 rounded-2xl h-12 focus:ring-indigo-500 text-sm font-bold"
+                                                        className="bg-zinc-900/50 border-white/5 rounded-2xl h-14 focus:ring-indigo-500 text-base font-bold px-6"
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="flex items-center justify-between pt-2 border-t border-white/5">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center">
-                                                        <Clock className="w-4 h-4 text-indigo-400" />
+                                            <div className="flex items-center justify-between pt-6 border-t border-white/5">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-full bg-indigo-500/10 flex items-center justify-center">
+                                                        <Clock className="w-5 h-5 text-indigo-400" />
                                                     </div>
-                                                    <span className="text-[11px] text-zinc-500 font-bold uppercase tracking-wider">Changes will be saved on import.</span>
+                                                    <p className="text-xs text-zinc-500 font-bold uppercase tracking-widest">Settings will persist to your dashboard on import.</p>
                                                 </div>
                                                 <Button
-                                                    size="sm"
+                                                    size="lg"
                                                     onClick={() => {
                                                         setEditingId(null)
                                                         if (!selectedIds.has(sub.id)) toggleSelection(sub.id)
                                                     }}
-                                                    className="bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl h-10 px-6 text-xs font-black uppercase tracking-widest transition-all"
+                                                    className="bg-zinc-800 hover:bg-zinc-700 text-white rounded-2xl h-14 px-10 text-sm font-black uppercase tracking-widest transition-all shadow-xl"
                                                 >
-                                                    Done Editing
+                                                    Apply Changes
                                                 </Button>
                                             </div>
                                         </div>
                                     )}
 
-                                    {/* Email Context Preview */}
+                                    {/* Intelligence Preview */}
                                     {expandedIds.has(sub.id) && (
-                                        <div className="mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
-                                            <div className="rounded-[1.5rem] bg-black/40 border border-white/5 p-6 space-y-4 shadow-inner">
-                                                <div className="pb-4 border-b border-white/5">
-                                                    <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.25em] mb-2">Subject</p>
-                                                    <p className="text-sm font-bold text-zinc-200 italic leading-relaxed">"{sub.subject || 'No Subject'}"</p>
+                                        <div className="mt-6 animate-in fade-in slide-in-from-top-6 duration-500">
+                                            <div className="rounded-[2rem] bg-black/40 border border-white/5 p-8 space-y-6 shadow-2xl">
+                                                <div className="pb-6 border-b border-white/5">
+                                                    <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mb-3">Email Subject</p>
+                                                    <p className="text-base font-bold text-zinc-200 indent-2 italic leading-relaxed">"{sub.subject || 'No Subject'}"</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.25em] mb-2">Snippet</p>
-                                                    <p className="text-[13px] text-zinc-400 leading-relaxed font-medium">
+                                                    <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.3em] mb-3">Data Snippet</p>
+                                                    <p className="text-[14px] text-zinc-400 leading-relaxed font-medium indent-2">
                                                         {sub.snippet}
                                                     </p>
                                                 </div>
@@ -535,19 +533,19 @@ export function GmailImportModal({
                                         </div>
                                     )}
 
-                                    {/* Update Info Section */}
+                                    {/* Delta Context */}
                                     {sub.status === 'UPDATE' && selectedIds.has(sub.id) && !editingId && (
-                                        <div className="mt-6 p-5 rounded-3xl bg-amber-500/5 border border-amber-500/20 flex items-center justify-between shadow-inner">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
-                                                    <AlertTriangle className="h-5 w-5 text-amber-500" />
+                                        <div className="mt-6 p-6 rounded-[2.25rem] bg-amber-500/5 border border-amber-500/20 flex items-center justify-between shadow-2xl">
+                                            <div className="flex items-center gap-5">
+                                                <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center">
+                                                    <AlertTriangle className="h-6 w-6 text-amber-500" />
                                                 </div>
-                                                <span className="text-xs font-black text-amber-500 uppercase tracking-[0.1em]">Legacy Pricing Detected</span>
+                                                <span className="text-sm font-black text-amber-500 uppercase tracking-[0.15em]">Subscription Delta Found</span>
                                             </div>
-                                            <div className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-3">
-                                                <span className="text-zinc-600 line-through">{formatCurrency(sub.existing_data!.cost, sub.existing_data!.currency)}</span>
-                                                <ArrowRight className="w-4 h-4 text-amber-500" />
-                                                <span className="text-white px-3 py-1 bg-amber-500/20 rounded-lg">{formatCurrency(sub.cost, sub.currency)}</span>
+                                            <div className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-4">
+                                                <span className="text-zinc-600 line-through decoration-zinc-800 decoration-2">{formatCurrency(sub.existing_data!.cost, sub.existing_data!.currency)}</span>
+                                                <ArrowRight className="w-5 h-5 text-amber-500" />
+                                                <span className="text-white px-5 py-2 bg-amber-500/20 rounded-xl border border-amber-500/20">{formatCurrency(sub.cost, sub.currency)}</span>
                                             </div>
                                         </div>
                                     )}
@@ -555,23 +553,24 @@ export function GmailImportModal({
                             ))
                         )}
                     </div>
-                </ScrollArea>
+                </div>
 
-                <DialogFooter className="p-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-8 bg-black/60">
-                    <div className="flex items-center gap-6">
+                {/* Sticky Footer */}
+                <div className="p-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-8 bg-black shrink-0">
+                    <div className="flex items-center gap-8">
                         <Button
                             variant="outline"
-                            size="sm"
-                            className="text-[11px] h-11 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 hover:bg-zinc-900/50 rounded-2xl px-6 font-black uppercase tracking-widest transition-all"
+                            size="lg"
+                            className="text-[11px] h-14 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-500 hover:bg-zinc-900/40 rounded-[1.5rem] px-8 font-black uppercase tracking-widest transition-all"
                             onClick={handleImportAllNew}
                             disabled={isImporting || isScanning}
                         >
-                            Import All New
+                            Sync All New
                         </Button>
-                        <div className="flex items-center gap-3 px-5 py-2.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 shadow-inner">
-                            <div className="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-pulse" />
-                            <span className="text-[11px] font-black text-indigo-400 uppercase tracking-widest">
-                                {selectedIds.size} Ready to Sync
+                        <div className="flex items-center gap-4 px-6 py-3 rounded-full bg-indigo-500/10 border border-indigo-500/20 shadow-[0_0_20px_rgba(99,102,241,0.1)]">
+                            <div className="w-3 h-3 rounded-full bg-indigo-500 animate-pulse" />
+                            <span className="text-xs font-black text-indigo-400 uppercase tracking-widest">
+                                {selectedIds.size} Ready to Import
                             </span>
                         </div>
                     </div>
@@ -581,29 +580,29 @@ export function GmailImportModal({
                             variant="ghost"
                             onClick={onClose}
                             disabled={isImporting || isScanning}
-                            className="text-zinc-500 h-11 hover:text-white hover:bg-zinc-900 rounded-2xl px-8 font-heavy text-sm transition-all"
+                            className="text-zinc-500 h-14 hover:text-white hover:bg-zinc-900 rounded-2xl px-10 font-heavy text-base transition-all"
                         >
                             Cancel
                         </Button>
                         <Button
                             onClick={handleImport}
                             disabled={isImporting || isScanning || selectedIds.size === 0}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest h-14 px-12 rounded-[1.5rem] min-w-[240px] shadow-[0_0_40px_rgba(99,102,241,0.25)] transition-all hover:scale-[1.03] active:scale-[0.97]"
+                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest h-16 px-16 rounded-[2rem] min-w-[280px] shadow-[0_0_50px_rgba(99,102,241,0.3)] transition-all hover:scale-[1.04] active:scale-[0.96]"
                         >
                             {isImporting ? (
                                 <>
-                                    <Loader2 className="w-5 h-5 mr-3 animate-spin" />
-                                    Synchronizing...
+                                    <Loader2 className="w-6 h-6 mr-4 animate-spin" />
+                                    Processing...
                                 </>
                             ) : (
                                 <>
-                                    Complete Import
-                                    <ArrowRight className="w-6 h-6 ml-3" />
+                                    Complete Import {selectedIds.size > 0 && `(${selectedIds.size})`}
+                                    <ArrowRight className="w-7 h-7 ml-4" />
                                 </>
                             )}
                         </Button>
                     </div>
-                </DialogFooter>
+                </div>
             </DialogContent>
         </Dialog>
     )
