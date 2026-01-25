@@ -40,8 +40,8 @@ export async function connectGmailAccount() {
 
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
-export async function scanGmailReceipts(accessToken: string) {
-    console.log('[GmailAction] Scanning inbox with token...')
+export async function scanGmailReceipts(accessToken: string, days: number = 90) {
+    console.log(`[GmailAction] Scanning inbox for last ${days} days...`)
 
     try {
         const supabase = await createClient()
@@ -55,8 +55,8 @@ export async function scanGmailReceipts(accessToken: string) {
             .eq('user_id', user.id)
 
         // 2. Fetch from Gmail
-        // Broader query: searches full text, last 90 days
-        const query = "newer_than:90d (receipt OR invoice OR bill OR subscription OR payment OR renewal OR order OR confirmation OR \"Test Receipt\")"
+        // Dynamic query based on days parameter
+        const query = `newer_than:${days}d (receipt OR invoice OR bill OR subscription OR payment OR renewal OR order OR confirmation OR "Test Receipt")`
 
         const listRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=25`, {
             headers: { Authorization: `Bearer ${accessToken}` }
@@ -128,7 +128,7 @@ export async function scanGmailReceipts(accessToken: string) {
         const cleanedText = text.replace(/```json|```/g, '').trim()
         const detectedSubscriptions = JSON.parse(cleanedText)
 
-        // 5. Duplicate & Conflict Detection
+        // 5. Intelligent Pre-Processing: Compare against existing subscriptions
         const processedSubs = detectedSubscriptions.map((sub: any) => {
             // Find existing sub with same name (fuzzy)
             const match = existingSubs?.find(e =>
@@ -138,15 +138,15 @@ export async function scanGmailReceipts(accessToken: string) {
 
             if (match) {
                 const samePrice = Math.abs(match.cost - sub.cost) < 0.01
-                // Same name + Same price = Duplicate
+
                 if (samePrice) {
-                    return { ...sub, status: 'duplicate', existing_id: match.id }
-                }
-                // Same name + Different price = Conflict
-                else {
+                    // Exact match on Name and Price
+                    return { ...sub, status: 'EXISTS', existing_id: match.id }
+                } else {
+                    // Name matches, but Price is different
                     return {
                         ...sub,
-                        status: 'conflict',
+                        status: 'UPDATE',
                         existing_id: match.id,
                         existing_data: {
                             name: match.name,
@@ -157,8 +157,8 @@ export async function scanGmailReceipts(accessToken: string) {
                 }
             }
 
-            // No match found = New
-            return { ...sub, status: 'new' }
+            // No match found
+            return { ...sub, status: 'NEW' }
         })
 
         return {

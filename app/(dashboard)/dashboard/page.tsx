@@ -88,13 +88,13 @@ export default function DashboardPage() {
         }
     }, [searchParams, router])
 
-    const handleScanInbox = async () => {
+    const handleScanInbox = async (days: number = 90) => {
         if (!isPro(profile?.subscription_tier)) {
             router.push('/pricing')
             return
         }
 
-        console.log("[v0] Starting Gmail Sync flow...")
+        console.log(`[v0] Starting Gmail Sync flow for last ${days} days...`)
         setIsScanning(true)
 
         try {
@@ -110,8 +110,8 @@ export default function DashboardPage() {
 
             console.log("[v0] Token found, scanning inbox...")
 
-            // 2. Call Server Action
-            const result = await scanGmailReceipts(token)
+            // 2. Call Server Action with days
+            const result = await scanGmailReceipts(token, days)
 
             if (!result.success) {
                 console.error("[v0] Error scanning inbox:", result.error)
@@ -119,22 +119,12 @@ export default function DashboardPage() {
             }
 
             // 3. Handle Results
-            const addedCount = result.count || 0
-            if (addedCount > 0) {
-                toast.success(`✨ Auto-added ${addedCount} high-confidence subscriptions!`, {
-                    description: "Check your dashboard for new entries."
-                })
-                refreshSubscriptions()
-            }
-
             if (result.found && result.found > 0) {
                 setFoundSubscriptions(result.subs)
                 setIsReviewOpen(true)
-                if (addedCount === 0) {
-                    toast.success(`Found ${result.found} potential subscriptions!`, {
-                        description: "Please review them to add to your dashboard."
-                    })
-                }
+                toast.success(`Found ${result.found} potential subscriptions!`, {
+                    description: "Please review them to add to your dashboard."
+                })
             } else {
                 if (result.scanned && result.scanned > 0) {
                     toast.info("Scan Complete", {
@@ -207,7 +197,7 @@ export default function DashboardPage() {
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
                             <Button
-                                onClick={handleScanInbox}
+                                onClick={() => handleScanInbox()}
                                 disabled={isScanning}
                                 size="lg"
                                 className="flex-1 gap-2 bg-indigo-600 hover:bg-indigo-700 h-12 text-md shadow-lg shadow-indigo-500/20"
@@ -240,6 +230,8 @@ export default function DashboardPage() {
                         refreshSubscriptions()
                         setFoundSubscriptions([])
                     }}
+                    onRescan={handleScanInbox}
+                    isScanning={isScanning}
                 />
             </div>
         )
@@ -258,7 +250,7 @@ export default function DashboardPage() {
                     <div className="flex items-center gap-3">
                         <ManualSubscriptionModal onSubscriptionAdded={refreshSubscriptions} />
                         <Button
-                            onClick={handleScanInbox}
+                            onClick={() => handleScanInbox()}
                             disabled={isScanning}
                             variant={isGmailConnected ? "outline" : "outline"}
                             className={`gap-2 ${isGmailConnected ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400" : "bg-white dark:bg-zinc-900"}`}
@@ -282,6 +274,8 @@ export default function DashboardPage() {
                         refreshSubscriptions()
                         setFoundSubscriptions([])
                     }}
+                    onRescan={handleScanInbox}
+                    isScanning={isScanning}
                 />
 
                 <div className="grid w-full gap-6 xl:grid-cols-[1fr_380px]">
