@@ -97,74 +97,85 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
         const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!)
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
 
-        // Process in small batches to avoid overwhelming the API or hitting limits
+        // Process messages and filter via AI gatekeeper
         const aiResults = await Promise.all(emailDetails.map(async (email: any) => {
             try {
-                const prompt = `Extract the merchant name, exact amount (number), currency symbol, and billing date from this email snippet. 
+                const prompt = `Analyze this email. Is it a recurring subscription, bill, or receipt?
                 Subject: ${email.subject}
                 Snippet: ${email.snippet}
-                Return JSON only: { "merchant_name": "string", "amount": number, "currency": "string", "date": "ISO8601" }.
-                If you cannot find a value, return null for that field.`
+                
+                CRITICAL INSTRUCTIONS:
+                - If it is NOT a subscription, bill, or receipt: Return ONLY the word "null" (no JSON).
+                - If it IS a subscription/bill: Return JSON only: { "merchant_name": "string", "amount": number, "currency": "string", "date": "ISO8601", "frequency": "monthly" | "yearly" }.
+                - Ignore marketing, newsletters, and personal chats.`
 
                 const result = await model.generateContent(prompt)
-                const text = result.response.text().replace(/```json|```/g, '').trim()
-                return JSON.parse(text)
+                const text = result.response.text().trim()
+
+                if (text.toLowerCase() === 'null') return null
+
+                const cleanedText = text.replace(/```json|```/g, '').trim()
+                return JSON.parse(cleanedText)
             } catch (err) {
                 console.error(`[Gemini] Failed to parse email ${email.id}:`, err)
                 return null
             }
         }))
 
-        // 5. Map results and check for conflicts
-        const processedSubs = emailDetails.map((email: any, index: number) => {
-            const ai = aiResults[index]
+        // 5. Filter and Map results
+        const processedSubs = emailDetails
+            .map((email: any, index: number) => {
+                const ai = aiResults[index]
+                if (!ai) return null
 
-            const name = ai?.merchant_name || email.subject
-            const cost = ai?.amount || 0.00
-            const currency = ai?.currency || 'USD'
-            const date = ai?.date || email.date
+                const name = ai.merchant_name || email.subject
+                const cost = ai.amount || 0.00
+                const currency = ai.currency || 'USD'
+                const date = ai.date || email.date
+                const frequency = ai.frequency || 'monthly'
 
-            // Find existing sub with same name (fuzzy)
-            const match = existingSubs?.find(e =>
-                e.name.toLowerCase().includes(name.toLowerCase()) ||
-                name.toLowerCase().includes(e.name.toLowerCase())
-            )
+                // Find existing sub with same name (fuzzy)
+                const match = existingSubs?.find(e =>
+                    e.name.toLowerCase().includes(name.toLowerCase()) ||
+                    name.toLowerCase().includes(e.name.toLowerCase())
+                )
 
-            // Calculate status
-            let status: 'NEW' | 'EXISTS' | 'UPDATE' = 'NEW'
-            let existing_id = undefined
-            let existing_data = undefined
+                // Calculate status
+                let status: 'NEW' | 'EXISTS' | 'UPDATE' = 'NEW'
+                let existing_id = undefined
+                let existing_data = undefined
 
-            if (match) {
-                const samePrice = Math.abs(match.cost - cost) < 0.01
-                if (samePrice) {
-                    status = 'EXISTS'
-                } else {
-                    status = 'UPDATE'
+                if (match) {
+                    const samePrice = Math.abs(match.cost - cost) < 0.01
+                    if (samePrice) {
+                        status = 'EXISTS'
+                    } else {
+                        status = 'UPDATE'
+                    }
+                    existing_id = match.id
+                    existing_data = {
+                        name: match.name,
+                        cost: match.cost,
+                        currency: match.currency
+                    }
                 }
-                existing_id = match.id
-                existing_data = {
-                    name: match.name,
-                    cost: match.cost,
-                    currency: match.currency
-                }
-            }
 
-            return {
-                id: email.id,
-                name: name,
-                cost: cost,
-                currency: currency,
-                frequency: 'monthly',
-                date: date,
-                subject: email.subject,
-                snippet: email.snippet,
-                confidence: ai ? 90 : 50,
-                status: status,
-                existing_id,
-                existing_data
-            }
-        })
+                return {
+                    id: email.id,
+                    name: name,
+                    cost: cost,
+                    currency: currency,
+                    frequency: frequency,
+                    date: date,
+                    subject: email.subject,
+                    snippet: email.snippet,
+                    confidence: 95,
+                    status: status,
+                    existing_id,
+                    existing_data
+                }
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null)
 
         return {
             success: true,

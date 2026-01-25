@@ -223,10 +223,23 @@ export function GmailImportModal({
             currency: currency || 'USD',
         }).format(amount)
     }
-
     const visibleSubscriptions = useMemo(() => {
         return foundSubscriptions.filter(s => !removedIds.has(s.id))
     }, [foundSubscriptions, removedIds])
+
+    const isAllSelected = useMemo(() => {
+        return visibleSubscriptions.length > 0 &&
+            visibleSubscriptions.every(sub => selectedIds.has(sub.id))
+    }, [visibleSubscriptions, selectedIds])
+
+    const handleSelectAll = (checked: boolean) => {
+        const next = new Set(selectedIds)
+        visibleSubscriptions.forEach(sub => {
+            if (checked) next.add(sub.id)
+            else next.delete(sub.id)
+        })
+        setSelectedIds(next)
+    }
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !isImporting && !isScanning && !open && onClose()}>
@@ -273,6 +286,23 @@ export function GmailImportModal({
                     </div>
                 </DialogHeader>
 
+                <div className="px-8 py-4 border-b border-white/5 bg-black/20 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <Checkbox
+                            id="select-all"
+                            checked={isAllSelected}
+                            onCheckedChange={(checked) => handleSelectAll(!!checked)}
+                            className="h-5 w-5 rounded-md border-zinc-800 data-[state=checked]:bg-indigo-600 data-[state=checked]:border-indigo-600"
+                        />
+                        <label htmlFor="select-all" className="text-xs font-black uppercase tracking-widest text-zinc-400 cursor-pointer select-none">
+                            Select All Detections
+                        </label>
+                    </div>
+                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-600">
+                        {visibleSubscriptions.length} Transactions Found
+                    </div>
+                </div>
+
                 <ScrollArea className="max-h-[60vh] px-8">
                     <div className="space-y-4 py-8">
                         {isScanning ? (
@@ -302,7 +332,7 @@ export function GmailImportModal({
                                     key={sub.id}
                                     className={cn(
                                         "group relative flex flex-col p-6 rounded-[2.5rem] border transition-all duration-500",
-                                        sub.status === 'EXISTS' ? 'bg-zinc-950/40 border-white/5' :
+                                        sub.status === 'EXISTS' && !selectedIds.has(sub.id) ? 'bg-zinc-950/40 border-white/5' :
                                             selectedIds.has(sub.id) ? 'bg-zinc-900/90 border-indigo-500/40 shadow-[0_0_40px_rgba(99,102,241,0.08)] ring-1 ring-indigo-500/30' :
                                                 'bg-zinc-900/40 border-zinc-900 hover:bg-zinc-900/60 hover:border-white/5'
                                     )}
@@ -318,11 +348,11 @@ export function GmailImportModal({
                                                         className={cn(
                                                             "h-10 px-4 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all",
                                                             selectedIds.has(sub.id)
-                                                                ? "bg-amber-500 border-amber-500 text-amber-950 hover:bg-amber-400"
+                                                                ? "bg-amber-500 border-amber-500 text-amber-950 hover:bg-amber-400 shadow-lg shadow-amber-500/20"
                                                                 : "border-zinc-800 text-zinc-500 hover:border-zinc-600 hover:text-zinc-300"
                                                         )}
                                                     >
-                                                        {selectedIds.has(sub.id) ? 'Update Selected' : 'Update'}
+                                                        {selectedIds.has(sub.id) ? 'Updating' : 'Update'}
                                                     </Button>
                                                 ) : (
                                                     <Checkbox
@@ -397,14 +427,17 @@ export function GmailImportModal({
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-2 self-center bg-black/40 p-1.5 rounded-[1.25rem] border border-white/5 shadow-inner">
+                                            <div className="flex items-center gap-2 self-center bg-black/60 p-2 rounded-[1.25rem] border border-white/10 shadow-2xl">
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    onClick={() => setEditingId(editingId === sub.id ? null : sub.id)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        setEditingId(editingId === sub.id ? null : sub.id)
+                                                    }}
                                                     className={cn(
                                                         "w-10 h-10 rounded-xl transition-all duration-300",
-                                                        editingId === sub.id ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/30" : "text-zinc-500 hover:bg-zinc-800 hover:text-white"
+                                                        editingId === sub.id ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/30" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
                                                     )}
                                                 >
                                                     <Pencil className="w-4 h-4" />
@@ -412,7 +445,10 @@ export function GmailImportModal({
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    onClick={() => removeRow(sub.id)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        removeRow(sub.id)
+                                                    }}
                                                     className="w-10 h-10 rounded-xl text-zinc-500 hover:bg-red-500/10 hover:text-red-500 transition-all duration-300"
                                                 >
                                                     <X className="w-5 h-5" />
