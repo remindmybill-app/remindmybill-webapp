@@ -97,42 +97,57 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
         const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!)
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
 
-        // Process messages and filter via AI gatekeeper
+        // Process messages and filter via relaxed AI logic
         const aiResults = await Promise.all(emailDetails.map(async (email: any) => {
             try {
-                const prompt = `Analyze this email. Is it a recurring subscription, bill, or receipt?
+                const prompt = `Analyze this email snippet. Extract ANY potential service, merchant, subscription, or transaction.
                 Subject: ${email.subject}
                 Snippet: ${email.snippet}
                 
                 CRITICAL INSTRUCTIONS:
-                - If it is NOT a subscription, bill, or receipt: Return ONLY the word "null" (no JSON).
-                - If it IS a subscription/bill: Return JSON only: { "merchant_name": "string", "amount": number, "currency": "string", "date": "ISO8601", "frequency": "monthly" | "yearly" }.
-                - Ignore marketing, newsletters, and personal chats.`
+                - If you see a brand name (e.g., 'Spotify', 'Netflix', 'Gym'), EXTRACT IT.
+                - If you see a price, EXTRACT IT.
+                - If you are unsure, EXTRACT IT ANYWAY and default the price to 0.
+                - Only return null if the email is completely empty or absolute gibberish.
+                - Return JSON only: { "merchant_name": "string", "amount": number, "currency": "string", "date": "ISO8601", "frequency": "monthly" | "yearly" }.`
 
                 const result = await model.generateContent(prompt)
-                const text = result.response.text().trim()
+                let text = result.response.text().trim()
+
+                // Safety: Handle common Gemini formatting (markdown backticks)
+                if (text.includes("```")) {
+                    text = text.replace(/```json|```/g, "").trim()
+                }
 
                 if (text.toLowerCase() === 'null') return null
 
-                const cleanedText = text.replace(/```json|```/g, '').trim()
-                return JSON.parse(cleanedText)
+                try {
+                    return JSON.parse(text)
+                } catch (pErr) {
+                    console.warn(`[Gemini] JSON Parse backup for ${email.id}:`, pErr)
+                    return null
+                }
             } catch (err) {
                 console.error(`[Gemini] Failed to parse email ${email.id}:`, err)
                 return null
             }
         }))
 
-        // 5. Filter and Map results
+        // 5. Filter and Map results (Keep even partial matches)
         const processedSubs = emailDetails
             .map((email: any, index: number) => {
                 const ai = aiResults[index]
-                if (!ai) return null
 
-                const name = ai.merchant_name || email.subject
-                const cost = ai.amount || 0.00
-                const currency = ai.currency || 'USD'
-                const date = ai.date || email.date
-                const frequency = ai.frequency || 'monthly'
+                // If AI failed completely, we still show the email as a potential item
+                // using the Subject as the Name, assuming it might be a sub.
+                const name = ai?.merchant_name || email.subject
+                const cost = typeof ai?.amount === 'number' ? ai.amount : 0.00
+                const currency = ai?.currency || 'USD'
+                const date = ai?.date || email.date
+                const frequency = ai?.frequency || 'monthly'
+
+                // Skip if name is still gibberish/empty (unlikely)
+                if (!name || name === '(No Subject)') return null
 
                 // Find existing sub with same name (fuzzy)
                 const match = existingSubs?.find(e =>
@@ -169,7 +184,7 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
                     date: date,
                     subject: email.subject,
                     snippet: email.snippet,
-                    confidence: 95,
+                    confidence: ai ? 90 : 40,
                     status: status,
                     existing_id,
                     existing_data
