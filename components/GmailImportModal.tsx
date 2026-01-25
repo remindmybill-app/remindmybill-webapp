@@ -22,6 +22,7 @@ import {
     Mail,
     Pencil,
     X,
+    Trash2,
     Check,
     Clock,
     Filter
@@ -417,7 +418,7 @@ export function GmailImportModal({
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-8">
+                                        <div className="flex items-center gap-8 flex-1 justify-end">
                                             <div className="text-right shrink-0">
                                                 <div className="text-3xl font-black text-white tracking-tighter">
                                                     {formatCurrency(getCost(sub), getCurrency(sub))}
@@ -427,7 +428,9 @@ export function GmailImportModal({
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-2 self-center bg-black/60 p-2 rounded-[1.25rem] border border-white/10 shadow-2xl">
+                                            {/* Force Action Buttons */}
+                                            <div className="flex items-center gap-2 ml-auto shrink-0 bg-black/40 p-1.5 rounded-xl border border-white/5 shadow-inner">
+                                                {/* Edit Button */}
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
@@ -436,12 +439,14 @@ export function GmailImportModal({
                                                         setEditingId(editingId === sub.id ? null : sub.id)
                                                     }}
                                                     className={cn(
-                                                        "w-10 h-10 rounded-xl transition-all duration-300",
-                                                        editingId === sub.id ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/30" : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                                                        "h-9 w-9 text-zinc-400 hover:text-white transition-colors",
+                                                        editingId === sub.id && "bg-indigo-500 text-white"
                                                     )}
                                                 >
-                                                    <Pencil className="w-4 h-4" />
+                                                    <Pencil className="h-4 w-4" />
                                                 </Button>
+
+                                                {/* Delete Button */}
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
@@ -449,9 +454,9 @@ export function GmailImportModal({
                                                         e.stopPropagation()
                                                         removeRow(sub.id)
                                                     }}
-                                                    className="w-10 h-10 rounded-xl text-zinc-500 hover:bg-red-500/10 hover:text-red-500 transition-all duration-300"
+                                                    className="h-9 w-9 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 transition-colors"
                                                 >
-                                                    <X className="w-5 h-5" />
+                                                    <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             </div>
                                         </div>
