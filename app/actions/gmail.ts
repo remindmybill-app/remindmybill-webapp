@@ -93,12 +93,41 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
             }
         }))
 
-        // 4. Map ALL emails directly to UI format for verification
-        const processedSubs = emailDetails.map((email: any) => {
-            // Find existing sub with same name (fuzzy) - just in case for debugging
+        // 4. Batch Parse with Gemini Flash
+        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!)
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+
+        // Process in small batches to avoid overwhelming the API or hitting limits
+        const aiResults = await Promise.all(emailDetails.map(async (email: any) => {
+            try {
+                const prompt = `Extract the merchant name, exact amount (number), currency symbol, and billing date from this email snippet. 
+                Subject: ${email.subject}
+                Snippet: ${email.snippet}
+                Return JSON only: { "merchant_name": "string", "amount": number, "currency": "string", "date": "ISO8601" }.
+                If you cannot find a value, return null for that field.`
+
+                const result = await model.generateContent(prompt)
+                const text = result.response.text().replace(/```json|```/g, '').trim()
+                return JSON.parse(text)
+            } catch (err) {
+                console.error(`[Gemini] Failed to parse email ${email.id}:`, err)
+                return null
+            }
+        }))
+
+        // 5. Map results and check for conflicts
+        const processedSubs = emailDetails.map((email: any, index: number) => {
+            const ai = aiResults[index]
+
+            const name = ai?.merchant_name || email.subject
+            const cost = ai?.amount || 0.00
+            const currency = ai?.currency || 'USD'
+            const date = ai?.date || email.date
+
+            // Find existing sub with same name (fuzzy)
             const match = existingSubs?.find(e =>
-                e.name.toLowerCase().includes(email.subject.toLowerCase()) ||
-                email.subject.toLowerCase().includes(e.name.toLowerCase())
+                e.name.toLowerCase().includes(name.toLowerCase()) ||
+                name.toLowerCase().includes(e.name.toLowerCase())
             )
 
             // Calculate status
@@ -107,7 +136,12 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
             let existing_data = undefined
 
             if (match) {
-                status = 'EXISTS'
+                const samePrice = Math.abs(match.cost - cost) < 0.01
+                if (samePrice) {
+                    status = 'EXISTS'
+                } else {
+                    status = 'UPDATE'
+                }
                 existing_id = match.id
                 existing_data = {
                     name: match.name,
@@ -118,14 +152,14 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
 
             return {
                 id: email.id,
-                name: email.subject, // Use subject as name for now
-                cost: 0.00, // Default to 0.00
-                currency: 'USD',
+                name: name,
+                cost: cost,
+                currency: currency,
                 frequency: 'monthly',
-                date: email.date,
+                date: date,
                 subject: email.subject,
                 snippet: email.snippet,
-                confidence: 100,
+                confidence: ai ? 90 : 50,
                 status: status,
                 existing_id,
                 existing_data
