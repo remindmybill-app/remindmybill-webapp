@@ -16,13 +16,15 @@ import * as React from 'react';
 interface PlanChangeEmailProps {
     customerName?: string;
     newPlanName: string;
+    price: string;
 }
 
 export const PlanChangeEmail = ({
     customerName = 'valued customer',
     newPlanName,
+    price,
 }: PlanChangeEmailProps) => {
-    const previewText = `Success: Your plan has been updated to ${newPlanName}.`;
+    const previewText = `Your RemindMyBill Plan has been updated to ${newPlanName}.`;
 
     return (
         <Html>
@@ -33,16 +35,16 @@ export const PlanChangeEmail = ({
                     <Container className="mx-auto my-10 max-w-[580px] rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
                         <Section>
                             <Heading className="text-2xl font-bold tracking-tight text-zinc-900">
-                                Plan Updated Successfully
+                                Your RemindMyBill Plan has been updated
                             </Heading>
                             <Text className="mt-4 text-zinc-600">
                                 Hi {customerName},
                             </Text>
                             <Text className="text-zinc-600">
-                                This email confirms that your subscription plan for <strong>Remind My Bill</strong> has been successfully updated to the <strong>{newPlanName}</strong> tier.
+                                You have successfully switched to the <strong>{newPlanName}</strong> plan.
                             </Text>
                             <Text className="text-zinc-600">
-                                Your new features and limits are now active. You can explore them on your dashboard.
+                                <strong>New Price:</strong> {price}/month
                             </Text>
                         </Section>
 

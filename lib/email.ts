@@ -32,3 +32,19 @@ export async function sendEmail({
         return { success: false, error };
     }
 }
+
+import React from 'react';
+import { PlanChangeEmail } from '@/emails/PlanChangeEmail';
+
+export async function sendPlanChangeEmail(email: string, userName: string, planName: string, price: string) {
+    return sendEmail({
+        to: email,
+        subject: 'Your RemindMyBill Plan has been updated',
+        react: React.createElement(PlanChangeEmail, {
+            customerName: userName,
+            newPlanName: planName,
+            price: price,
+        }),
+        from: 'Remind My Bill <updates@remindmybill.com>',
+    });
+}
