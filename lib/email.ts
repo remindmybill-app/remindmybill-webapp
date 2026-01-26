@@ -1,4 +1,7 @@
 import { Resend } from 'resend';
+import React from 'react';
+import { PlanChangeEmail } from '@/emails/PlanChangeEmail';
+import { BillReminderEmail } from '@/emails/BillReminderEmail';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -15,7 +18,7 @@ export async function sendEmail({
     subject,
     react,
     text,
-    from = 'Remind My Bill <onboarding@resend.dev>', // Default from address
+    from = 'Remind My Bill <updates@remindmybill.com>', // User asked for this domain
 }: SendEmailOptions) {
     try {
         const data = await resend.emails.send({
@@ -33,9 +36,6 @@ export async function sendEmail({
     }
 }
 
-import React from 'react';
-import { PlanChangeEmail } from '@/emails/PlanChangeEmail';
-
 export async function sendPlanChangeEmail(email: string, userName: string, planName: string, price: string) {
     return sendEmail({
         to: email,
@@ -45,6 +45,33 @@ export async function sendPlanChangeEmail(email: string, userName: string, planN
             newPlanName: planName,
             price: price,
         }),
-        from: 'Remind My Bill <updates@remindmybill.com>',
+    });
+}
+
+export async function sendBillReminderEmail({
+    email,
+    userName,
+    serviceName,
+    amount,
+    currency,
+    dueDate,
+}: {
+    email: string;
+    userName: string;
+    serviceName: string;
+    amount: number;
+    currency: string;
+    dueDate: string;
+}) {
+    return sendEmail({
+        to: email,
+        subject: `Reminder: Your ${serviceName} bill is due in 3 days`,
+        react: React.createElement(BillReminderEmail, {
+            customerName: userName,
+            serviceName,
+            amount,
+            currency,
+            dueDate,
+        }),
     });
 }
