@@ -6,6 +6,8 @@ import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { formatCurrency } from "@/lib/utils/currency"
 import { useProfile } from "@/lib/hooks/use-profile"
 
+import { getNextRenewalDate, getRenewalDisplay } from "@/lib/utils/date-utils"
+
 export function QuickStats() {
   const { subscriptions, isLoading } = useSubscriptions()
   const { profile } = useProfile()
@@ -13,31 +15,24 @@ export function QuickStats() {
   const totalMonthlySpend = subscriptions.reduce((sum, sub) => sum + sub.cost, 0)
   const activeCount = subscriptions.length
 
-  // Find next renewal
+  // Find next renewal with rollover logic
   const nextRenewal =
     subscriptions.length > 0
       ? subscriptions.reduce((earliest, sub) => {
-        return new Date(sub.renewal_date) < new Date(earliest.renewal_date) ? sub : earliest
+        const earliestDate = getNextRenewalDate(earliest.renewal_date, earliest.frequency)
+        const subDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
+        return subDate < earliestDate ? sub : earliest
       })
       : null
-
-  const daysUntilRenewal = nextRenewal
-    ? Math.ceil((new Date(nextRenewal.renewal_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    : null
 
   let renewalValue = "None"
   let renewalColor = ""
 
-  if (nextRenewal && daysUntilRenewal !== null) {
-    if (daysUntilRenewal < 0) {
-      renewalValue = `${nextRenewal.name} - Overdue by ${Math.abs(daysUntilRenewal)} days`
-      renewalColor = "text-rose-500"
-    } else if (daysUntilRenewal === 0) {
-      renewalValue = `${nextRenewal.name} - Due Today`
-      renewalColor = "text-amber-500"
-    } else {
-      renewalValue = `${nextRenewal.name} - In ${daysUntilRenewal} days`
-    }
+  if (nextRenewal) {
+    const nextDate = getNextRenewalDate(nextRenewal.renewal_date, nextRenewal.frequency)
+    const { label, statusColor } = getRenewalDisplay(nextDate)
+    renewalValue = `${nextRenewal.name} - ${label}`
+    renewalColor = statusColor
   }
 
   const stats = [

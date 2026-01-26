@@ -29,12 +29,15 @@ export async function upgradeUserToPro(userId: string) {
 
         if (profile?.email) {
             const { sendPlanChangeEmail } = await import('@/lib/email')
-            await sendPlanChangeEmail(
-                profile.email,
-                profile.full_name?.split(' ')[0] || 'User',
-                'Pro Plan',
-                '$3.99'
-            )
+            await sendPlanChangeEmail({
+                email: profile.email,
+                userName: profile.full_name?.split(' ')[0] || 'User',
+                planName: 'Pro Plan',
+                price: '$3.99',
+                limit: 100,
+                isUpgrade: true,
+                date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+            })
         }
     } catch (emailError) {
         console.error('[Action] Upgrade email failed:', emailError)
@@ -70,12 +73,15 @@ export async function downgradeUserToFree(userId: string) {
 
         if (profile?.email) {
             const { sendPlanChangeEmail } = await import('@/lib/email')
-            await sendPlanChangeEmail(
-                profile.email,
-                profile.full_name?.split(' ')[0] || 'User',
-                'Essential',
-                '$0.00'
-            )
+            await sendPlanChangeEmail({
+                email: profile.email,
+                userName: profile.full_name?.split(' ')[0] || 'User',
+                planName: 'Essential',
+                price: '$0.00',
+                limit: 3,
+                isUpgrade: false,
+                date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+            })
         }
     } catch (emailError) {
         console.error('[Action] Downgrade email failed:', emailError)

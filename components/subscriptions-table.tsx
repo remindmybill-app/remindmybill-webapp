@@ -6,7 +6,7 @@ import { Tv, Music, Code, Dumbbell, Cloud, Mail, Package, Gamepad2, Inbox, Spark
 import { Button } from "@/components/ui/button"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { formatCurrency } from "@/lib/utils/currency"
-import { formatDistanceToNow, parseISO, isPast, addMonths, addYears } from "date-fns"
+import { formatDistanceToNow, parseISO } from "date-fns"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   DropdownMenu,
@@ -17,6 +17,7 @@ import {
 import { ManualSubscriptionModal } from "@/components/manual-subscription-modal"
 import { toast } from "sonner"
 import { Subscription } from "@/lib/types"
+import { getNextRenewalDate, getRenewalDisplay } from "@/lib/utils/date-utils"
 
 const categoryIcons: Record<string, any> = {
   Entertainment: Tv,
@@ -45,36 +46,6 @@ export function SubscriptionsTable() {
         toast.error("Failed to delete subscription")
       }
       setDeletingId(null)
-    }
-  }
-
-  const getRenewalDetails = (dateStr: string, frequency: string) => {
-    try {
-      let date = parseISO(dateStr)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-
-      if (isPast(date) && date < today) {
-        // Logic to find next payment date if it's in the past
-        while (date < today) {
-          if (frequency === 'yearly') date = addYears(date, 1)
-          else date = addMonths(date, 1)
-        }
-      }
-
-      const daysLeft = Math.ceil((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-
-      let statusColor = "text-zinc-800 dark:text-zinc-300"
-      if (daysLeft < 0) statusColor = "text-rose-500 font-bold"
-      else if (daysLeft <= 3) statusColor = "text-amber-500 font-bold"
-
-      let label = `${daysLeft} days`
-      if (daysLeft === 0) label = "Today"
-      if (daysLeft === 1) label = "Tomorrow"
-
-      return { label, daysLeft, statusColor }
-    } catch (e) {
-      return { label: "N/A", daysLeft: 0, statusColor: "text-muted-foreground" }
     }
   }
 
@@ -156,7 +127,9 @@ export function SubscriptionsTable() {
                   <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
                     {subscriptions.map((sub) => {
                       const Icon = categoryIcons[sub.category] || Package
-                      const { label, daysLeft, statusColor } = getRenewalDetails(sub.renewal_date, sub.frequency)
+
+                      const nextDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
+                      const { label, statusColor } = getRenewalDisplay(nextDate)
 
                       const logoUrl = `https://logo.clearbit.com/${sub.name.toLowerCase().replace(/\s+/g, '')}.com`
 
@@ -191,7 +164,7 @@ export function SubscriptionsTable() {
                             <div className="inline-flex items-center gap-2 justify-end">
                               <Calendar className="h-3 w-3 text-muted-foreground" />
                               <span className={`text-sm ${statusColor}`}>
-                                {daysLeft < 0 ? "Overdue" : label}
+                                {label}
                               </span>
                             </div>
                           </td>
@@ -241,7 +214,8 @@ export function SubscriptionsTable() {
               <div className="space-y-4 p-4 md:hidden">
                 {subscriptions.map((sub) => {
                   const Icon = categoryIcons[sub.category] || Package
-                  const { label, daysLeft, statusColor } = getRenewalDetails(sub.renewal_date, sub.frequency)
+                  const nextDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
+                  const { label, statusColor } = getRenewalDisplay(nextDate)
                   return (
                     <div key={sub.id} className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                       <div className="mb-4 flex items-center justify-between">

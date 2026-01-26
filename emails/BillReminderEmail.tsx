@@ -10,6 +10,7 @@ import {
     Text,
     Link,
     Tailwind,
+    Button,
 } from '@react-email/components';
 import * as React from 'react';
 
@@ -28,7 +29,8 @@ export const BillReminderEmail = ({
     currency,
     dueDate,
 }: BillReminderEmailProps) => {
-    const previewText = `Heads up: Your ${serviceName} bill is due in 3 days.`;
+    const previewText = `${serviceName} is renewing in 3 days.`;
+    const googleCancelUrl = `https://www.google.com/search?q=how+to+cancel+${encodeURIComponent(serviceName)}`;
 
     return (
         <Html>
@@ -39,50 +41,65 @@ export const BillReminderEmail = ({
                     <Container className="mx-auto my-10 max-w-[580px] rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
                         <Section>
                             <Heading className="text-2xl font-bold tracking-tight text-zinc-900">
-                                Upcoming Bill Reminder
+                                {serviceName} is renewing in 3 days.
                             </Heading>
                             <Text className="mt-4 text-zinc-600">
                                 Hi {customerName},
                             </Text>
                             <Text className="text-zinc-600">
-                                Just a heads up that your subscription for <strong>{serviceName}</strong> is renewing soon.
+                                This is a reminder that your subscription for <strong>{serviceName}</strong> is scheduled to renew shortly.
                             </Text>
                         </Section>
 
-                        <Section className="my-8 rounded-xl bg-zinc-50 p-6 ring-1 ring-zinc-200">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <Text className="m-0 text-xs font-bold uppercase tracking-widest text-zinc-400">Amount Due</Text>
-                                    <Text className="m-0 text-xl font-bold text-zinc-900">
-                                        {currency} {amount.toFixed(2)}
-                                    </Text>
-                                </div>
-                                <div className="text-right">
-                                    <Text className="m-0 text-xs font-bold uppercase tracking-widest text-zinc-400">Due Date</Text>
-                                    <Text className="m-0 text-sm font-bold text-zinc-900">{dueDate}</Text>
-                                </div>
+                        <Section className="my-8 rounded-xl bg-zinc-50 p-6 border border-zinc-200">
+                            <Text className="m-0 text-xs font-bold uppercase tracking-widest text-zinc-400 mb-4">Payment Details</Text>
+                            <div className="flex justify-between items-center mb-2">
+                                <Text className="m-0 text-sm text-zinc-600">Amount:</Text>
+                                <Text className="m-0 text-lg font-bold text-zinc-900">{currency} {amount.toFixed(2)}</Text>
                             </div>
+                            <div className="flex justify-between items-center mb-4">
+                                <Text className="m-0 text-sm text-zinc-600">Due Date:</Text>
+                                <Text className="m-0 text-sm font-bold text-zinc-900">{dueDate}</Text>
+                            </div>
+                            <Hr className="border-zinc-200 my-4" />
+                            <Text className="m-0 text-[11px] text-zinc-400 italic">
+                                Note: These charges are usually processed in the morning of the due date.
+                            </Text>
                         </Section>
 
-                        <Section>
-                            <Text className="text-zinc-600">
-                                We'll notify you again if any major issues occur. You can review all your bills on your dashboard.
+                        <Section className="my-8">
+                            <Heading className="text-lg font-bold text-zinc-900 mb-2">Want to cancel?</Heading>
+                            <Text className="text-zinc-600 text-sm mb-4">
+                                If you no longer need this service, we've prepared a quick link to help you find the cancellation steps:
                             </Text>
-                            <Section className="mt-8 text-center">
-                                <Link
-                                    href={`${process.env.NEXT_PUBLIC_APP_URL}/dashboard`}
-                                    className="inline-block rounded-xl bg-indigo-600 px-6 py-3 text-sm font-bold text-white no-underline shadow-lg shadow-indigo-500/20"
-                                >
-                                    View My Bills
-                                </Link>
-                            </Section>
+                            <Button
+                                href={googleCancelUrl}
+                                className="bg-white border border-rose-200 text-rose-600 px-6 py-3 rounded-xl text-sm font-bold shadow-sm"
+                            >
+                                How to cancel {serviceName}
+                            </Button>
+                        </Section>
+
+                        <Section className="bg-amber-50 rounded-xl p-4 border border-amber-100 my-8">
+                            <Text className="m-0 text-xs text-amber-800 leading-relaxed">
+                                ⚠️ <strong>Note:</strong> This is an automated reminder. Cancellation usually takes up to 24 hours to process before the billing date.
+                            </Text>
+                        </Section>
+
+                        <Section className="text-center">
+                            <Link
+                                href={`${process.env.NEXT_PUBLIC_APP_URL}/dashboard`}
+                                className="text-zinc-400 text-sm font-medium underline"
+                            >
+                                Manage all subscriptions on your Dashboard
+                            </Link>
                         </Section>
 
                         <Hr className="my-8 border-zinc-200" />
 
                         <Section>
                             <Text className="text-xs text-zinc-400 text-center">
-                                Remind My Bill &bull; Secure Subscription Management
+                                Remind My Bill &bull; Secure Subscription Management &bull; {new Date().getFullYear()}
                             </Text>
                         </Section>
                     </Container>
