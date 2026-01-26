@@ -1,6 +1,30 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 import { sendBillReminderEmail } from '@/lib/email';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+async function getAICancellationAdvice(serviceName: string): Promise<string> {
+    const fallback = "To cancel, visit the merchant's website at least 24 hours in advance.";
+    try {
+        const prompt = `Provide a 2-sentence summary on how to cancel '${serviceName}'. Include a direct link to their cancellation page if known, or a tip on potential hidden fees. Keep it urgent and helpful.`;
+
+        // Setting a timeout for AI generation
+        const result = await Promise.race([
+            model.generateContent(prompt),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('AI Timeout')), 8000))
+        ]) as any;
+
+        const response = await result.response;
+        const text = response.text().trim();
+        return text || fallback;
+    } catch (error) {
+        console.error(`[AI] Failed to generate advice for ${serviceName}:`, error);
+        return fallback;
+    }
+}
 
 export async function GET() {
     try {
@@ -15,7 +39,6 @@ export async function GET() {
         console.log(`[Cron] Target renewal date: ${targetDateString}`);
 
         // 2. Query subscriptions due on that date
-        // Note: renewal_date is assumed to be a DATE or ISO string in Supabase
         const { data: subscriptions, error } = await supabase
             .from('subscriptions')
             .select(`
@@ -49,6 +72,9 @@ export async function GET() {
 
                 const userName = sub.profiles.full_name?.split(' ')[0] || 'User';
 
+                // Get AI powered advice
+                const advice = await getAICancellationAdvice(sub.name);
+
                 return await sendBillReminderEmail({
                     email: sub.profiles.email,
                     userName,
@@ -56,6 +82,7 @@ export async function GET() {
                     amount: sub.cost,
                     currency: sub.currency,
                     dueDate: new Date(sub.renewal_date).toLocaleDateString(),
+                    cancellationAdvice: advice
                 });
             })
         );

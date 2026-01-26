@@ -20,6 +20,7 @@ interface BillReminderEmailProps {
     amount: number;
     currency: string;
     dueDate: string;
+    cancellationAdvice?: string;
 }
 
 export const BillReminderEmail = ({
@@ -28,7 +29,9 @@ export const BillReminderEmail = ({
     amount,
     currency,
     dueDate,
+    cancellationAdvice = 'To cancel, visit the merchant\'s website at least 24 hours in advance.',
 }: BillReminderEmailProps) => {
+    const baseUrl = 'https://remindmybill.com';
     const previewText = `${serviceName} is renewing in 3 days.`;
     const googleCancelUrl = `https://www.google.com/search?q=how+to+cancel+${encodeURIComponent(serviceName)}`;
 
@@ -48,6 +51,15 @@ export const BillReminderEmail = ({
                             </Text>
                             <Text className="text-zinc-600">
                                 This is a reminder that your subscription for <strong>{serviceName}</strong> is scheduled to renew shortly.
+                            </Text>
+                        </Section>
+
+                        <Section className="bg-indigo-50 rounded-xl p-6 border border-indigo-100 my-6">
+                            <Text className="m-0 text-sm font-bold text-indigo-900 mb-2 flex items-center gap-2">
+                                💡 Smart Tip
+                            </Text>
+                            <Text className="m-0 text-sm text-indigo-800 leading-relaxed">
+                                {cancellationAdvice}
                             </Text>
                         </Section>
 
@@ -88,7 +100,7 @@ export const BillReminderEmail = ({
 
                         <Section className="text-center">
                             <Link
-                                href={`${process.env.NEXT_PUBLIC_APP_URL}/dashboard`}
+                                href={`${baseUrl}/dashboard`}
                                 className="text-zinc-400 text-sm font-medium underline"
                             >
                                 Manage all subscriptions on your Dashboard

@@ -74,6 +74,7 @@ export async function sendBillReminderEmail({
     amount,
     currency,
     dueDate,
+    cancellationAdvice,
 }: {
     email: string;
     userName: string;
@@ -81,6 +82,7 @@ export async function sendBillReminderEmail({
     amount: number;
     currency: string;
     dueDate: string;
+    cancellationAdvice?: string;
 }) {
     return sendEmail({
         to: email,
@@ -91,6 +93,7 @@ export async function sendBillReminderEmail({
             amount,
             currency,
             dueDate,
+            cancellationAdvice,
         }),
     });
 }

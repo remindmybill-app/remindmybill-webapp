@@ -31,6 +31,7 @@ export const PlanChangeEmail = ({
     isUpgrade,
     date,
 }: PlanChangeEmailProps) => {
+    const baseUrl = 'https://remindmybill.com';
     const previewText = isUpgrade
         ? `You are now on the ${newPlanName}!`
         : `Your RemindMyBill Plan has been updated to ${newPlanName}.`;
@@ -73,7 +74,7 @@ export const PlanChangeEmail = ({
 
                         <Section className="mt-8 text-center">
                             <Button
-                                href={`${process.env.NEXT_PUBLIC_APP_URL}/dashboard`}
+                                href={`${baseUrl}/dashboard`}
                                 className="inline-block rounded-xl bg-zinc-900 px-6 py-3 text-sm font-bold text-white no-underline shadow-lg"
                             >
                                 Go to Dashboard
