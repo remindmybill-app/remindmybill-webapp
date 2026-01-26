@@ -17,13 +17,28 @@ export function QuickStats() {
   const nextRenewal =
     subscriptions.length > 0
       ? subscriptions.reduce((earliest, sub) => {
-          return new Date(sub.renewal_date) < new Date(earliest.renewal_date) ? sub : earliest
-        })
+        return new Date(sub.renewal_date) < new Date(earliest.renewal_date) ? sub : earliest
+      })
       : null
 
   const daysUntilRenewal = nextRenewal
     ? Math.ceil((new Date(nextRenewal.renewal_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null
+
+  let renewalValue = "None"
+  let renewalColor = ""
+
+  if (nextRenewal && daysUntilRenewal !== null) {
+    if (daysUntilRenewal < 0) {
+      renewalValue = `${nextRenewal.name} - Overdue by ${Math.abs(daysUntilRenewal)} days`
+      renewalColor = "text-rose-500"
+    } else if (daysUntilRenewal === 0) {
+      renewalValue = `${nextRenewal.name} - Due Today`
+      renewalColor = "text-amber-500"
+    } else {
+      renewalValue = `${nextRenewal.name} - In ${daysUntilRenewal} days`
+    }
+  }
 
   const stats = [
     {
@@ -40,7 +55,8 @@ export function QuickStats() {
     },
     {
       label: "Next Renewal",
-      value: isLoading ? "..." : nextRenewal ? `${nextRenewal.name} - ${daysUntilRenewal} days` : "None",
+      value: isLoading ? "..." : renewalValue,
+      colorClass: renewalColor,
       icon: Clock,
       trend: null,
     },
@@ -61,7 +77,7 @@ export function QuickStats() {
               </div>
               <div className="mt-4 space-y-1">
                 <div className="text-xs font-medium text-muted-foreground sm:text-sm">{stat.label}</div>
-                <div className="text-xl font-bold sm:text-2xl">{stat.value}</div>
+                <div className={`text-xl font-bold sm:text-2xl ${"colorClass" in stat ? stat.colorClass : ""}`}>{stat.value}</div>
               </div>
             </CardContent>
           </Card>
