@@ -1,10 +1,10 @@
 'use server'
 
-import { getSupabaseServerClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase-server'
 import { revalidatePath } from 'next/cache'
 
 export async function upgradeUserToPro(userId: string) {
-    const supabase = await getSupabaseServerClient()
+    const supabase = await createClient()
 
     const { error } = await supabase
         .from('profiles')
@@ -45,7 +45,7 @@ export async function upgradeUserToPro(userId: string) {
 }
 
 export async function downgradeUserToFree(userId: string) {
-    const supabase = await getSupabaseServerClient()
+    const supabase = await createClient()
 
     const { error } = await supabase
         .from('profiles')

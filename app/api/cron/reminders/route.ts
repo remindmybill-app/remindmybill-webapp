@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { createClient } from '@/lib/supabase-server';
 import { sendBillReminderEmail } from '@/lib/email';
 
 export async function GET() {
     try {
         console.log('[Cron] Starting Bill Reminder Job...');
-        const supabase = await getSupabaseServerClient();
+        const supabase = await createClient();
 
         // 1. Calculate the target date (3 days from now)
         const targetDate = new Date();
@@ -42,7 +42,7 @@ export async function GET() {
 
         // 3. Send emails
         const results = await Promise.allSettled(
-            subscriptions.map(async (sub) => {
+            subscriptions.map(async (sub: any) => {
                 if (!sub.profiles?.email) {
                     return { success: false, error: 'No user email found' };
                 }
@@ -62,8 +62,8 @@ export async function GET() {
 
         const summary = {
             total: subscriptions.length,
-            sent: results.filter((r) => r.status === 'fulfilled' && (r.value as any).success).length,
-            failed: results.filter((r) => r.status === 'rejected' || !(r.value as any).success).length,
+            sent: results.filter((r: any) => r.status === 'fulfilled' && r.value?.success).length,
+            failed: results.filter((r: any) => r.status === 'rejected' || !r.value?.success).length,
         };
 
         console.log('[Cron] Job complete:', summary);
