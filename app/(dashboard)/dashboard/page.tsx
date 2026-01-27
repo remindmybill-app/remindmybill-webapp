@@ -23,6 +23,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ManualSubscriptionModal } from "@/components/manual-subscription-modal"
 import { isPro } from "@/lib/subscription-utils"
 import { CheckCircle2 } from "lucide-react"
+import { DashboardAIWidget } from "@/components/DashboardAIWidget"
 
 export default function DashboardPage() {
     const { isAuthenticated, signIn, isLoading: authLoading } = useAuth()
@@ -306,22 +307,9 @@ export default function DashboardPage() {
                             </div>
                         )}
 
-                        {/* Smart Alert / Forecast Card */}
+                        {/* AI Portfolio Insights Widget */}
                         {isPro(profile?.subscription_tier) && (
-                            <div className="rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-800 p-6 text-white shadow-xl shadow-zinc-500/10 dark:from-zinc-800 dark:to-zinc-900">
-                                <div className="mb-4 flex items-center justify-between">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm">
-                                        <TrendingUp className="h-5 w-5 text-emerald-400" />
-                                    </div>
-                                    <span className="rounded-full bg-emerald-500/20 px-2 py-1 text-xs font-bold text-emerald-300 backdrop-blur-sm">
-                                        Forecast
-                                    </span>
-                                </div>
-                                <h3 className="mb-1 text-lg font-bold">Monthly Forecast</h3>
-                                <p className="mb-4 text-sm text-zinc-400">
-                                    Based on your active subscriptions, your next month's bill is estimated to be <span className="text-white font-bold">${subscriptions.reduce((acc, sub) => acc + sub.cost, 0).toFixed(2)}</span>.
-                                </p>
-                            </div>
+                            <DashboardAIWidget subscriptions={subscriptions} />
                         )}
                     </div>
                 </div>

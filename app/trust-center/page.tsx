@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { Shield, AlertTriangle, CheckCircle2, Search, ArrowRight, Lock, TrendingUp, AlertCircle, HelpCircle, Globe, Zap, Fingerprint, Loader2 } from "lucide-react"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,6 +12,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { debounce } from "lodash"
 import { motion, AnimatePresence } from "framer-motion"
+import { analyzeCompanySafety } from "@/app/actions/trust-ai"
 
 // Types for Trust Analysis
 interface Platform {
@@ -143,21 +145,22 @@ export default function TrustCenterPage() {
     setError(null)
 
     try {
-      const response = await fetch("/api/trust", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain: searchQuery }),
-      })
+      const result = await analyzeCompanySafety(searchQuery)
 
-      if (!response.ok) {
-        throw new Error("Failed to analyze domain")
+      if (!result.success) {
+        throw new Error(result.error)
       }
 
-      const data = await response.json()
-      setAnalysis(data)
+      setAnalysis(result.data as any)
+
+      if (result.source === 'ai') {
+        toast.success("AI Analysis Complete", {
+          description: `Generated a real-time safety report for ${searchQuery}`
+        })
+      }
     } catch (err: any) {
       console.error("Analysis error:", err)
-      setError("Could not analyze this service. " + (err.message || ""))
+      setError(err.message || "Could not analyze this service.")
     } finally {
       setIsAnalyzing(false)
     }
