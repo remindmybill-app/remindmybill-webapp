@@ -114,8 +114,7 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
         }))
 
         // 4. Batch Parse with Gemini Flash (Auditor Mode)
-        const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!)
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+        const { geminiFlash: model } = require("@/lib/gemini")
 
         const aiResults = await Promise.all(emailDetails.map(async (email: any) => {
             try {
@@ -159,7 +158,7 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
 
                 return ai
             } catch (err) {
-                console.error(`[Gemini] Failed to parse email ${email.id}:`, err)
+                console.error(`FULL AI ERROR (Gmail Email ${email.id}):`, err)
                 return null
             }
         }))

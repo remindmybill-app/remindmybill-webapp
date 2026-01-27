@@ -30,7 +30,8 @@ export function DashboardAIWidget({ subscriptions }: DashboardAIWidgetProps) {
                     setError(result.error || "Failed to load insights")
                 }
             } catch (err) {
-                setError("An unexpected error occurred")
+                console.error("[DashboardAIWidget] Silent Failure:", err)
+                setInsights(null) // Ensure nothing is shown
             } finally {
                 setIsLoading(false)
             }
@@ -61,9 +62,7 @@ export function DashboardAIWidget({ subscriptions }: DashboardAIWidgetProps) {
                         <p className="text-sm font-medium animate-pulse">Analyzing your spending patterns...</p>
                     </div>
                 ) : error ? (
-                    <div className="p-8 text-center text-rose-500 text-sm">
-                        {error}
-                    </div>
+                    null // SILENT FAILURE: Don't show technical errors
                 ) : insights ? (
                     <Tabs defaultValue="leakage" className="w-full">
                         <TabsList className="w-full grid grid-cols-3 rounded-none bg-transparent border-b border-zinc-100 dark:border-zinc-800 h-12">

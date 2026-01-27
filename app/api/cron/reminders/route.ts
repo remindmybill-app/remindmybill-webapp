@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 import { sendBillReminderEmail } from '@/lib/email';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+import { geminiFlash as model } from '@/lib/gemini';
 
 async function getAICancellationAdvice(serviceName: string): Promise<string> {
     const fallback = "To cancel, visit the merchant's website at least 24 hours in advance.";
@@ -21,7 +18,7 @@ async function getAICancellationAdvice(serviceName: string): Promise<string> {
         const text = response.text().trim();
         return text || fallback;
     } catch (error) {
-        console.error(`[AI] Failed to generate advice for ${serviceName}:`, error);
+        console.error(`FULL AI ERROR (Cron ${serviceName}):`, error);
         return fallback;
     }
 }

@@ -159,8 +159,17 @@ export default function TrustCenterPage() {
         })
       }
     } catch (err: any) {
-      console.error("Analysis error:", err)
-      setError(err.message || "Could not analyze this service.")
+      console.error("Analysis error (fallback triggered):", err)
+      // Robust Fallback: Clear the error, hide the analyzing state, and show a gentle toast
+      // We don't want to show a scary red box if it's just the AI failing
+      setAnalysis(null)
+      toast.error("Analysis unavailable", {
+        description: "We couldn't reach the AI analyst. Reverting to database search."
+      })
+      // If we have search results already from the debounced search, keep them
+      if (searchResults.length === 0) {
+        setError(`No verified data found for "${searchQuery}".`)
+      }
     } finally {
       setIsAnalyzing(false)
     }

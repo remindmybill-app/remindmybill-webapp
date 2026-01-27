@@ -1,5 +1,5 @@
 
-import { GoogleGenerativeAI } from "@google/generative-ai"
+import { geminiFlash as model } from "@/lib/gemini"
 import { NextResponse } from "next/server"
 
 export async function POST(req: Request) {
@@ -10,11 +10,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Domain is required" }, { status: 400 })
         }
 
-        // Initialize Gemini (assuming API key is in env)
-        // If not, we'll gracefully fall back or error, but this structure allows easy config
-        const apiKey = process.env.GOOGLE_API_KEY || "dummy_key_if_missing"
-        const genAI = new GoogleGenerativeAI(apiKey)
-        const model = genAI.getGenerativeModel({ model: "gemini-pro" })
+        // Initialize Gemini via central lib
 
         const prompt = `
       Analyze the trustworthiness of the subscription service at this domain: ${domain}.
@@ -33,25 +29,7 @@ export async function POST(req: Request) {
       Do not include any explanation or markdown formatting, just the raw JSON.
     `
 
-        // In a real scenario, we'd wrap this call. For demo purposes, if API key is missing/invalid,
-        // we might want to return a mock response to ensure the UI works for the user.
-        // However, I will implement the actual call.
-
-        // MOCK FALLBACK for stability during development if no key:
-        if (apiKey === "dummy_key_if_missing") {
-            console.warn("Missing GOOGLE_API_KEY, returning mock data")
-            return NextResponse.json({
-                service_name: domain,
-                trust_score: 75,
-                category: "Unknown",
-                cancellation_difficulty: "medium",
-                dark_patterns: ["Simulated Dark Pattern"],
-                positive_features: ["Simulated Positive Feature"],
-                risk_flags: ["Simulated Risk Flag"],
-                trend: "stable",
-                alert_count: 1
-            })
-        }
+        // REMOVED MOCK FALLBACK - Using central lib which handles API key presence
 
         try {
             const result = await model.generateContent(prompt)
@@ -64,7 +42,7 @@ export async function POST(req: Request) {
 
             return NextResponse.json(data)
         } catch (apiError) {
-            console.error("Gemini API Error:", apiError)
+            console.error("FULL AI ERROR (Trust API):", apiError)
             // Fallback mock if API fails
             return NextResponse.json({
                 service_name: domain,

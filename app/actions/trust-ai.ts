@@ -1,10 +1,7 @@
 'use server'
 
-import { GoogleGenerativeAI } from "@google/generative-ai"
+import { geminiFlash as model } from "@/lib/gemini"
 import { createClient } from "@/lib/supabase-server"
-
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!)
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
 
 export async function analyzeCompanySafety(query: string) {
     if (!query) throw new Error("Query is required")
@@ -90,7 +87,7 @@ export async function analyzeCompanySafety(query: string) {
             }
         }
     } catch (err: any) {
-        console.error("[TrustAI] Gemini/Parsing Error:", err)
+        console.error('FULL AI ERROR (Trust):', err)
         return {
             success: false,
             error: "Failed to analyze service safety. Please try again later."

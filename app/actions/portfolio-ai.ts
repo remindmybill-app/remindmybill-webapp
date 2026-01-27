@@ -1,9 +1,6 @@
 'use server'
 
-import { GoogleGenerativeAI } from "@google/generative-ai"
-
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY!)
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+import { geminiFlash as model } from "@/lib/gemini"
 
 export async function generatePortfolioInsights(subscriptions: any[]) {
     if (!subscriptions || subscriptions.length === 0) {
@@ -59,7 +56,7 @@ export async function generatePortfolioInsights(subscriptions: any[]) {
             data: insights
         }
     } catch (err: any) {
-        console.error("[PortfolioAI] Error generating insights:", err)
+        console.error('FULL AI ERROR (Portfolio):', err)
         return {
             success: false,
             error: "Failed to generate AI insights."
