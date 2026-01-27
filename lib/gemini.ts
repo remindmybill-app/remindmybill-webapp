@@ -14,5 +14,5 @@ if (!apiKey) {
 }
 
 export const genAI = new GoogleGenerativeAI(apiKey || "");
-// Use gemini-1.5-flash-latest as it is more stable than just 'gemini-1.5-flash' in some regions
-export const geminiFlash = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+// Switching to 'gemini-pro' as it is the most stable and universally available text model
+export const geminiFlash = genAI.getGenerativeModel({ model: "gemini-pro" });
