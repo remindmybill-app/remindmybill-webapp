@@ -1,17 +1,24 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 import { sendBillReminderEmail } from '@/lib/email';
-import { generateSafeContent } from '@/lib/gemini';
+import { generateText } from '@/lib/openai-client';
 
-async function getAICancellationAdvice(serviceName: string): Promise<string> {
-    const fallback = "To cancel, visit the merchant's website at least 24 hours in advance.";
+async function getAICancellationAdvice(serviceName: string, amount: number, currency: string, date: string): Promise<string> {
+    const fallback = "Just a friendly heads up that your subscription is renewing soon.";
     try {
-        const prompt = `Provide a 2-sentence summary on how to cancel '${serviceName}'. Include a direct link to their cancellation page if known, or a tip on potential hidden fees. Keep it urgent and helpful.`;
+        const prompt = `Generate a brief, reassuring one-sentence explanation for this subscription reminder email. 
+        Input: 
+        - Service: ${serviceName}
+        - Amount: ${amount} ${currency}
+        - Date: ${date}
+        
+        Tone: friendly, clear, non-pushy. 
+        Output: ONE sentence, no JSON, max 25 words.`;
 
-        const text = await generateSafeContent(prompt);
+        const text = await generateText(prompt);
         return text || fallback;
     } catch (error) {
-        console.error(`FULL AI ERROR (Cron ${serviceName}):`, error);
+        console.error(`[OpenAI] Reminder enrichment failed for ${serviceName}:`, error);
         return fallback;
     }
 }
@@ -63,7 +70,12 @@ export async function GET() {
                 const userName = sub.profiles.full_name?.split(' ')[0] || 'User';
 
                 // Get AI powered advice
-                const advice = await getAICancellationAdvice(sub.name);
+                const advice = await getAICancellationAdvice(
+                    sub.name,
+                    sub.cost,
+                    sub.currency,
+                    new Date(sub.renewal_date).toLocaleDateString()
+                );
 
                 return await sendBillReminderEmail({
                     email: sub.profiles.email,

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { generateText } from '@/lib/openai-client'
 
 export async function connectGmailAccount() {
     const supabase = await createClient()
@@ -74,7 +75,8 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
         // 2. Fetch from Gmail
         const query = `newer_than:${days}d (subject:(receipt OR invoice OR bill OR "payment processed" OR "renews on" OR "order confirmation" OR total) OR (receipt OR invoice OR bill OR "payment processed" OR "renews on" OR "order confirmation" OR total))`
 
-        const listRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=20`, {
+        // Limiting to 50 results for cost and speed control
+        const listRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=50`, {
             headers: { Authorization: `Bearer ${accessToken}` }
         })
 
@@ -88,8 +90,8 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
             return { success: true, count: 0, found: 0, scanned: 0, items: [], message: "No recently received bills found." }
         }
 
-        // 3. Fetch details for found messages
-        const emailDetails = await Promise.all(messages.slice(0, 20).map(async (m: any) => {
+        // 3. Fetch details for found messages (Up to 50)
+        const emailDetails = await Promise.all(messages.slice(0, 50).map(async (m: any) => {
             const detail = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${m.id}`, {
                 headers: { Authorization: `Bearer ${accessToken}` }
             })
@@ -112,54 +114,61 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
             }
         }))
 
-        // 4. Batch Parse with Gemini Flash (Auditor Mode)
-        const { generateSafeContent } = require("@/lib/gemini")
+        // 4. Batch Parse with OpenAI (gpt-4o-mini)
+        const AI_KEYWORDS = ["invoice", "receipt", "subscription", "renewal", "payment", "bill", "plan"];
 
         const aiResults = await Promise.all(emailDetails.map(async (email: any) => {
+            const lowerSubject = email.subject.toLowerCase();
+            const lowerSnippet = email.snippet.toLowerCase();
+            const hasKeyword = AI_KEYWORDS.some(k => lowerSubject.includes(k) || lowerSnippet.includes(k));
+
+            // FALLBACK LOGIC (Regex)
+            const getFallback = () => {
+                const amountMatch = (email.subject + email.body).match(/[€$£]\s?(\d+(\.\d{1,2})?)/) || (email.subject + email.body).match(/(\d+(\.\d{1,2})?)\s?(USD|EUR|GBP)/i);
+                return {
+                    is_subscription: hasKeyword,
+                    merchant_name: email.subject.split(/[:\-–]/)[0].trim().substring(0, 30),
+                    amount: amountMatch ? parseFloat(amountMatch[1]) : 0,
+                    currency: amountMatch ? (amountMatch[0].includes('€') ? 'EUR' : amountMatch[0].includes('£') ? 'GBP' : 'USD') : 'USD',
+                    billing_date: email.date,
+                    billing_frequency: 'monthly' as const
+                };
+            };
+
+            if (!hasKeyword) return null;
+
             try {
-                const prompt = `You are a financial data auditor.
-                Analyze this email text to extract billing/subscription data.
-                
-                CONTENT:
-                Subject: ${email.subject}
-                Body: ${email.body || email.snippet}
-                Email Date: ${email.date}
-                
-                RULES:
-                1. Is this a Bill, Receipt, or Subscription Invoice?
-                   - If it's a security alert, login notification, newsletter, or shipping update: Return ONLY "null".
-                2. Extract:
-                   - merchant_name: The service/company provider.
-                   - amount: The GRAND TOTAL only.
-                   - currency: e.g. USD, EUR.
-                   - date: The actual billing date from text (ISO8601).
-                   - frequency: "monthly" or "yearly".
-                
-                Return JSON only: { "merchant_name": "string", "amount": number, "currency": "string", "date": "ISO8601", "frequency": "monthly" | "yearly" }.`
+                const prompt = `You are a financial data extractor.
+                Given this email's subject and body, extract subscription or bill info if present.
+                Return ONLY JSON, no explanation.
 
-                let text = await generateSafeContent(prompt)
-
-                if (!text) return null
-
-                if (text.includes("```")) {
-                    text = text.replace(/```json|```/g, "").trim()
+                JSON shape:
+                {
+                  "is_subscription": boolean,
+                  "merchant_name": string | null,
+                  "amount": number | null,
+                  "currency": string | null,
+                  "billing_frequency": "monthly" | "yearly" | "one_time" | null,
+                  "billing_date": string | null
                 }
 
-                if (text.toLowerCase() === 'null') return null
+                Email Info:
+                - Subject: ${email.subject}
+                - Snippet: ${email.snippet}
+                - Body: ${email.body.substring(0, 800)}
 
-                const ai = JSON.parse(text)
+                If this is not a bill/subscription, return { "is_subscription": false }.`;
 
-                // Safety: Regex Price Fallback if AI missed it
-                if (ai && ai.amount === 0) {
-                    const combined = `${email.subject} ${email.body}`
-                    const match = combined.match(/\$\s?(\d+\.\d{2})/i) || combined.match(/(\d+\.\d{2})\s?USD/i)
-                    if (match) ai.amount = parseFloat(match[1])
-                }
+                const text = await generateText(prompt);
+                if (!text) return getFallback();
 
-                return ai
+                const ai = JSON.parse(text.replace(/```json|```/g, "").trim());
+                if (!ai.is_subscription) return null;
+
+                return ai;
             } catch (err) {
-                console.error(`FULL AI ERROR (Gmail Email ${email.id}):`, err)
-                return null
+                console.error(`[OpenAI] Extraction failed for ${email.id}:`, err);
+                return getFallback();
             }
         }))
 
@@ -172,8 +181,8 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
                 const name = ai.merchant_name || email.subject
                 const cost = ai.amount || 0.00
                 const currency = ai.currency || 'USD'
-                const date = ai.date || email.date
-                const frequency = ai.frequency || 'monthly'
+                const date = ai.billing_date || ai.date || email.date
+                const frequency = ai.billing_frequency || ai.frequency || 'monthly'
 
                 // Skip if name is still gibberish/empty (unlikely)
                 if (!name || name === '(No Subject)') return null

@@ -206,18 +206,18 @@ export default function TrustCenterPage() {
             </div>
             <h1 className="mb-4 text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-5xl">Trust Center</h1>
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
-              Exposing hidden dark patterns and cancellation traps using Gemini AI.
+              Exposing hidden dark patterns and cancellation traps using our verified database.
             </p>
           </div>
 
           {/* Search Section */}
           <div className="mx-auto max-w-2xl relative z-20">
-            <div className="group relative flex flex-col sm:flex-row gap-3 rounded-3xl bg-white p-2 shadow-2xl shadow-zinc-200 dark:bg-zinc-900 dark:shadow-none ring-1 ring-zinc-200 dark:ring-zinc-800 focus-within:ring-2 focus-within:ring-indigo-500/50 transition-all">
-              <div className="relative flex-1">
+            <div className="group relative rounded-3xl bg-white p-2 shadow-2xl shadow-zinc-200 dark:bg-zinc-900 dark:shadow-none ring-1 ring-zinc-200 dark:ring-zinc-800 focus-within:ring-2 focus-within:ring-indigo-500/50 transition-all">
+              <div className="relative">
                 <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Check any service (e.g. Netflix, Adobe)"
-                  className="h-14 border-none bg-transparent pl-12 text-lg focus-visible:ring-0 shadow-none outline-none"
+                  className="h-14 border-none bg-transparent pl-12 text-lg focus-visible:ring-0 shadow-none outline-none w-full"
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
@@ -255,20 +255,12 @@ export default function TrustCenterPage() {
                       ))
                     ) : (
                       <div className="p-4 text-center text-sm text-muted-foreground">
-                        No matches found for "{searchQuery}". <button onClick={handleAnalyze} className="text-primary underline">Run AI Audit?</button>
+                        No matches found for "{searchQuery}".
                       </div>
                     )}
                   </div>
                 )}
               </div>
-              <Button
-                onClick={handleAnalyze}
-                disabled={isAnalyzing || !searchQuery}
-                size="lg"
-                className="h-14 rounded-2xl bg-zinc-900 px-8 text-md font-semibold dark:bg-indigo-600 dark:hover:bg-indigo-700 hover:bg-zinc-800 transition-colors"
-              >
-                {isAnalyzing ? "Analyzing..." : "Analyze Now"}
-              </Button>
             </div>
             <p className="mt-4 text-center text-xs font-medium text-muted-foreground uppercase tracking-widest">
               T&C Audit &bull; UX Review &bull; Fee Transparency

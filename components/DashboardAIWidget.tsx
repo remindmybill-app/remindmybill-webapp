@@ -12,6 +12,7 @@ interface DashboardAIWidgetProps {
 }
 
 export function DashboardAIWidget({ subscriptions }: DashboardAIWidgetProps) {
+    return null; // AI Portfolio Insights disabled for now
     const [insights, setInsights] = useState<any>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
