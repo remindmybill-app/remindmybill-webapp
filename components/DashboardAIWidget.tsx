@@ -40,7 +40,7 @@ export function DashboardAIWidget({ subscriptions }: DashboardAIWidgetProps) {
         fetchInsights()
     }, [subscriptions])
 
-    if (subscriptions.length === 0) return null
+    if (subscriptions.length === 0 || error || (!isLoading && !insights)) return null
 
     return (
         <Card className="rounded-3xl border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900 overflow-hidden">
@@ -61,8 +61,6 @@ export function DashboardAIWidget({ subscriptions }: DashboardAIWidgetProps) {
                         <Loader2 className="h-8 w-8 animate-spin mb-4 text-indigo-500" />
                         <p className="text-sm font-medium animate-pulse">Analyzing your spending patterns...</p>
                     </div>
-                ) : error ? (
-                    null // SILENT FAILURE: Don't show technical errors
                 ) : insights ? (
                     <Tabs defaultValue="leakage" className="w-full">
                         <TabsList className="w-full grid grid-cols-3 rounded-none bg-transparent border-b border-zinc-100 dark:border-zinc-800 h-12">

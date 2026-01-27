@@ -1,6 +1,6 @@
 'use server'
 
-import { geminiFlash as model } from "@/lib/gemini"
+import { geminiFlash as model, generateSafeContent } from "@/lib/gemini"
 import { createClient } from "@/lib/supabase-server"
 
 export async function analyzeCompanySafety(query: string) {
@@ -45,9 +45,15 @@ export async function analyzeCompanySafety(query: string) {
             }
         `
 
-        const result = await model.generateContent(prompt)
-        const response = await result.response
-        let text = response.text().trim()
+        let text = await generateSafeContent(prompt)
+
+        if (!text) {
+            return {
+                success: false,
+                isQuotaExceeded: true,
+                error: "AI analysis is temporarily unavailable due to high demand. Please try again tomorrow."
+            }
+        }
 
         // Clean markdown if present
         if (text.includes("```")) {

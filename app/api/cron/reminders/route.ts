@@ -1,21 +1,14 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 import { sendBillReminderEmail } from '@/lib/email';
-import { geminiFlash as model } from '@/lib/gemini';
+import { geminiFlash as model, generateSafeContent } from '@/lib/gemini';
 
 async function getAICancellationAdvice(serviceName: string): Promise<string> {
     const fallback = "To cancel, visit the merchant's website at least 24 hours in advance.";
     try {
         const prompt = `Provide a 2-sentence summary on how to cancel '${serviceName}'. Include a direct link to their cancellation page if known, or a tip on potential hidden fees. Keep it urgent and helpful.`;
 
-        // Setting a timeout for AI generation
-        const result = await Promise.race([
-            model.generateContent(prompt),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('AI Timeout')), 8000))
-        ]) as any;
-
-        const response = await result.response;
-        const text = response.text().trim();
+        const text = await generateSafeContent(prompt);
         return text || fallback;
     } catch (error) {
         console.error(`FULL AI ERROR (Cron ${serviceName}):`, error);

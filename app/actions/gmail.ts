@@ -114,7 +114,7 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
         }))
 
         // 4. Batch Parse with Gemini Flash (Auditor Mode)
-        const { geminiFlash: model } = require("@/lib/gemini")
+        const { generateSafeContent } = require("@/lib/gemini")
 
         const aiResults = await Promise.all(emailDetails.map(async (email: any) => {
             try {
@@ -138,8 +138,9 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
                 
                 Return JSON only: { "merchant_name": "string", "amount": number, "currency": "string", "date": "ISO8601", "frequency": "monthly" | "yearly" }.`
 
-                const result = await model.generateContent(prompt)
-                let text = result.response.text().trim()
+                let text = await generateSafeContent(prompt)
+
+                if (!text) return null
 
                 if (text.includes("```")) {
                     text = text.replace(/```json|```/g, "").trim()

@@ -1,6 +1,6 @@
 'use server'
 
-import { geminiFlash as model } from "@/lib/gemini"
+import { geminiFlash as model, generateSafeContent } from "@/lib/gemini"
 
 export async function generatePortfolioInsights(subscriptions: any[]) {
     if (!subscriptions || subscriptions.length === 0) {
@@ -40,9 +40,15 @@ export async function generatePortfolioInsights(subscriptions: any[]) {
             }
         `
 
-        const result = await model.generateContent(prompt)
-        const response = await result.response
-        let text = response.text().trim()
+        let text = await generateSafeContent(prompt)
+
+        if (!text) {
+            return {
+                success: false,
+                isQuotaExceeded: true,
+                error: "AI insights are temporarily unavailable."
+            }
+        }
 
         // Clean markdown if present
         if (text.includes("```")) {

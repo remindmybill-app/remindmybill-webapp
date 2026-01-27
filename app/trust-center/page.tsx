@@ -163,9 +163,15 @@ export default function TrustCenterPage() {
       // Robust Fallback: Clear the error, hide the analyzing state, and show a gentle toast
       // We don't want to show a scary red box if it's just the AI failing
       setAnalysis(null)
-      toast.error("Analysis unavailable", {
-        description: "We couldn't reach the AI analyst. Reverting to database search."
-      })
+      if (err.message?.includes("unavailable") || err.isQuotaExceeded) {
+        toast.info("AI Analysis on Break", {
+          description: "We've hit our daily AI limit. Reverting to database search."
+        })
+      } else {
+        toast.error("Analysis unavailable", {
+          description: "We couldn't reach the AI analyst. Reverting to database search."
+        })
+      }
       // If we have search results already from the debounced search, keep them
       if (searchResults.length === 0) {
         setError(`No verified data found for "${searchQuery}".`)
@@ -272,9 +278,9 @@ export default function TrustCenterPage() {
           {/* Error Alert */}
           {error && (
             <div className="mx-auto max-w-2xl mt-8">
-              <Alert variant="destructive" className="rounded-2xl border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-200">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle className="font-bold">Analysis Failed</AlertTitle>
+              <Alert variant={error.includes("temporarily unavailable") ? "default" : "destructive"} className={`rounded-2xl ${error.includes("temporarily unavailable") ? "border-zinc-200 bg-white" : "border-rose-200 bg-rose-50 text-rose-900 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-200"}`}>
+                <AlertCircle className={`h-4 w-4 ${error.includes("temporarily unavailable") ? "text-indigo-500" : ""}`} />
+                <AlertTitle className="font-bold">{error.includes("temporarily unavailable") ? "AI Offline" : "Analysis Failed"}</AlertTitle>
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             </div>
