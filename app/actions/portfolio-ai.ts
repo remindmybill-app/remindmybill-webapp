@@ -1,6 +1,6 @@
 'use server'
 
-import { geminiFlash as model, generateSafeContent } from "@/lib/gemini"
+import { generateSafeContent } from "@/lib/gemini"
 
 export async function generatePortfolioInsights(subscriptions: any[]) {
     if (!subscriptions || subscriptions.length === 0) {

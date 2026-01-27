@@ -38,7 +38,6 @@ export async function connectGmailAccount() {
     return { error: 'No redirect URL returned' }
 }
 
-import { GoogleGenerativeAI } from "@google/generative-ai"
 
 function getEmailBody(payload: any): string {
     let body = "";

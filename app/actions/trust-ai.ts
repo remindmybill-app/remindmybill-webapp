@@ -1,6 +1,6 @@
 'use server'
 
-import { geminiFlash as model, generateSafeContent } from "@/lib/gemini"
+import { generateSafeContent } from "@/lib/gemini"
 import { createClient } from "@/lib/supabase-server"
 
 export async function analyzeCompanySafety(query: string) {

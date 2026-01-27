@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase-server';
 import { sendBillReminderEmail } from '@/lib/email';
-import { geminiFlash as model, generateSafeContent } from '@/lib/gemini';
+import { generateSafeContent } from '@/lib/gemini';
 
 async function getAICancellationAdvice(serviceName: string): Promise<string> {
     const fallback = "To cancel, visit the merchant's website at least 24 hours in advance.";

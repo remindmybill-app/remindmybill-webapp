@@ -1,5 +1,5 @@
 
-import { geminiFlash as model } from "@/lib/gemini"
+import { generateSafeContent } from "@/lib/gemini"
 import { NextResponse } from "next/server"
 
 export async function POST(req: Request) {
@@ -32,9 +32,11 @@ export async function POST(req: Request) {
         // REMOVED MOCK FALLBACK - Using central lib which handles API key presence
 
         try {
-            const result = await model.generateContent(prompt)
-            const response = await result.response
-            const text = response.text()
+            const text = await generateSafeContent(prompt)
+
+            if (!text) {
+                throw new Error("AI analysis unavailable")
+            }
 
             // Clean markdown from response if present
             const jsonStr = text.replace(/```json/g, "").replace(/```/g, "").trim()

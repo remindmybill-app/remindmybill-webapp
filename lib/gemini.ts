@@ -1,39 +1,13 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { generateText } from "./ai-client";
 
-const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-
-console.log('--- AI CONFIGURATION ---');
-console.log('API Key Status:', apiKey ? 'Present' : 'MISSING');
-if (apiKey) {
-    console.log('Key Prefix:', apiKey.substring(0, 4) + '...');
-}
-console.log('------------------------');
-
-if (!apiKey) {
-    console.warn('[Gemini] GOOGLE_GENERATIVE_AI_API_KEY is not defined in environment variables.');
-}
-
-export const genAI = new GoogleGenerativeAI(apiKey || "");
-// Confirmed available via diagnostics
-export const geminiFlash = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+// Mapping legacy models to OpenRouter identifiers
+const DEFAULT_MODEL = "google/gemini-2.0-flash-001";
 
 /**
- * Safe wrapper for Gemini content generation.
- * Handles 429 (Quota Exceeded) by returning null instead of throwing.
+ * Safe wrapper for Gemini content generation via OpenRouter.
+ * Handles errors and quota by returning null.
  */
 export async function generateSafeContent(prompt: string): Promise<string | null> {
-    try {
-        const result = await geminiFlash.generateContent(prompt);
-        const response = await result.response;
-        return response.text().trim();
-    } catch (error: any) {
-        // Handle 429 Quota Exceeded error
-        if (error?.status === 429 || error?.message?.includes('429')) {
-            console.warn('[Gemini] Quota exhausted (429), pausing AI features.');
-            return null;
-        }
-
-        // Rethrow other errors to be caught by the action's specific catch block
-        throw error;
-    }
+    console.log('[Gemini-Legacy-Helper] Routing request through OpenRouter');
+    return generateText(prompt, DEFAULT_MODEL);
 }
