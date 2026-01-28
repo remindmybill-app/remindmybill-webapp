@@ -49,14 +49,14 @@ export default function AnalyticsPage() {
       }
     }
 
-    const totalMonthlySpend = subscriptions.reduce((sum, sub) => sum + sub.cost, 0)
+    const totalMonthlySpend = subscriptions.reduce((sum, sub) => sum + (sub.cost / (sub.shared_with_count || 1)), 0)
     const yearlyProjection = totalMonthlySpend * 12 // Simple projection
 
     // Group by category
     const categoryMap = new Map<string, number>()
     subscriptions.forEach((sub) => {
       const current = categoryMap.get(sub.category) || 0
-      categoryMap.set(sub.category, current + sub.cost)
+      categoryMap.set(sub.category, current + (sub.cost / (sub.shared_with_count || 1)))
     })
 
     const categoryData = Array.from(categoryMap.entries())
@@ -78,7 +78,7 @@ export default function AnalyticsPage() {
           id: sub.id,
           name: sub.name,
           date: renewalDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-          cost: sub.cost,
+          cost: sub.cost / (sub.shared_with_count || 1),
           daysUntil,
           category: sub.category
         }
@@ -88,7 +88,7 @@ export default function AnalyticsPage() {
 
     // Calculate projected savings from low trust score subscriptions
     const lowUsageSubs = (subscriptions || []).filter((sub) => sub.trust_score < 50)
-    const projectedSavings = lowUsageSubs.reduce((sum, sub) => sum + sub.cost * 12, 0)
+    const projectedSavings = lowUsageSubs.reduce((sum, sub) => sum + (sub.cost / (sub.shared_with_count || 1)) * 12, 0)
 
     // Calculate Spending Trends (Last 12 Months)
     const last12Months = getLast12Months()
@@ -247,19 +247,19 @@ export default function AnalyticsPage() {
 
         {/* Spending Trend Area Chart */}
         <Card className="col-span-4 rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 mb-10 overflow-hidden">
-          <CardHeader className="p-8 pb-0">
+          <CardHeader className="p-6 sm:p-8 pb-0">
             <div className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-indigo-500" />
               <CardTitle className="text-xl font-bold">Spending Trends</CardTitle>
             </div>
             <CardDescription>Monthly subscription costs over time</CardDescription>
           </CardHeader>
-          <CardContent className="p-0">
-            <div className="h-[300px] w-full mt-4">
+          <CardContent className="p-0 sm:p-6 sm:pt-0">
+            <div className="h-[250px] sm:h-[300px] w-full mt-4">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={analytics.spendingTrendData}
-                  margin={{ top: 10, right: 0, left: 0, bottom: 0 }}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                 >
                   <defs>
                     <linearGradient id="colorSpending" x1="0" y1="0" x2="0" y2="1">
@@ -272,8 +272,12 @@ export default function AnalyticsPage() {
                     dataKey="month"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+                    tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
                     dy={10}
+                    minTickGap={20}
+                  />
+                  <YAxis
+                    hide={true}
                   />
                   <Tooltip
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
@@ -296,24 +300,24 @@ export default function AnalyticsPage() {
         <div className="grid gap-10 lg:grid-cols-2">
           {/* Category Breakdown */}
           <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 overflow-hidden">
-            <CardHeader className="p-8 pb-4">
+            <CardHeader className="p-6 sm:p-8 pb-4">
               <div className="flex items-center gap-2">
                 <Target className="h-5 w-5 text-violet-500" />
                 <CardTitle className="text-xl font-bold">Category Allocation</CardTitle>
               </div>
               <CardDescription>Monthly budget distribution across sectors</CardDescription>
             </CardHeader>
-            <CardContent className="p-8 pt-0">
-              <div className="flex flex-col items-center gap-10 sm:flex-row">
-                <div className="h-[250px] w-full sm:w-1/2">
+            <CardContent className="p-6 sm:p-8 pt-0">
+              <div className="flex flex-col items-center gap-6 sm:gap-10 sm:flex-row">
+                <div className="h-[200px] sm:h-[250px] w-full sm:w-1/2">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={analytics.categoryData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={65}
-                        outerRadius={90}
+                        innerRadius={60}
+                        outerRadius={80}
                         paddingAngle={8}
                         dataKey="value"
                         stroke="none"
@@ -328,7 +332,7 @@ export default function AnalyticsPage() {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="w-full space-y-4 sm:w-1/2">
+                <div className="w-full space-y-3 sm:w-1/2">
                   {analytics.categoryData.map((category, index) => (
                     <div key={index} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">

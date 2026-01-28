@@ -53,6 +53,7 @@ export interface Subscription {
   last_used_date: string | null
   auto_renewal: boolean
   cancellation_difficulty: "easy" | "medium" | "hard"
+  shared_with_count: number
   created_at: string
   updated_at: string
 }

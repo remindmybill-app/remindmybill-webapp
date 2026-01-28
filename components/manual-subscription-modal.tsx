@@ -31,6 +31,7 @@ const formSchema = z.object({
     }),
     isTrial: z.boolean().default(false),
     category: z.string().min(1, "Category is required"),
+    sharedWithCount: z.string().min(1, "Required").refine((val) => !isNaN(Number(val)) && Number(val) >= 1, "Must be at least 1"),
 })
 
 const categories = [
@@ -77,6 +78,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
             frequency: "monthly",
             isTrial: false,
             category: "Entertainment",
+            sharedWithCount: "1",
         }
     })
 
@@ -89,7 +91,8 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                 setValue("currency", subscriptionToEdit.currency)
                 setValue("frequency", subscriptionToEdit.frequency)
                 setValue("category", subscriptionToEdit.category)
-                setValue("isTrial", false) // Assuming mock data didn't have this, or add if needed
+                setValue("isTrial", false)
+                setValue("sharedWithCount", String(subscriptionToEdit.shared_with_count || 1))
 
                 if (subscriptionToEdit.renewal_date) {
                     const rDate = new Date(subscriptionToEdit.renewal_date)
@@ -102,6 +105,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                     frequency: "monthly",
                     isTrial: false,
                     category: "Entertainment",
+                    sharedWithCount: "1",
                 })
                 setDate(undefined)
             }
@@ -141,7 +145,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                     frequency: values.frequency,
                     renewal_date: values.renewalDate.toISOString(),
                     category: values.category,
-                    // trust_score: 50, // Keep existing trust score
+                    shared_with_count: Number(values.sharedWithCount),
                 }).eq('id', subscriptionToEdit.id)
 
                 if (error) throw error
@@ -159,6 +163,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                     status: values.isTrial ? "active" : "active",
                     category: values.category,
                     trust_score: 50,
+                    shared_with_count: Number(values.sharedWithCount),
                 })
                 if (error) throw error
                 toast.success("Subscription added successfully")
@@ -386,6 +391,30 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                                         ))}
                                     </SelectContent>
                                 </Select>
+                            </div>
+                        </div>
+
+                        {/* Sharing Options */}
+                        <div className="space-y-2">
+                            <Label htmlFor="sharedWithCount" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Shared with how many people?</Label>
+                            <div className="flex items-center gap-4">
+                                <Input
+                                    id="sharedWithCount"
+                                    type="number"
+                                    min="1"
+                                    {...register("sharedWithCount")}
+                                    className={cn("h-12 w-24 text-lg font-medium bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10", errors.sharedWithCount && "border-rose-500")}
+                                />
+                                <div className="flex-1 text-sm text-muted-foreground transition-all">
+                                    {watch("sharedWithCount") && Number(watch("sharedWithCount")) > 1 ? (
+                                        <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-medium">
+                                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-500 text-[10px] text-white">👤</span>
+                                            <span>My Share: {(Number(watch("cost") || 0) / Number(watch("sharedWithCount"))).toFixed(2)}</span>
+                                        </div>
+                                    ) : (
+                                        <span className="opacity-50">Personal subscription (100% cost)</span>
+                                    )}
+                                </div>
                             </div>
                         </div>
 

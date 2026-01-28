@@ -14,19 +14,20 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, Search, Bell, User, Settings, LogOut, AlertCircle } from "lucide-react"
+import { Menu, Search, Bell, User, Settings, LogOut, AlertCircle, Home, Briefcase, Plus, BarChart3 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useProfile } from "@/lib/hooks/use-profile"
 import { useNotifications } from "@/lib/hooks/use-notifications"
 import { isPro } from "@/lib/subscription-utils"
-// import type { Notification } from "@/lib/types" // No longer needed as we use the hook's type or inferred type
-
-// const mockNotifications: Notification[] = [] // Removed
+import { ManualSubscriptionModal } from "@/components/manual-subscription-modal"
+import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 
 export function Navigation() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const { profile } = useProfile()
   const { notifications } = useNotifications()
+  const { refreshSubscriptions } = useSubscriptions()
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
   const getTimeAgo = (timestamp: string) => {
     const seconds = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000)
@@ -37,185 +38,246 @@ export function Navigation() {
   }
 
   return (
-    <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <Bell className="h-7 w-7 text-primary" />
-            <span className="text-xl font-bold">Remind My Bill</span>
-          </Link>
+    <>
+      <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:block hidden">
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2">
+              <Bell className="h-7 w-7 text-primary" />
+              <span className="text-xl font-bold">Remind My Bill</span>
+            </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden items-center gap-6 md:flex">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/dashboard">Dashboard</Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/trust-center">Trust Center</Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/analytics">Analytics</Link>
-            </Button>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/pricing">Pricing</Link>
-            </Button>
-          </div>
-
-          {/* Right Side Actions */}
-          <div className="flex items-center gap-2">
-            {/* Search Bar */}
-            <div className="hidden lg:block">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  type="search"
-                  placeholder="Search... (Cmd+K)"
-                  className="w-64 pl-9 pr-4"
-                  onFocus={() => setIsSearchOpen(true)}
-                />
-                <kbd className="pointer-events-none absolute right-2 top-1/2 hidden h-5 -translate-y-1/2 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-                  <span className="text-xs">⌘</span>K
-                </kbd>
-              </div>
+            {/* Desktop Navigation */}
+            <div className="hidden items-center gap-6 md:flex">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/dashboard">Dashboard</Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/trust-center">Trust Center</Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/analytics">Analytics</Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/pricing">Pricing</Link>
+              </Button>
             </div>
 
-            {/* Mobile Search */}
-            <Button variant="ghost" size="icon" className="lg:hidden">
-              <Search className="h-5 w-5" />
-              <span className="sr-only">Search</span>
-            </Button>
+            {/* Right Side Actions */}
+            <div className="flex items-center gap-2">
+              {/* Search Bar */}
+              <div className="hidden lg:block">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="search"
+                    placeholder="Search... (Cmd+K)"
+                    className="w-64 pl-9 pr-4"
+                    onFocus={() => setIsSearchOpen(true)}
+                  />
+                  <kbd className="pointer-events-none absolute right-2 top-1/2 hidden h-5 -translate-y-1/2 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+                    <span className="text-xs">⌘</span>K
+                  </kbd>
+                </div>
+              </div>
 
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="h-5 w-5" />
-                  {notifications.some(n => !n.read) && (
-                    <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive" />
-                  )}
-                  <span className="sr-only">Notifications</span>
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-80">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">Recent Alerts</h3>
-                    <Badge variant="secondary">{notifications.length}</Badge>
-                  </div>
-                  <div className="space-y-3">
-                    {notifications.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">No new notifications</p>
-                    ) : (
-                      notifications.map((notification) => (
-                        <div
-                          key={notification.id}
-                          className="flex gap-3 rounded-lg border p-3 transition-colors hover:bg-accent"
-                        >
-                          <AlertCircle
-                            className={`mt-0.5 h-5 w-5 flex-shrink-0 ${notification.type === "warning"
-                              ? "text-yellow-500"
-                              : notification.type === "alert"
-                                ? "text-destructive"
-                                : "text-primary"
-                              }`}
-                          />
-                          <div className="flex-1 space-y-1">
-                            <p className="text-sm font-medium">{notification.title}</p>
-                            <p className="text-xs text-muted-foreground">{notification.message}</p>
-                            <p className="text-xs text-muted-foreground">{getTimeAgo(notification.created_at)}</p>
-                          </div>
-                        </div>
-                      ))
+              {/* Mobile Search - Hidden on mobile as it will be in bottom nav or top logo area if we kept it */}
+              <Button variant="ghost" size="icon" className="lg:hidden">
+                <Search className="h-5 w-5" />
+                <span className="sr-only">Search</span>
+              </Button>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
+                    {notifications.some(n => !n.read) && (
+                      <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-destructive" />
                     )}
-                  </div>
-                  <Button variant="outline" className="w-full bg-transparent" size="sm">
-                    View All Notifications
+                    <span className="sr-only">Notifications</span>
                   </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-80">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold">Recent Alerts</h3>
+                      <Badge variant="secondary">{notifications.length}</Badge>
+                    </div>
+                    <div className="space-y-3">
+                      {notifications.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-4">No new notifications</p>
+                      ) : (
+                        notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className="flex gap-3 rounded-lg border p-3 transition-colors hover:bg-accent"
+                          >
+                            <AlertCircle
+                              className={`mt-0.5 h-5 w-5 flex-shrink-0 ${notification.type === "warning"
+                                ? "text-yellow-500"
+                                : notification.type === "alert"
+                                  ? "text-destructive"
+                                  : "text-primary"
+                                }`}
+                            />
+                            <div className="flex-1 space-y-1">
+                              <p className="text-sm font-medium">{notification.title}</p>
+                              <p className="text-xs text-muted-foreground">{notification.message}</p>
+                              <p className="text-xs text-muted-foreground">{getTimeAgo(notification.created_at)}</p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <Button variant="outline" className="w-full bg-transparent" size="sm">
+                      View All Notifications
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary relative">
-                    <User className="h-5 w-5" />
-                    {isPro(profile?.subscription_tier) && (
-                      <span className="absolute -top-1 -right-1 flex h-4 w-8 items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-[9px] font-bold text-white shadow-sm ring-1 ring-white dark:ring-black">
-                        PRO
-                      </span>
-                    )}
-                  </div>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{profile?.full_name || "User"}</p>
-                    <p className="text-xs leading-none text-muted-foreground">{profile?.email}</p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/profile" className="cursor-pointer">
-                    <User className="mr-2 h-4 w-4" />
-                    Profile
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/settings" className="cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary relative">
+                      <User className="h-5 w-5" />
+                      {isPro(profile?.subscription_tier) && (
+                        <span className="absolute -top-1 -right-1 flex h-4 w-8 items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-[9px] font-bold text-white shadow-sm ring-1 ring-white dark:ring-black">
+                          PRO
+                        </span>
+                      )}
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium leading-none">{profile?.full_name || "User"}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{profile?.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile" className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" className="cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-            {/* Mobile Menu */}
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Toggle menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-80">
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center gap-2 border-b pb-4">
-                    <Bell className="h-6 w-6 text-primary" />
-                    <span className="text-lg font-bold">Remind My Bill</span>
-                  </div>
-                  <nav className="flex flex-col gap-2">
-                    <Button variant="ghost" className="justify-start" asChild>
-                      <Link href="/dashboard">Dashboard</Link>
+              {/* Mobile Menu - Hidden because we will use Bottom Nav */}
+              <div className="md:hidden">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <Menu className="h-5 w-5" />
+                      <span className="sr-only">Toggle menu</span>
                     </Button>
-                    <Button variant="ghost" className="justify-start" asChild>
-                      <Link href="/trust-center">Trust Center</Link>
-                    </Button>
-                    <Button variant="ghost" className="justify-start" asChild>
-                      <Link href="/analytics">Analytics</Link>
-                    </Button>
-                    <Button variant="ghost" className="justify-start" asChild>
-                      <Link href="/pricing">Pricing</Link>
-                    </Button>
-                    <Button variant="ghost" className="justify-start" asChild>
-                      <Link href="/settings">Settings</Link>
-                    </Button>
-                    <Button variant="ghost" className="justify-start" asChild>
-                      <Link href="/profile">Profile</Link>
-                    </Button>
-                  </nav>
-                </div>
-              </SheetContent>
-            </Sheet>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-80">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-center gap-2 border-b pb-4">
+                        <Bell className="h-6 w-6 text-primary" />
+                        <span className="text-lg font-bold">Remind My Bill</span>
+                      </div>
+                      <nav className="flex flex-col gap-2">
+                        <Button variant="ghost" className="justify-start" asChild>
+                          <Link href="/dashboard">Dashboard</Link>
+                        </Button>
+                        <Button variant="ghost" className="justify-start" asChild>
+                          <Link href="/trust-center">Trust Center</Link>
+                        </Button>
+                        <Button variant="ghost" className="justify-start" asChild>
+                          <Link href="/analytics">Analytics</Link>
+                        </Button>
+                        <Button variant="ghost" className="justify-start" asChild>
+                          <Link href="/pricing">Pricing</Link>
+                        </Button>
+                        <Button variant="ghost" className="justify-start" asChild>
+                          <Link href="/settings">Settings</Link>
+                        </Button>
+                        <Button variant="ghost" className="justify-start" asChild>
+                          <Link href="/profile">Profile</Link>
+                        </Button>
+                      </nav>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile-Only Header (Just Logo) */}
+      <div className="md:hidden flex h-14 items-center justify-between px-6 border-b bg-background/95 backdrop-blur sticky top-0 z-40">
+        <Link href="/" className="flex items-center gap-2">
+          <Bell className="h-6 w-6 text-primary" />
+          <span className="text-lg font-bold">Remind My Bill</span>
+        </Link>
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" className="relative p-0 h-8 w-8">
+            <Bell className="h-5 w-5" />
+            {notifications.some(n => !n.read) && (
+              <span className="absolute right-0 top-0 h-2 w-2 rounded-full bg-destructive" />
+            )}
+          </Button>
+          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <User className="h-4 w-4 text-primary" />
           </div>
         </div>
       </div>
-    </nav>
+
+      {/* Bottom Navigation Bar (Mobile Only) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border/50 pb-safe-area-inset-bottom">
+        <div className="grid h-16 grid-cols-5 items-center justify-items-center">
+          <Link href="/dashboard" className="flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <Home className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Dashboard</span>
+          </Link>
+          <Link href="/dashboard" className="flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <Briefcase className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Portfolio</span>
+          </Link>
+          <div className="relative">
+            <Button
+              size="icon"
+              className="h-12 w-12 rounded-2xl bg-primary shadow-lg shadow-primary/25 -mt-8 flex items-center justify-center ring-4 ring-background"
+              onClick={() => setIsAddModalOpen(true)}
+            >
+              <Plus className="h-6 w-6 text-primary-foreground" />
+            </Button>
+          </div>
+          <Link href="/analytics" className="flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <BarChart3 className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Analytics</span>
+          </Link>
+          <Link href="/settings" className="flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-primary transition-colors">
+            <Settings className="h-5 w-5" />
+            <span className="text-[10px] font-medium">Settings</span>
+          </Link>
+        </div>
+      </div>
+
+      <ManualSubscriptionModal
+        open={isAddModalOpen}
+        onOpenChange={setIsAddModalOpen}
+        onSubscriptionAdded={refreshSubscriptions}
+        trigger={<span className="hidden" />}
+      />
+    </>
   )
 }

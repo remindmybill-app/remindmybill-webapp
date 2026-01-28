@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"
+import React, { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tv, Music, Code, Dumbbell, Cloud, Mail, Package, Gamepad2, Inbox, Sparkles, TrendingUp, Calendar, MoreHorizontal, Pencil, Trash2, Loader2, Zap, XCircle } from "lucide-react"
@@ -14,10 +14,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+  DrawerFooter,
+  DrawerClose,
+} from "@/components/ui/drawer"
 import { ManualSubscriptionModal } from "@/components/manual-subscription-modal"
 import { toast } from "sonner"
 import { Subscription } from "@/lib/types"
 import { getNextRenewalDate, getRenewalDisplay } from "@/lib/utils/date-utils"
+import { CalendarExportButton } from "@/components/calendar-export-button"
 
 const categoryIcons: Record<string, any> = {
   Entertainment: Tv,
@@ -35,6 +45,7 @@ export function SubscriptionsTable() {
   const { subscriptions, isLoading, refreshSubscriptions, deleteSubscription, cancelSubscription } = useSubscriptions()
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [selectedMobileSub, setSelectedMobileSub] = useState<Subscription | null>(null)
 
   const handleDelete = async (id: string, name: string) => {
     if (confirm(`Are you sure you want to delete ${name}?`)) {
@@ -46,6 +57,7 @@ export function SubscriptionsTable() {
         toast.error("Failed to delete subscription")
       }
       setDeletingId(null)
+      setSelectedMobileSub(null)
     }
   }
 
@@ -64,10 +76,20 @@ export function SubscriptionsTable() {
             <p className="mb-8 max-w-sm text-sm text-muted-foreground text-balance">
               Link your primary inbox to automatically visualize and manage your monthly recurring expenditures.
             </p>
-            <Button size="lg" className="h-12 rounded-xl bg-zinc-900 px-8 text-md font-bold dark:bg-indigo-600 dark:hover:bg-indigo-700">
+
+            {/* Desktop Analyze Button */}
+            <Button size="lg" className="hidden md:flex h-12 rounded-xl bg-zinc-900 px-8 text-md font-bold dark:bg-indigo-600 dark:hover:bg-indigo-700">
               <Sparkles className="h-5 w-5 mr-2" />
               Analyze Inbox
             </Button>
+
+            {/* Mobile Sticky Analyze Button */}
+            <div className="md:hidden fixed bottom-20 left-4 right-4 z-40">
+              <Button size="lg" className="w-full h-14 rounded-2xl bg-zinc-900 text-lg font-bold shadow-2xl dark:bg-indigo-600 dark:hover:bg-indigo-700 border-2 border-white/10">
+                <Sparkles className="h-6 w-6 mr-3" />
+                Scan Gmail For Bills
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -149,13 +171,29 @@ export function SubscriptionsTable() {
                                 />
                               </div>
                               <div>
-                                <span className="block text-sm font-bold text-zinc-900 dark:text-zinc-50">{sub.name}</span>
+                                <span className="block text-sm font-bold text-zinc-900 dark:text-zinc-50">
+                                  {sub.name}
+                                  {sub.shared_with_count > 1 && (
+                                    <span className="ml-2 inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-tighter text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
+                                      👥 Shared
+                                    </span>
+                                  )}
+                                </span>
                                 <span className="text-[10px] font-medium text-muted-foreground uppercase">{sub.category}</span>
                               </div>
                             </div>
                           </td>
                           <td className="p-4 text-right">
-                            <div className="font-black text-sm tracking-tighter text-zinc-900 dark:text-zinc-50">{formatCurrency(sub.cost, sub.currency)}</div>
+                            <div className="font-black text-sm tracking-tighter text-zinc-900 dark:text-zinc-50">
+                              {sub.shared_with_count > 1 ? (
+                                <div className="flex flex-col items-end">
+                                  <span className="text-indigo-600 dark:text-indigo-400">{formatCurrency(sub.cost / sub.shared_with_count, sub.currency)}</span>
+                                  <span className="text-[9px] text-muted-foreground opacity-50 font-medium">Full: {formatCurrency(sub.cost, sub.currency)}</span>
+                                </div>
+                              ) : (
+                                formatCurrency(sub.cost, sub.currency)
+                              )}
+                            </div>
                           </td>
                           <td className="p-4 text-right">
                             <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{sub.frequency || 'Monthly'}</div>
@@ -174,35 +212,44 @@ export function SubscriptionsTable() {
                             </Badge>
                           </td>
                           <td className="p-4 pr-6 text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-zinc-200 dark:hover:bg-zinc-700">
-                                  {deletingId === sub.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                                  ) : (
-                                    <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                                  )}
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => setEditingSubscription(sub)}>
-                                  <Pencil className="mr-2 h-4 w-4" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => {
-                                  if (confirm("Are you sure you want to cancel this subscription? It will be marked as cancelled but remain in your history.")) {
-                                    cancelSubscription(sub.id)
-                                  }
-                                }}>
-                                  <XCircle className="mr-2 h-4 w-4" />
-                                  Cancel Subscription
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleDelete(sub.id, sub.name)} className="text-destructive focus:text-destructive">
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            <div className="flex items-center justify-end gap-1">
+                              <CalendarExportButton
+                                name={sub.name}
+                                cost={sub.cost / sub.shared_with_count}
+                                currency={sub.currency === 'USD' ? '$' : sub.currency === 'EUR' ? '€' : '£'}
+                                renewalDate={sub.renewal_date}
+                                frequency={sub.frequency}
+                              />
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-zinc-200 dark:hover:bg-zinc-700">
+                                    {deletingId === sub.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                    ) : (
+                                      <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => setEditingSubscription(sub)}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => {
+                                    if (confirm("Are you sure you want to cancel this subscription? It will be marked as cancelled but remain in your history.")) {
+                                      cancelSubscription(sub.id)
+                                    }
+                                  }}>
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    Cancel Subscription
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleDelete(sub.id, sub.name)} className="text-destructive focus:text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </td>
                         </tr>
                       )
@@ -217,44 +264,40 @@ export function SubscriptionsTable() {
                   const nextDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
                   const { label, statusColor } = getRenewalDisplay(nextDate)
                   return (
-                    <div key={sub.id} className="rounded-2xl border border-zinc-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                    <div
+                      key={sub.id}
+                      className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 active:scale-[0.98] transition-transform"
+                      onClick={() => setSelectedMobileSub(sub)}
+                    >
                       <div className="mb-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-zinc-50 dark:bg-zinc-800 ring-1 ring-zinc-100 dark:ring-zinc-700">
-                            <Icon className="h-5 w-5 text-zinc-600 dark:text-zinc-400" />
+                        <div className="flex items-center gap-4">
+                          <div className="h-12 w-12 flex items-center justify-center rounded-xl bg-zinc-50 dark:bg-zinc-800 ring-1 ring-zinc-100 dark:ring-zinc-700">
+                            <Icon className="h-6 w-6 text-zinc-600 dark:text-zinc-400" />
                           </div>
                           <div>
-                            <p className="text-sm font-bold text-zinc-900 dark:text-white">{sub.name}</p>
-                            <p className={`text-[10px] font-medium ${statusColor}`}>Renews in {label}</p>
+                            <p className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                              {sub.name}
+                              {sub.shared_with_count > 1 && <span className="text-[9px] bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 px-1 rounded">👥</span>}
+                            </p>
+                            <p className={`text-xs font-medium ${statusColor}`}>Renews in {label}</p>
                           </div>
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                              <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setEditingSubscription(sub)}>
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDelete(sub.id, sub.name)} className="text-destructive focus:text-destructive">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <Button variant="ghost" size="icon" className="h-10 w-10">
+                          <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
+                        </Button>
                       </div>
-                      <div className="flex items-center justify-between pt-2 border-t border-zinc-50 dark:border-zinc-800/50">
+                      <div className="flex items-center justify-between pt-4 border-t border-zinc-50 dark:border-zinc-800/50">
                         <div>
-                          <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Cost</p>
-                          <p className="text-lg font-black tracking-tighter text-zinc-900 dark:text-white">
-                            {formatCurrency(sub.cost, sub.currency)}
-                            <span className="text-[10px] font-normal text-muted-foreground ml-1 uppercase">/{sub.frequency === 'yearly' ? 'yr' : 'mo'}</span>
+                          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Cost</p>
+                          <p className="text-xl font-black tracking-tighter text-zinc-900 dark:text-white">
+                            {formatCurrency(sub.cost / sub.shared_with_count, sub.currency)}
+                            <span className="text-xs font-normal text-muted-foreground ml-1 uppercase">/{sub.frequency === 'yearly' ? 'yr' : 'mo'}</span>
                           </p>
+                          {sub.shared_with_count > 1 && (
+                            <p className="text-[9px] text-muted-foreground font-medium">Full: {formatCurrency(sub.cost, sub.currency)}</p>
+                          )}
                         </div>
-                        <Badge variant="outline" className="h-6 text-[10px] font-black uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-800/20 border-zinc-200 dark:border-zinc-800">
+                        <Badge variant="outline" className="h-7 px-3 text-[10px] font-black uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-800/20 border-zinc-200 dark:border-zinc-800">
                           {sub.category}
                         </Badge>
                       </div>
@@ -266,6 +309,62 @@ export function SubscriptionsTable() {
           )}
         </CardContent>
       </Card>
+
+      {/* Mobile Action Drawer */}
+      <Drawer open={!!selectedMobileSub} onOpenChange={(open) => !open && setSelectedMobileSub(null)}>
+        <DrawerContent className="p-6">
+          <DrawerHeader className="p-0 mb-6">
+            <div className="flex items-center gap-4 text-left">
+              <div className="h-14 w-14 flex items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-500/10">
+                {selectedMobileSub && categoryIcons[selectedMobileSub.category] ? React.createElement(categoryIcons[selectedMobileSub.category], { className: "h-7 w-7 text-indigo-600" }) : <Package className="h-7 w-7" />}
+              </div>
+              <div>
+                <DrawerTitle className="text-2xl font-bold">{selectedMobileSub?.name}</DrawerTitle>
+                <p className="text-muted-foreground">{selectedMobileSub?.category} • {selectedMobileSub?.frequency}</p>
+              </div>
+            </div>
+          </DrawerHeader>
+
+          <div className="grid grid-cols-3 gap-2 mb-8">
+            <Button
+              variant="outline"
+              className="h-16 rounded-2xl flex flex-col items-center justify-center gap-1 border-zinc-200 dark:border-zinc-800"
+              onClick={() => {
+                setEditingSubscription(selectedMobileSub)
+                setSelectedMobileSub(null)
+              }}
+            >
+              <Pencil className="h-5 w-5" />
+              <span className="text-xs font-bold">Edit</span>
+            </Button>
+            <div className="flex items-center justify-center border border-zinc-200 dark:border-zinc-800 rounded-2xl h-16">
+              <CalendarExportButton
+                name={selectedMobileSub?.name || ''}
+                cost={(selectedMobileSub?.cost || 0) / (selectedMobileSub?.shared_with_count || 1)}
+                currency={selectedMobileSub?.currency === 'USD' ? '$' : selectedMobileSub?.currency === 'EUR' ? '€' : '£'}
+                renewalDate={selectedMobileSub?.renewal_date || ''}
+                frequency={selectedMobileSub?.frequency || ''}
+              />
+            </div>
+            <Button
+              variant="outline"
+              className="h-16 rounded-2xl flex flex-col items-center justify-center gap-1 border-rose-100 bg-rose-50/30 text-rose-600 dark:bg-rose-500/5 dark:border-rose-900/30"
+              onClick={() => {
+                if (selectedMobileSub) handleDelete(selectedMobileSub.id, selectedMobileSub.name)
+              }}
+            >
+              <Trash2 className="h-5 w-5" />
+              <span className="text-xs font-bold">Delete</span>
+            </Button>
+          </div>
+
+          <DrawerFooter className="p-0">
+            <DrawerClose asChild>
+              <Button variant="ghost" className="h-14 w-full rounded-2xl text-lg font-bold">Cancel</Button>
+            </DrawerClose>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
 
       <ManualSubscriptionModal
         open={!!editingSubscription}
