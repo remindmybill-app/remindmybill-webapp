@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { Check, Mail, MessageSquare, TrendingUp, FileText, ShieldCheck, Loader2 } from "lucide-react"
+import { Check, Mail, MessageSquare, TrendingUp, FileText, ShieldCheck, Loader2, XCircle } from "lucide-react"
 import { useProfile } from "@/lib/hooks/use-profile"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -125,7 +125,9 @@ export default function PricingPage() {
           {plans.map((plan, index) => (
             <Card
               key={index}
-              className={`relative overflow-hidden ${plan.highlight ? "border-primary/50 shadow-lg shadow-primary/20 ring-2 ring-primary/20" : ""
+              className={`relative overflow-hidden transition-all duration-300 ${plan.highlight
+                ? "border-primary shadow-lg shadow-primary/20 ring-1 ring-primary/20"
+                : "border-white/10 bg-zinc-900/40 hover:border-white/20"
                 }`}
             >
               {/* Current Plan Badge */}
@@ -138,10 +140,10 @@ export default function PricingPage() {
                   </div>
                 )}
               {plan.highlight && (
-                <div className="absolute top-0 right-0 z-20">
-                  <div className="bg-primary px-4 py-1.5 rounded-bl-xl text-[10px] font-black uppercase tracking-[0.2em] text-primary-foreground shadow-lg">
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
+                  <Badge className="bg-primary px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-primary-foreground shadow-xl border-2 border-background">
                     Recommended
-                  </div>
+                  </Badge>
                 </div>
               )}
               {plan.highlight && (
@@ -177,7 +179,7 @@ export default function PricingPage() {
                             }`}
                         />
                       ) : (
-                        <Check className="mt-0.5 h-5 w-5 flex-shrink-0 text-muted-foreground opacity-30" />
+                        <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-500/50" />
                       )}
                       <span
                         className={`${feature.included
@@ -234,7 +236,7 @@ export default function PricingPage() {
                 >
                   {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
                   {plan.name === "Pro Plan" && isPro(profile?.subscription_tier)
-                    ? "Current Plan"
+                    ? "Manage Billing"
                     : plan.name === "Essential" && isFree(profile?.subscription_tier)
                       ? "Current Plan"
                       : plan.cta}

@@ -184,7 +184,7 @@ export default function TrustCenterPage() {
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-emerald-500"
     if (score >= 50) return "text-amber-500"
-    return "text-rose-500 dark:text-rose-400"
+    return "text-red-400 font-bold"
   }
 
   const getScoreBg = (score: number) => {
@@ -262,6 +262,14 @@ export default function TrustCenterPage() {
                           <HelpCircle className="h-4 w-4 mr-2" />
                           Request to add "{searchQuery}"
                         </Button>
+                        <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800/50 w-full text-center">
+                          <a
+                            href="mailto:support@remindmybill.com"
+                            className="text-[11px] text-muted-foreground hover:text-indigo-500 transition-colors flex items-center justify-center gap-1.5"
+                          >
+                            Don't see a service? <span className="underline decoration-indigo-500/30">Request it.</span>
+                          </a>
+                        </div>
                       </div>
                     )}
                     {searchResults.length > 0 && (

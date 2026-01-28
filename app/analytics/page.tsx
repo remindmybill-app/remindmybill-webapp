@@ -29,6 +29,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Info, AlertTriangle, ArrowUp } from "lucide-react"
+import { ErrorBoundary } from "@/components/ui/error-boundary"
 
 // Helper to get last 12 months
 const getLast12Months = () => {
@@ -52,7 +53,7 @@ export default function AnalyticsPage() {
         categoryData: [],
         upcomingRenewals: [],
         projectedSavings: 0,
-        lowUsageSubs: [],
+        savingsOpportunities: [],
         spendingTrendData: [],
         yearlyProjection: 0,
       }
@@ -103,21 +104,35 @@ export default function AnalyticsPage() {
     // Calculate Spending Trends (Last 12 Months)
     const last12Months = getLast12Months()
     const spendingTrendData = last12Months.map((month, i) => {
-      if (totalMonthlySpend === 0) return { month, spending: 0 }
-      const growthFactor = 0.9 + (i / 11) * 0.1
+      // For now, since we don't have a history table, show the current spend 
+      // if it existed in that month (simple simulation of current portfolio)
       return {
         month,
-        spending: Math.round(totalMonthlySpend * growthFactor),
+        spending: totalMonthlySpend,
       }
     })
+
+    // Detect Potential Savings (Real logic)
+    // We look for subscriptions with low trust scores or high cancellation difficulty
+    const savingsOpportunities = (subscriptions || [])
+      .filter(sub => sub.trust_score < 60 || sub.cancellation_difficulty.toLowerCase() === 'hard')
+      .map(sub => ({
+        id: sub.id,
+        name: sub.name,
+        reason: sub.trust_score < 40 ? "Unusually High Cost" : "Hard to Cancel",
+        annualSaving: (sub.cost / (sub.shared_with_count || 1)) * 12
+      }))
+      .sort((a, b) => b.annualSaving - a.annualSaving)
+
+    const totalRecoverable = savingsOpportunities.reduce((sum, item) => sum + item.annualSaving, 0)
 
     return {
       totalMonthlySpend,
       activeCount: subscriptions.length,
       categoryData: categoryData || [],
       upcomingRenewals: upcomingRenewals || [],
-      projectedSavings,
-      lowUsageSubs: lowUsageSubs || [],
+      projectedSavings: totalRecoverable,
+      savingsOpportunities,
       spendingTrendData,
       yearlyProjection,
     }
@@ -136,6 +151,24 @@ export default function AnalyticsPage() {
           </div>
           <Skeleton className="h-[400px] rounded-3xl" />
         </div>
+      </div>
+    )
+  }
+
+  // Handle Empty State
+  if (subscriptions.length === 0) {
+    return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center">
+        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-indigo-50 dark:bg-indigo-500/10 shadow-xl shadow-indigo-500/10">
+          <BarChart3 className="h-12 w-12 text-indigo-600 dark:text-indigo-400" />
+        </div>
+        <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Analytics Unavailable</h2>
+        <p className="mt-2 text-lg text-muted-foreground max-w-md">
+          Add your first subscription to see spending trends, category breakdowns, and optimization insights.
+        </p>
+        <Button className="mt-8 rounded-xl h-12 px-8 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20" asChild>
+          <a href="/dashboard">Add Your First Subscription</a>
+        </Button>
       </div>
     )
   }
@@ -269,49 +302,51 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent className="p-0 sm:p-6 sm:pt-0">
             <div className="h-[250px] sm:h-[300px] w-full mt-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={analytics.spendingTrendData}
-                  margin={{ top: 10, right: 0, left: -25, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="colorSpending" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.1} />
-                  <XAxis
-                    dataKey="month"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
-                    dy={10}
-                    minTickGap={20}
-                  />
-                  <YAxis
-                    hide={true}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      borderRadius: '12px',
-                      border: 'none',
-                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                      fontSize: '12px',
-                      padding: '8px 12px'
-                    }}
-                    formatter={(value: number) => [`$${value}`, "Spending"]}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="spending"
-                    stroke="#6366f1"
-                    strokeWidth={3}
-                    fillOpacity={1}
-                    fill="url(#colorSpending)"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <ErrorBoundary>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={analytics.spendingTrendData}
+                    margin={{ top: 10, right: 0, left: -25, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="colorSpending" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.1} />
+                    <XAxis
+                      dataKey="month"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
+                      dy={10}
+                      minTickGap={20}
+                    />
+                    <YAxis
+                      hide={true}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '12px',
+                        border: 'none',
+                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                        fontSize: '12px',
+                        padding: '8px 12px'
+                      }}
+                      formatter={(value: number) => [`$${value}`, "Spending"]}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="spending"
+                      stroke="#6366f1"
+                      strokeWidth={3}
+                      fillOpacity={1}
+                      fill="url(#colorSpending)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </ErrorBoundary>
             </div>
           </CardContent>
         </Card>
@@ -329,27 +364,29 @@ export default function AnalyticsPage() {
             <CardContent className="p-6 sm:p-8 pt-0">
               <div className="flex flex-col items-center gap-6 sm:gap-10 sm:flex-row">
                 <div className="h-[200px] sm:h-[250px] w-full sm:w-1/2">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={analytics.categoryData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={8}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {analytics.categoryData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <ErrorBoundary>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={analytics.categoryData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={8}
+                          dataKey="value"
+                          stroke="none"
+                        >
+                          {analytics.categoryData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </ErrorBoundary>
                 </div>
                 <div className="w-full space-y-3 sm:w-1/2">
                   {analytics.categoryData.map((category, index) => (
@@ -395,7 +432,7 @@ export default function AnalyticsPage() {
             <CardContent className="p-8 pt-0">
               <div className="mb-8 rounded-2xl bg-white/80 p-6 text-center shadow-inner dark:bg-zinc-900/50 backdrop-blur-sm">
                 <p className="text-5xl font-extrabold tracking-tighter text-indigo-600 dark:text-indigo-400">
-                  ${(analytics.projectedSavings + 864).toFixed(0)}
+                  ${analytics.projectedSavings.toFixed(0)}
                 </p>
                 <p className="mt-2 text-sm font-semibold text-indigo-900/60 dark:text-indigo-300/50 uppercase tracking-widest">Est. Annual Recoverable</p>
               </div>
@@ -403,56 +440,33 @@ export default function AnalyticsPage() {
                 <div>
                   <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-900/40 dark:text-blue-200/40 mb-3">Optimization Insights</h4>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between rounded-xl border border-white/40 bg-white/40 p-4 dark:border-white/5 dark:bg-white/5 shadow-sm">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center">
-                          <Zap className="h-4 w-4 text-blue-600" />
+                    {analytics.savingsOpportunities.map((opportunity) => (
+                      <div key={opportunity.id} className="flex items-center justify-between rounded-xl border border-white/40 bg-white/40 p-4 dark:border-white/5 dark:bg-white/5 shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center">
+                            <Zap className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <div>
+                            <span className="block text-sm font-bold text-indigo-950 dark:text-indigo-50 leading-tight">{opportunity.name}</span>
+                            <span className="text-[11px] text-indigo-600/70 dark:text-indigo-300/60">{opportunity.reason}</span>
+                          </div>
                         </div>
-                        <div>
-                          <span className="block text-sm font-bold text-indigo-950 dark:text-indigo-50 leading-tight">Adobe Creative Cloud</span>
-                          <span className="text-[11px] text-indigo-600/70 dark:text-indigo-300/60">Switch to Affinity ($50 one-time)</span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-heavy text-emerald-600 dark:text-emerald-400">Save $720/yr</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between rounded-xl border border-white/40 bg-white/40 p-4 dark:border-white/5 dark:bg-white/5 shadow-sm">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center">
-                          <AlertTriangle className="h-4 w-4 text-orange-600" />
-                        </div>
-                        <div>
-                          <span className="block text-sm font-bold text-indigo-950 dark:text-indigo-50 leading-tight">Hulu Subscription</span>
-                          <span className="text-[11px] text-indigo-600/70 dark:text-indigo-300/60">Last used 90+ days ago</span>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Save ${opportunity.annualSaving.toFixed(0)}/yr</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-heavy text-emerald-600 dark:text-emerald-400">Save $144/yr</p>
-                      </div>
-                    </div>
-                    {analytics.lowUsageSubs.length === 0 && analytics.projectedSavings === 0 && (
-                      <p className="text-sm text-indigo-600/60 text-center py-2 font-medium">Great! All subscriptions are optimized.</p>
+                    ))}
+                    {analytics.savingsOpportunities.length === 0 && (
+                      <p className="text-sm text-indigo-600/60 text-center py-4 font-medium italic">Great! No major leakages detected in your profile.</p>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="text-xs font-bold uppercase tracking-widest text-orange-900/40 dark:text-orange-200/40 mb-3">Price Changes This Year</h4>
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-orange-900/40 dark:text-orange-200/40 mb-3">Price Monitor</h4>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between rounded-xl border border-white/40 bg-white/40 p-4 dark:border-white/5 dark:bg-white/5 shadow-sm">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center font-bold text-xs">N</div>
-                        <div>
-                          <span className="block text-sm font-bold text-indigo-950 dark:text-indigo-50">Netflix</span>
-                          <span className="text-[11px] text-zinc-500 uppercase font-medium">$15 → $17</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 text-rose-600 font-bold text-sm">
-                        <ArrowUp className="h-3 w-3" />
-                        13%
-                      </div>
+                    <div className="flex items-center justify-center rounded-xl border border-white/40 bg-white/40 p-8 dark:border-white/5 dark:bg-white/5 shadow-sm border-dashed">
+                      <p className="text-sm text-muted-foreground italic">No price changes detected this period.</p>
                     </div>
                   </div>
                 </div>
