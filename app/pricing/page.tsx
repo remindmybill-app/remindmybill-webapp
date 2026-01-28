@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { Check, Mail, MessageSquare, TrendingUp, FileText, ShieldCheck, Loader2, XCircle } from "lucide-react"
+import { Check, Mail, MessageSquare, TrendingUp, FileText, ShieldCheck, Loader2, XCircle, Shield, CreditCard, Zap, Lock } from "lucide-react"
 import { useProfile } from "@/lib/hooks/use-profile"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -246,24 +246,49 @@ export default function PricingPage() {
           ))}
         </div>
 
-        {/* FAQ Section */}
-        <div className="mx-auto max-w-3xl mb-16">
-          <h2 className="mb-8 text-center text-2xl font-bold">Frequently Asked Questions</h2>
-          <div className="grid gap-4">
+        {/* Premium FAQ Section */}
+        <div className="mx-auto max-w-5xl mb-16">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold tracking-tight text-white mb-2">Service & Trust FAQ</h2>
+            <p className="text-zinc-400">Everything you need to know about our commitment to your financial health.</p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2">
             {[
-              { q: "Can I cancel anytime?", a: "Yes, you can cancel your subscription at any time. Your access will continue until the end of your billing period." },
-              { q: "How does the AI Inbox Hunter work?", a: "We securely scan your email receipts to automatically find subscriptions you might have forgotten about. We never sell your data." },
-              { q: "Is there a limit on manual subscriptions?", a: "The Essential plan covers up to 3 subscriptions. Pro allows unlimited tracking." },
-              { q: "Can I get a refund?", a: "We offer a 30-day money-back guarantee if you're not satisfied with the Pro features." }
+              {
+                q: "No-Questions-Asked Cancellation",
+                a: "Enjoy total freedom. Cancel your subscription anytime with a single click from your dashboard—no retention traps or hidden hurdles.",
+                icon: Shield
+              },
+              {
+                q: "AI-Powered Inbox Protection",
+                a: "Our Inbox Hunter securely scans your digital receipts using 256-bit encryption. We find the leaks, but never store or sell your private data.",
+                icon: Lock
+              },
+              {
+                q: "Unlimited Pro Scaling",
+                a: "Scale without limits. While the Essential plan handles the basics, Pro gives you unlimited tracking for every service, app, and membership in your life.",
+                icon: Zap
+              },
+              {
+                q: "30-Day Trust Guarantee",
+                a: "We stand by our insights. If Remind My Bill doesn't help you save more than the cost of the subscription in your first 30 days, we'll refund you instantly.",
+                icon: CreditCard
+              }
             ].map((faq, i) => (
-              <Card key={i} className="border-muted/50 shadow-sm">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">{faq.q}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{faq.a}</p>
-                </CardContent>
-              </Card>
+              <div
+                key={i}
+                className="bg-zinc-900/50 border border-white/5 p-6 rounded-2xl hover:border-emerald-500/20 transition-all duration-300 group backdrop-blur-sm"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-white/5 text-zinc-500 group-hover:text-emerald-400 transition-colors">
+                    <faq.icon className="h-4 w-4" />
+                  </div>
+                  <h3 className="font-semibold text-white">{faq.q}</h3>
+                </div>
+                <p className="text-zinc-400 text-sm leading-relaxed">
+                  {faq.a}
+                </p>
+              </div>
             ))}
           </div>
         </div>
