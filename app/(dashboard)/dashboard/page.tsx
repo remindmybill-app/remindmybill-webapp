@@ -2,6 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { format } from "date-fns"
 import { toast } from "sonner"
 import { FinancialHealthCard } from "@/components/financial-health-card"
 import { QuickStats } from "@/components/quick-stats"
@@ -182,7 +183,7 @@ export default function DashboardPage() {
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-zinc-900 dark:text-zinc-50">Dashboard</h1>
                         <p className="mt-2 text-muted-foreground">
-                            Monday, Jan 1st • No active tracking
+                            {format(new Date(), "EEEE, MMM do")} &bull; No active tracking
                         </p>
                     </div>
 

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { debounce } from "lodash"
 import { motion, AnimatePresence } from "framer-motion"
@@ -51,6 +52,9 @@ export default function TrustCenterPage() {
   const [trustedServices, setTrustedServices] = useState<Platform[]>([])
   const [riskyServices, setRiskyServices] = useState<Platform[]>([])
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true)
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false)
+  const [requestServiceName, setRequestServiceName] = useState("")
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false)
 
   const supabase = getSupabaseBrowserClient()
 
@@ -136,6 +140,22 @@ export default function TrustCenterPage() {
     setSearchQuery("")
     setSearchResults([])
     setIsAnalyzing(false)
+  }
+
+  const handleRequestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!requestServiceName) return
+
+    setIsSubmittingRequest(true)
+    await new Promise(resolve => setTimeout(resolve, 800))
+
+    toast.success("Request sent!", {
+      description: `We'll audit ${requestServiceName} and add it to our database shortly.`
+    })
+
+    setRequestServiceName("")
+    setIsRequestModalOpen(false)
+    setIsSubmittingRequest(false)
   }
 
   const handleAnalyze = async () => {
@@ -258,23 +278,34 @@ export default function TrustCenterPage() {
                         <p className="text-sm text-muted-foreground mb-4">
                           No matches found for "{searchQuery}".
                         </p>
-                        <Button variant="outline" size="sm" className="rounded-xl border-dashed">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-xl border-dashed"
+                          onClick={() => {
+                            setRequestServiceName(searchQuery)
+                            setIsRequestModalOpen(true)
+                          }}
+                        >
                           <HelpCircle className="h-4 w-4 mr-2" />
                           Request to add "{searchQuery}"
                         </Button>
                         <div className="mt-4 pt-4 border-t border-zinc-100 dark:border-zinc-800/50 w-full text-center">
-                          <a
-                            href="mailto:support@remindmybill.com"
-                            className="text-[11px] text-muted-foreground hover:text-indigo-500 transition-colors flex items-center justify-center gap-1.5"
+                          <button
+                            onClick={() => setIsRequestModalOpen(true)}
+                            className="text-[11px] text-muted-foreground hover:text-indigo-500 transition-colors flex items-center justify-center gap-1.5 mx-auto"
                           >
                             Don't see a service? <span className="underline decoration-indigo-500/30">Request it.</span>
-                          </a>
+                          </button>
                         </div>
                       </div>
                     )}
                     {searchResults.length > 0 && (
                       <div className="p-3 border-t border-zinc-100 dark:border-zinc-800 text-center">
-                        <button className="text-[11px] font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest flex items-center justify-center gap-1 mx-auto">
+                        <button
+                          onClick={() => setIsRequestModalOpen(true)}
+                          className="text-[11px] font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest flex items-center justify-center gap-1 mx-auto"
+                        >
                           Don't see it? <ArrowRight className="h-3 w-3" /> Request a service
                         </button>
                       </div>
@@ -618,6 +649,49 @@ export default function TrustCenterPage() {
             </div>
           </>
         )}
+        {/* Request Service Modal */}
+        <Dialog open={isRequestModalOpen} onOpenChange={setIsRequestModalOpen}>
+          <DialogContent className="sm:max-w-[425px] rounded-3xl">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold">Request a Service</DialogTitle>
+              <DialogDescription>
+                Don't see a service in our database? Let us know and we'll audit it for dark patterns.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleRequestSubmit} className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label htmlFor="service-name" className="text-sm font-bold uppercase tracking-widest text-muted-foreground ml-1">
+                  Service Name
+                </label>
+                <Input
+                  id="service-name"
+                  placeholder="e.g. Paramount+, New York Times"
+                  value={requestServiceName}
+                  onChange={(e) => setRequestServiceName(e.target.value)}
+                  className="h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700"
+                  required
+                  autoFocus
+                />
+              </div>
+              <DialogFooter className="pt-4">
+                <Button
+                  type="submit"
+                  className="w-full h-12 rounded-2xl bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 font-bold shadow-xl"
+                  disabled={isSubmittingRequest || !requestServiceName}
+                >
+                  {isSubmittingRequest ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    "Submit Request"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

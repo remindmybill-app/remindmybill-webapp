@@ -20,6 +20,7 @@ import type { Subscription } from "@/lib/types"
 import { useProfile } from "@/lib/hooks/use-profile"
 import Link from "next/link"
 import { getTierDisplayName } from "@/lib/subscription-utils"
+import { useRouter } from "next/navigation"
 
 const formSchema = z.object({
     name: z.string().min(1, "Service name is required"),
@@ -65,6 +66,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
     const [date, setDate] = useState<Date>()
     const [serviceOpen, setServiceOpen] = useState(false)
     const { profile } = useProfile()
+    const router = useRouter()
 
     // Derived state for controlled/uncontrolled
     const isOpen = controlledOpen ?? internalOpen
@@ -182,6 +184,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
             reset()
             setDate(undefined)
             onSubscriptionAdded() // This calls refreshSubscriptions in parent
+            router.refresh()
         } catch (error: any) {
             console.error("Error saving subscription:", error)
             toast.error(error.message || "Operation failed")

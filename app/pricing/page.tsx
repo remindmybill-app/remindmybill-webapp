@@ -293,24 +293,6 @@ export default function PricingPage() {
           </div>
         </div>
 
-        {/* Downgrade Button for Premium Users */}
-        {isPro(profile?.subscription_tier) && (
-          <div className="flex justify-center mt-8">
-            <Button variant="outline" size="sm" onClick={async () => {
-              try {
-                setIsUpdating(true)
-                await downgradeUserToFree(profile!.id)
-                toast.success("Downgraded to Free plan")
-                router.refresh()
-              } catch (e) {
-                toast.error("Downgrade failed")
-                setIsUpdating(false)
-              }
-            }}>
-              Downgrade to Free
-            </Button>
-          </div>
-        )}
 
         {/* Dev Tools - Reset Subscription */}
         {process.env.NODE_ENV === 'development' || (typeof window !== 'undefined' && window.location.hostname === 'localhost') ? (

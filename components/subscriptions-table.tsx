@@ -23,7 +23,18 @@ import {
   DrawerFooter,
   DrawerClose,
 } from "@/components/ui/drawer"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { ManualSubscriptionModal } from "@/components/manual-subscription-modal"
+import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Subscription } from "@/lib/types"
 import { getNextRenewalDate, getRenewalDisplay } from "@/lib/utils/date-utils"
@@ -46,19 +57,33 @@ export function SubscriptionsTable() {
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [selectedMobileSub, setSelectedMobileSub] = useState<Subscription | null>(null)
+  const [confirmDeleteSub, setConfirmDeleteSub] = useState<{ id: string, name: string } | null>(null)
+  const [confirmCancelSub, setConfirmCancelSub] = useState<{ id: string, name: string } | null>(null)
+  const router = useRouter()
 
-  const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Are you sure you want to delete ${name}?`)) {
-      setDeletingId(id)
-      const success = await deleteSubscription(id)
-      if (success) {
-        toast.success("Subscription deleted")
-      } else {
-        toast.error("Failed to delete subscription")
-      }
-      setDeletingId(null)
-      setSelectedMobileSub(null)
+  const handleDelete = async (id: string) => {
+    setDeletingId(id)
+    const success = await deleteSubscription(id)
+    if (success) {
+      toast.success("Subscription deleted")
+      router.refresh()
+    } else {
+      toast.error("Failed to delete subscription")
     }
+    setDeletingId(null)
+    setSelectedMobileSub(null)
+    setConfirmDeleteSub(null)
+  }
+
+  const handleCancel = async (id: string) => {
+    const success = await cancelSubscription(id)
+    if (success) {
+      toast.success("Subscription cancelled")
+      router.refresh()
+    } else {
+      toast.error("Failed to cancel subscription")
+    }
+    setConfirmCancelSub(null)
   }
 
   if (!isLoading && subscriptions.length === 0) {
@@ -238,15 +263,11 @@ export function SubscriptionsTable() {
                                     <Pencil className="mr-2 h-4 w-4" />
                                     Edit
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => {
-                                    if (confirm("Are you sure you want to cancel this subscription? It will be marked as cancelled but remain in your history.")) {
-                                      cancelSubscription(sub.id)
-                                    }
-                                  }}>
+                                  <DropdownMenuItem onClick={() => setConfirmCancelSub({ id: sub.id, name: sub.name })}>
                                     <XCircle className="mr-2 h-4 w-4" />
                                     Cancel Subscription
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleDelete(sub.id, sub.name)} className="text-destructive focus:text-destructive">
+                                  <DropdownMenuItem onClick={() => setConfirmDeleteSub({ id: sub.id, name: sub.name })} className="text-destructive focus:text-destructive">
                                     <Trash2 className="mr-2 h-4 w-4" />
                                     Delete
                                   </DropdownMenuItem>
@@ -366,7 +387,7 @@ export function SubscriptionsTable() {
               variant="outline"
               className="h-16 w-full rounded-2xl flex items-center justify-between px-6 border-rose-100 bg-rose-50/30 text-rose-600 dark:bg-rose-500/5 dark:border-rose-900/30 active:scale-[0.98] transition-all"
               onClick={() => {
-                if (selectedMobileSub) handleDelete(selectedMobileSub.id, selectedMobileSub.name)
+                if (selectedMobileSub) setConfirmDeleteSub({ id: selectedMobileSub.id, name: selectedMobileSub.name })
               }}
             >
               <div className="flex items-center gap-4">
@@ -386,6 +407,47 @@ export function SubscriptionsTable() {
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+
+      {/* Confirmation Dialogs */}
+      <AlertDialog open={!!confirmDeleteSub} onOpenChange={(open) => !open && setConfirmDeleteSub(null)}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {confirmDeleteSub?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove the subscription from your portfolio and analytics. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmDeleteSub && handleDelete(confirmDeleteSub.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-xl"
+            >
+              Delete Forever
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmCancelSub} onOpenChange={(open) => !open && setConfirmCancelSub(null)}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel {confirmCancelSub?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark the subscription as cancelled. It will remain in your history but stop recurring in your projections.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Keep Sub</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => confirmCancelSub && handleCancel(confirmCancelSub.id)}
+              className="bg-zinc-900 dark:bg-zinc-100 rounded-xl"
+            >
+              Confirm Cancel
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <ManualSubscriptionModal
         open={!!editingSubscription}
