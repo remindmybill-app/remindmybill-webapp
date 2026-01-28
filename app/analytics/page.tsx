@@ -20,6 +20,7 @@ import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { useMemo } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { getNextRenewalDate } from "@/lib/utils/date-utils"
 import {
   Tooltip as UITooltip,

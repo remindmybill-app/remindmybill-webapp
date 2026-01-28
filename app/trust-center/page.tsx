@@ -184,7 +184,7 @@ export default function TrustCenterPage() {
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-emerald-500"
     if (score >= 50) return "text-amber-500"
-    return "text-rose-500"
+    return "text-rose-500 dark:text-rose-400"
   }
 
   const getScoreBg = (score: number) => {
@@ -254,8 +254,21 @@ export default function TrustCenterPage() {
                         </button>
                       ))
                     ) : (
-                      <div className="p-4 text-center text-sm text-muted-foreground">
-                        No matches found for "{searchQuery}".
+                      <div className="p-6 text-center">
+                        <p className="text-sm text-muted-foreground mb-4">
+                          No matches found for "{searchQuery}".
+                        </p>
+                        <Button variant="outline" size="sm" className="rounded-xl border-dashed">
+                          <HelpCircle className="h-4 w-4 mr-2" />
+                          Request to add "{searchQuery}"
+                        </Button>
+                      </div>
+                    )}
+                    {searchResults.length > 0 && (
+                      <div className="p-3 border-t border-zinc-100 dark:border-zinc-800 text-center">
+                        <button className="text-[11px] font-bold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest flex items-center justify-center gap-1 mx-auto">
+                          Don't see it? <ArrowRight className="h-3 w-3" /> Request a service
+                        </button>
                       </div>
                     )}
                   </div>
@@ -550,7 +563,7 @@ export default function TrustCenterPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className="block font-bold text-rose-600 dark:text-rose-400">${service.average_cost}/mo</span>
+                        <span className="block font-bold text-rose-600 dark:text-rose-300">${service.average_cost}/mo</span>
                         <span className="text-[10px] uppercase text-zinc-400">Avg Cost</span>
                       </div>
                     </div>

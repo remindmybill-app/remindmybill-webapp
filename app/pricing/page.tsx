@@ -138,6 +138,13 @@ export default function PricingPage() {
                   </div>
                 )}
               {plan.highlight && (
+                <div className="absolute top-0 right-0 z-20">
+                  <div className="bg-primary px-4 py-1.5 rounded-bl-xl text-[10px] font-black uppercase tracking-[0.2em] text-primary-foreground shadow-lg">
+                    Recommended
+                  </div>
+                </div>
+              )}
+              {plan.highlight && (
                 <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/5 to-transparent" />
               )}
               <CardHeader>
@@ -177,7 +184,7 @@ export default function PricingPage() {
                           ? feature.highlight
                             ? "font-medium text-foreground"
                             : "text-foreground"
-                          : "text-muted-foreground opacity-50"
+                          : "text-zinc-400 dark:text-zinc-600 font-medium"
                           }`}
                       >
                         {feature.text}
