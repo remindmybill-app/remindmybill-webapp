@@ -24,6 +24,14 @@ interface CalendarExportButtonProps {
 
 export function CalendarExportButton({ name, cost, currency, renewalDate, frequency }: CalendarExportButtonProps) {
 
+    const safeCost = typeof cost === 'number' && !isNaN(cost)
+        ? cost
+        : (() => {
+            const raw = String(cost).replace(/[^\d.-]/g, '');
+            const parsed = parseFloat(raw);
+            return isNaN(parsed) ? 0 : parsed;
+        })();
+
     const generateICS = () => {
         const date = parseISO(renewalDate)
         const startDate = format(date, "yyyyMMdd'T'HHmmss")
@@ -37,7 +45,7 @@ export function CalendarExportButton({ name, cost, currency, renewalDate, freque
             `SUMMARY:Bill Due: ${name}`,
             `DTSTART:${startDate}`,
             `DTEND:${endDate}`,
-            `DESCRIPTION:Subscription bill for ${name}. Amount: ${currency}${cost.toFixed(2)}`,
+            `DESCRIPTION:Subscription bill for ${name}. Amount: ${currency}${safeCost.toFixed(2)}`,
             'STATUS:CONFIRMED',
             'SEQUENCE:0',
             'BEGIN:VALARM',
@@ -63,7 +71,7 @@ export function CalendarExportButton({ name, cost, currency, renewalDate, freque
     const getGoogleCalendarLink = () => {
         const date = parseISO(renewalDate)
         const formattedDate = format(date, "yyyyMMdd'T'HHmmss")
-        const details = `Subscription bill for ${name}. Amount: ${currency}${cost.toFixed(2)}`
+        const details = `Subscription bill for ${name}. Amount: ${currency}${safeCost.toFixed(2)}`
         const text = `Bill Due: ${name}`
 
         const baseUrl = 'https://calendar.google.com/calendar/render'

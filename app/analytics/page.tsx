@@ -259,7 +259,7 @@ export default function AnalyticsPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={analytics.spendingTrendData}
-                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  margin={{ top: 10, right: 0, left: -25, bottom: 0 }}
                 >
                   <defs>
                     <linearGradient id="colorSpending" x1="0" y1="0" x2="0" y2="1">
@@ -280,7 +280,13 @@ export default function AnalyticsPage() {
                     hide={true}
                   />
                   <Tooltip
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
+                    contentStyle={{
+                      borderRadius: '12px',
+                      border: 'none',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+                      fontSize: '12px',
+                      padding: '8px 12px'
+                    }}
                     formatter={(value: number) => [`$${value}`, "Spending"]}
                   />
                   <Area

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,6 +29,9 @@ export function Navigation() {
   const { notifications } = useNotifications()
   const { refreshSubscriptions } = useSubscriptions()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const pathname = usePathname()
+
+  const isActive = (path: string) => pathname === path
 
   const getTimeAgo = (timestamp: string) => {
     const seconds = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000)
@@ -241,33 +245,33 @@ export function Navigation() {
         </div>
       </div>
 
-      {/* Bottom Navigation Bar (Mobile Only) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border/50 pb-safe-area-inset-bottom">
-        <div className="grid h-16 grid-cols-5 items-center justify-items-center">
-          <Link href="/dashboard" className="flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-            <Home className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Dashboard</span>
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border/50 pb-safe-area-inset-bottom h-16 sm:h-20">
+        <div className="grid h-full grid-cols-5 items-center justify-items-center">
+          <Link href="/dashboard" className={`flex flex-col items-center justify-center gap-1 transition-all duration-200 ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
+            <Home className={`h-6 w-6 ${isActive('/dashboard') ? 'fill-current opacity-20' : ''}`} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">Dash</span>
           </Link>
-          <Link href="/dashboard" className="flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-            <Briefcase className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Portfolio</span>
+          <Link href="/portfolio" className={`flex flex-col items-center justify-center gap-1 transition-all duration-200 ${isActive('/portfolio') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
+            <Briefcase className={`h-6 w-6 ${isActive('/portfolio') ? 'fill-current opacity-20' : ''}`} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">Vault</span>
           </Link>
-          <div className="relative">
+          <div className="relative -top-3">
             <Button
               size="icon"
-              className="h-12 w-12 rounded-2xl bg-primary shadow-lg shadow-primary/25 -mt-8 flex items-center justify-center ring-4 ring-background"
+              className="h-14 w-14 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 shadow-xl shadow-indigo-500/30 active:scale-90 transition-transform duration-200 flex items-center justify-center ring-4 ring-background z-10"
               onClick={() => setIsAddModalOpen(true)}
             >
-              <Plus className="h-6 w-6 text-primary-foreground" />
+              <Plus className="h-8 w-8 text-white" />
             </Button>
+            <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping -z-0 opacity-20" />
           </div>
-          <Link href="/analytics" className="flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-            <BarChart3 className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Analytics</span>
+          <Link href="/analytics" className={`flex flex-col items-center justify-center gap-1 transition-all duration-200 ${isActive('/analytics') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
+            <BarChart3 className={`h-6 w-6 ${isActive('/analytics') ? 'fill-current opacity-20' : ''}`} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">Stats</span>
           </Link>
-          <Link href="/settings" className="flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-primary transition-colors">
-            <Settings className="h-5 w-5" />
-            <span className="text-[10px] font-medium">Settings</span>
+          <Link href="/settings" className={`flex flex-col items-center justify-center gap-1 transition-all duration-200 ${isActive('/settings') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
+            <Settings className={`h-6 w-6 ${isActive('/settings') ? 'fill-current opacity-20' : ''}`} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">More</span>
           </Link>
         </div>
       </div>

@@ -2,7 +2,7 @@
 import React, { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Tv, Music, Code, Dumbbell, Cloud, Mail, Package, Gamepad2, Inbox, Sparkles, TrendingUp, Calendar, MoreHorizontal, Pencil, Trash2, Loader2, Zap, XCircle } from "lucide-react"
+import { Tv, Music, Code, Dumbbell, Cloud, Mail, Package, Gamepad2, Inbox, Sparkles, TrendingUp, Calendar, MoreHorizontal, Pencil, Trash2, Loader2, Zap, XCircle, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { formatCurrency } from "@/lib/utils/currency"
@@ -84,11 +84,14 @@ export function SubscriptionsTable() {
             </Button>
 
             {/* Mobile Sticky Analyze Button */}
-            <div className="md:hidden fixed bottom-20 left-4 right-4 z-40">
-              <Button size="lg" className="w-full h-14 rounded-2xl bg-zinc-900 text-lg font-bold shadow-2xl dark:bg-indigo-600 dark:hover:bg-indigo-700 border-2 border-white/10">
-                <Sparkles className="h-6 w-6 mr-3" />
-                Scan Gmail For Bills
-              </Button>
+            <div className="md:hidden fixed bottom-20 left-4 right-4 z-40 animate-in fade-in slide-in-from-bottom-10 duration-700">
+              <div className="relative group">
+                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 animate-pulse transition duration-1000"></div>
+                <Button size="lg" className="relative w-full h-14 rounded-2xl bg-zinc-900 text-lg font-bold shadow-2xl dark:bg-indigo-600 dark:hover:bg-indigo-700 border border-white/10 active:scale-95 transition-transform">
+                  <Sparkles className="h-6 w-6 mr-3 text-indigo-400 animate-pulse" />
+                  Scan Gmail For Bills
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -266,7 +269,7 @@ export function SubscriptionsTable() {
                   return (
                     <div
                       key={sub.id}
-                      className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 active:scale-[0.98] transition-transform"
+                      className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 active:scale-[0.97] active:bg-zinc-50 dark:active:bg-zinc-800/50 transition-all duration-200"
                       onClick={() => setSelectedMobileSub(sub)}
                     >
                       <div className="mb-4 flex items-center justify-between">
@@ -282,9 +285,9 @@ export function SubscriptionsTable() {
                             <p className={`text-xs font-medium ${statusColor}`}>Renews in {label}</p>
                           </div>
                         </div>
-                        <Button variant="ghost" size="icon" className="h-10 w-10">
-                          <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
-                        </Button>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-100/50 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50">
+                          <MoreHorizontal className="h-6 w-6 text-muted-foreground" />
+                        </div>
                       </div>
                       <div className="flex items-center justify-between pt-4 border-t border-zinc-50 dark:border-zinc-800/50">
                         <div>
@@ -325,19 +328,31 @@ export function SubscriptionsTable() {
             </div>
           </DrawerHeader>
 
-          <div className="grid grid-cols-3 gap-2 mb-8">
+          <div className="flex flex-col gap-3 mb-8">
             <Button
               variant="outline"
-              className="h-16 rounded-2xl flex flex-col items-center justify-center gap-1 border-zinc-200 dark:border-zinc-800"
+              className="h-16 w-full rounded-2xl flex items-center justify-between px-6 border-zinc-200 dark:border-zinc-800 active:scale-[0.98] transition-all"
               onClick={() => {
                 setEditingSubscription(selectedMobileSub)
                 setSelectedMobileSub(null)
               }}
             >
-              <Pencil className="h-5 w-5" />
-              <span className="text-xs font-bold">Edit</span>
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center">
+                  <Pencil className="h-5 w-5 text-blue-600" />
+                </div>
+                <span className="text-base font-bold">Edit Details</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </Button>
-            <div className="flex items-center justify-center border border-zinc-200 dark:border-zinc-800 rounded-2xl h-16">
+
+            <div className="flex items-center justify-between h-16 w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 px-6 active:scale-[0.98] transition-all">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center">
+                  <Calendar className="h-5 w-5 text-indigo-600" />
+                </div>
+                <span className="text-base font-bold">Sync to Calendar</span>
+              </div>
               <CalendarExportButton
                 name={selectedMobileSub?.name || ''}
                 cost={(selectedMobileSub?.cost || 0) / (selectedMobileSub?.shared_with_count || 1)}
@@ -346,15 +361,21 @@ export function SubscriptionsTable() {
                 frequency={selectedMobileSub?.frequency || ''}
               />
             </div>
+
             <Button
               variant="outline"
-              className="h-16 rounded-2xl flex flex-col items-center justify-center gap-1 border-rose-100 bg-rose-50/30 text-rose-600 dark:bg-rose-500/5 dark:border-rose-900/30"
+              className="h-16 w-full rounded-2xl flex items-center justify-between px-6 border-rose-100 bg-rose-50/30 text-rose-600 dark:bg-rose-500/5 dark:border-rose-900/30 active:scale-[0.98] transition-all"
               onClick={() => {
                 if (selectedMobileSub) handleDelete(selectedMobileSub.id, selectedMobileSub.name)
               }}
             >
-              <Trash2 className="h-5 w-5" />
-              <span className="text-xs font-bold">Delete</span>
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-xl bg-rose-100/50 dark:bg-rose-500/20 flex items-center justify-center">
+                  <Trash2 className="h-5 w-5 text-rose-600" />
+                </div>
+                <span className="text-base font-bold">Delete Subscription</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-rose-300" />
             </Button>
           </div>
 
