@@ -110,7 +110,7 @@ export default function DashboardPage() {
                 return
             }
 
-            // [FIX] Open modal immediately so user sees the "Scanning" state inside the modal
+            // Open modal immediately so user sees the "Scanning" state
             setIsReviewOpen(true)
             console.log("[v0] Token found, scanning inbox...")
 
@@ -118,12 +118,16 @@ export default function DashboardPage() {
             const result = await scanGmailReceipts(token, days, true)
 
             if (!result.success) {
-                console.error("[v0] Error scanning inbox:", result.error)
-                throw new Error(result.error)
+                // Graceful Backend Failure
+                console.error("[v0] Scan returned error:", result.error)
+                toast.error("Scan failed", { description: result.error || "Could not complete scan." })
+                // We keep the modal open? Or close it? 
+                // Let's close it if it failed so they can try again.
+                setIsReviewOpen(false)
+                return
             }
 
             // 3. Handle Results
-            // We always update the found subscriptions if the call succeeded
             setFoundSubscriptions(result.subs || [])
 
             if (result.found && result.found > 0) {
@@ -136,11 +140,12 @@ export default function DashboardPage() {
 
             setLastSynced(new Date())
         } catch (error: any) {
-            console.error("[v0] Failed to scan inbox:", error)
-            toast.error("Sync failed", {
-                description: "Could not scan inbox. Please try reconnecting Gmail."
+            // Hard Network/Timeout Failure
+            console.error("[v0] Critical scan execution error:", error)
+            toast.error("Connection Interrupted", {
+                description: "The scan took too long or the connection was lost. Please try again."
             })
-            setIsReviewOpen(false) // Close modal on error
+            setIsReviewOpen(false)
         } finally {
             setIsScanning(false)
         }
