@@ -58,8 +58,8 @@ function getEmailBody(payload: any): string {
     return body;
 }
 
-export async function scanGmailReceipts(accessToken: string, days: number = 90) {
-    console.log(`[GmailAction] Scanning inbox for last ${days} days...`)
+export async function scanGmailReceipts(accessToken: string, days: number = 45, forceRescan: boolean = false) {
+    console.log(`[GmailAction] Scanning inbox for last ${days} days... (Force: ${forceRescan})`)
 
     try {
         const supabase = await createClient()
@@ -73,7 +73,10 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
             .eq('user_id', user.id)
 
         // 2. Fetch from Gmail
-        const query = `newer_than:${days}d (subject:(receipt OR invoice OR bill OR "payment processed" OR "renews on" OR "order confirmation" OR total) OR (receipt OR invoice OR bill OR "payment processed" OR "renews on" OR "order confirmation" OR total))`
+        // Broader query, 45d limit (to avoid timeouts), specific senders
+        // Note: Gmail API "q" parameter handles the OR logic.
+        const query = `newer_than:${days}d (subject:("receipt" OR "invoice" OR "subscription" OR "renewal" OR "payment successful") OR from:("stripe.com" OR "lovable.dev"))`
+        console.log('[GmailAction] Query:', query)
 
         // Limiting to 50 results for cost and speed control
         const listRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=50`, {
@@ -99,8 +102,11 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
 
             const dateHeader = data.payload.headers.find((h: any) => h.name === 'Date')?.value
             const subjectHeader = data.payload.headers.find((h: any) => h.name === 'Subject')?.value
+            const fromHeader = data.payload.headers.find((h: any) => h.name === 'From')?.value
+
             const date = dateHeader ? new Date(dateHeader).toISOString() : new Date().toISOString()
             const subject = subjectHeader || '(No Subject)'
+            const from = fromHeader || 'Unknown Sender'
 
             // Decoded Body for better AI context
             const body = getEmailBody(data.payload).substring(0, 1500)
@@ -109,27 +115,77 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
                 id: m.id,
                 snippet: data.snippet,
                 subject: subject,
+                from: from,
                 date: date,
                 body: body
             }
         }))
 
         // 4. Batch Parse with OpenAI (gpt-4o-mini)
-        const AI_KEYWORDS = ["invoice", "receipt", "subscription", "renewal", "payment", "bill", "plan"];
+        const AI_KEYWORDS = ["invoice", "receipt", "subscription", "renewal", "payment", "bill", "plan", "lovable", "stripe", "charged", "total"];
 
         const aiResults = await Promise.all(emailDetails.map(async (email: any) => {
             const lowerSubject = email.subject.toLowerCase();
             const lowerSnippet = email.snippet.toLowerCase();
-            const hasKeyword = AI_KEYWORDS.some(k => lowerSubject.includes(k) || lowerSnippet.includes(k));
+            const lowerFrom = email.from.toLowerCase();
+
+            const hasKeyword = AI_KEYWORDS.some(k => lowerSubject.includes(k) || lowerSnippet.includes(k) || lowerFrom.includes(k));
 
             // FALLBACK LOGIC (Regex)
             const getFallback = () => {
-                const amountMatch = (email.subject + email.body).match(/[€$£]\s?(\d+(\.\d{1,2})?)/) || (email.subject + email.body).match(/(\d+(\.\d{1,2})?)\s?(USD|EUR|GBP)/i);
+                // Smart Parsing for Stripe/Lovable
+                let merchantName = email.subject.split(/[:\-–]/)[0].trim().substring(0, 30);
+
+                // If sender is Stripe, try to extract real merchant from subject (e.g. "Receipt from Lovable")
+                if (lowerFrom.includes("stripe.com")) {
+                    const receiptMatch = email.subject.match(/Receipt from (.+)/i) || email.subject.match(/Invoice from (.+)/i);
+                    if (receiptMatch && receiptMatch[1]) {
+                        merchantName = receiptMatch[1].trim();
+                    } else {
+                        // Fallback: use the first part of subject, but be careful not to just say "Receipt"
+                        merchantName = merchantName.replace(/Receipt|Invoice|from/gi, '').trim() || "Stripe Merchant";
+                    }
+                }
+
+                // Relaxed Amount Regex
+                // 1. Standard currency symbols: $19.00
+                // 2. Currency codes: 19.00 USD
+                // 3. Contextual: Total: 19.00 (no symbol)
+
+                const textBlock = email.subject + " " + email.body;
+
+                // Regex 1: Symbol + Amount
+                let amountMatch = textBlock.match(/[€$£]\s?(\d{1,3}(,\d{3})*(\.\d{1,2})?)/);
+
+                // Regex 2: Amount + Code
+                if (!amountMatch) {
+                    amountMatch = textBlock.match(/(\d{1,3}(,\d{3})*(\.\d{1,2})?)\s?(USD|EUR|GBP)/i);
+                }
+
+                // Regex 3: Contextual (Total/Amount/Charged ... number)
+                if (!amountMatch) {
+                    // Look for "Total" followed by optional non-digits, then a number with 2 decimals
+                    const contextualMatch = textBlock.match(/(?:Total|Amount|Charged|Price)[^0-9$€£]{0,20}?(\d{1,3}(,\d{3})*(\.\d{2}))/i);
+                    if (contextualMatch) {
+                        // Create a fake match array structure to match previous logic
+                        amountMatch = [contextualMatch[0], contextualMatch[1]];
+                    }
+                }
+
+                const amount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 0;
+
+                let currency = 'USD';
+                if (amountMatch) {
+                    const matchStr = amountMatch[0].toUpperCase();
+                    if (matchStr.includes('€') || matchStr.includes('EUR')) currency = 'EUR';
+                    else if (matchStr.includes('£') || matchStr.includes('GBP')) currency = 'GBP';
+                }
+
                 return {
-                    is_subscription: hasKeyword,
-                    merchant_name: email.subject.split(/[:\-–]/)[0].trim().substring(0, 30),
-                    amount: amountMatch ? parseFloat(amountMatch[1]) : 0,
-                    currency: amountMatch ? (amountMatch[0].includes('€') ? 'EUR' : amountMatch[0].includes('£') ? 'GBP' : 'USD') : 'USD',
+                    is_subscription: hasKeyword || amount > 0, // If we found an amount contextually, assume it might be relevant
+                    merchant_name: merchantName,
+                    amount: amount,
+                    currency: currency,
                     billing_date: email.date,
                     billing_frequency: 'monthly' as const
                 };
@@ -139,8 +195,11 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
 
             try {
                 const prompt = `You are a financial data extractor.
-                Given this email's subject and body, extract subscription or bill info if present.
-                Return ONLY JSON, no explanation.
+                Given this email's subject, sender, and body, extract subscription or bill info if present.
+                
+                SPECIAL RULE: If sender is "Stripe", look at Subject "Receipt from X" to get the merchant name. Do NOT set merchant_name to "Stripe".
+                
+                Return ONLY JSON.
 
                 JSON shape:
                 {
@@ -153,6 +212,7 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
                 }
 
                 Email Info:
+                - From: ${email.from}
                 - Subject: ${email.subject}
                 - Snippet: ${email.snippet}
                 - Body: ${email.body.substring(0, 800)}
@@ -229,6 +289,10 @@ export async function scanGmailReceipts(accessToken: string, days: number = 90) 
                 }
             })
             .filter((item): item is NonNullable<typeof item> => item !== null)
+            // Deduplicate based on name + cost (simple)
+            .filter((v, i, a) => a.findIndex(t => (t.name === v.name && t.cost === v.cost)) === i)
+
+        console.log(`[GmailAction] Scan complete. Found: ${processedSubs.length} subscriptions.`)
 
         return {
             success: true,

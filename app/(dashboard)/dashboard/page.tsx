@@ -90,7 +90,7 @@ export default function DashboardPage() {
         }
     }, [searchParams, router])
 
-    const handleScanInbox = async (days: number = 90) => {
+    const handleScanInbox = async (days: number = 45) => {
         if (!isPro(profile?.subscription_tier)) {
             router.push('/pricing')
             return
@@ -114,8 +114,8 @@ export default function DashboardPage() {
             setIsReviewOpen(true)
             console.log("[v0] Token found, scanning inbox...")
 
-            // 2. Call Server Action with days
-            const result = await scanGmailReceipts(token, days)
+            // 2. Call Server Action with days and FORCE=true
+            const result = await scanGmailReceipts(token, days, true)
 
             if (!result.success) {
                 console.error("[v0] Error scanning inbox:", result.error)
