@@ -111,6 +111,8 @@ export default function DashboardPage() {
             }
 
             // Open modal immediately so user sees the "Scanning" state
+            // CRITICAL: Reset stale results BEFORE opening modal
+            setFoundSubscriptions([])
             setIsReviewOpen(true)
             console.log("[v0] Token found, scanning inbox...")
 
