@@ -59,7 +59,9 @@ function getEmailBody(payload: any): string {
 }
 
 export async function scanGmailReceipts(accessToken: string, days: number = 45, forceRescan: boolean = false) {
-    console.log(`[GmailAction] Scanning inbox for last ${days} days... (Force: ${forceRescan})`)
+    // Strict range enforcement
+    const scanDays = (days && days > 0) ? days : 45
+    console.log(`[GmailAction] Scanning inbox for last ${scanDays} days... (Force: ${forceRescan})`)
 
     try {
         const supabase = await createClient()
@@ -75,7 +77,7 @@ export async function scanGmailReceipts(accessToken: string, days: number = 45, 
         // 2. Fetch from Gmail
         // Broader query, 45d limit (to avoid timeouts), specific senders
         // Note: Gmail API "q" parameter handles the OR logic.
-        const query = `newer_than:${days}d (subject:("receipt" OR "invoice" OR "subscription" OR "renewal" OR "payment successful") OR from:("stripe.com" OR "lovable.dev"))`
+        const query = `newer_than:${scanDays}d (subject:("receipt" OR "invoice" OR "subscription" OR "renewal" OR "payment successful") OR from:("stripe.com" OR "lovable.dev"))`
         console.log('[GmailAction] Query:', query)
 
         // Limiting to 50 results for cost and speed control

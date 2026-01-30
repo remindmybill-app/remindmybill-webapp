@@ -50,7 +50,15 @@ export default function AnalyticsPage() {
   const userCurrency = profile?.default_currency || "USD"
 
   const analytics = useMemo(() => {
-    if (subscriptions.length === 0) {
+    // 1. Sanitize Data
+    const validSubscriptions = subscriptions.filter(sub =>
+      sub &&
+      typeof sub.cost === 'number' &&
+      !isNaN(sub.cost) &&
+      sub.currency
+    )
+
+    if (validSubscriptions.length === 0) {
       return {
         totalMonthlySpend: 0,
         activeCount: 0,
@@ -63,7 +71,7 @@ export default function AnalyticsPage() {
       }
     }
 
-    const totalMonthlySpend = subscriptions.reduce((sum, sub) => {
+    const totalMonthlySpend = validSubscriptions.reduce((sum, sub) => {
       const converted = convertCurrency(sub.cost, sub.currency, userCurrency)
       return sum + (converted / (sub.shared_with_count || 1))
     }, 0)
@@ -71,7 +79,7 @@ export default function AnalyticsPage() {
 
     // Group by category
     const categoryMap = new Map<string, number>()
-    subscriptions.forEach((sub) => {
+    validSubscriptions.forEach((sub) => {
       const converted = convertCurrency(sub.cost, sub.currency, userCurrency)
       const current = categoryMap.get(sub.category) || 0
       categoryMap.set(sub.category, current + (converted / (sub.shared_with_count || 1)))
@@ -86,7 +94,7 @@ export default function AnalyticsPage() {
       .sort((a, b) => b.value - a.value)
 
     // Calculate upcoming renewals (Next 30 days)
-    const upcomingRenewals = (subscriptions || [])
+    const upcomingRenewals = (validSubscriptions || [])
       .map((sub) => {
         const nextRenewalDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
         const today = new Date()
@@ -107,7 +115,7 @@ export default function AnalyticsPage() {
       .sort((a, b) => a.daysUntil - b.daysUntil)
 
     // Calculate projected savings from low trust score subscriptions
-    const lowUsageSubs = (subscriptions || []).filter((sub) => sub.trust_score < 50)
+    const lowUsageSubs = (validSubscriptions || []).filter((sub) => sub.trust_score < 50)
     const projectedSavings = lowUsageSubs.reduce((sum, sub) => {
       const converted = convertCurrency(sub.cost, sub.currency, userCurrency)
       return sum + (converted / (sub.shared_with_count || 1)) * 12
@@ -126,7 +134,7 @@ export default function AnalyticsPage() {
 
     // Detect Potential Savings (Real logic)
     // We look for subscriptions with low trust scores or high cancellation difficulty
-    const savingsOpportunities = (subscriptions || [])
+    const savingsOpportunities = (validSubscriptions || [])
       .filter(sub => sub.trust_score < 60 || sub.cancellation_difficulty.toLowerCase() === 'hard')
       .map(sub => {
         const converted = convertCurrency(sub.cost, sub.currency, userCurrency)

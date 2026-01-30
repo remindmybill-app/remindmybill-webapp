@@ -27,6 +27,7 @@ import {
     Clock,
     Filter
 } from "lucide-react"
+import { useRouter } from "next/navigation"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -81,6 +82,7 @@ export function GmailImportModal({
     const [localEdits, setLocalEdits] = useState<Record<string, Partial<DetectedSubscription>>>({})
     const [timeRange, setTimeRange] = useState(90)
     const [isImporting, setIsImporting] = useState(false)
+    const router = useRouter()
 
     // Select "NEW" and "UPDATE" items by default
     useEffect(() => {
@@ -239,6 +241,7 @@ export function GmailImportModal({
                 description: failCount > 0 ? `${failCount} failed to import.` : "Your dashboard has been refreshed.",
                 icon: <CheckCircle2 className="w-5 h-5 text-emerald-500" />
             })
+            router.refresh()
             onImportComplete()
             onClose()
         } else if (failCount > 0) {
