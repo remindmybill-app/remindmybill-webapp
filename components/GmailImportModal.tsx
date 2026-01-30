@@ -252,9 +252,14 @@ export function GmailImportModal({
     }
 
     const formatCurrency = (amount: number, currency: string) => {
+        // Map currency symbols to ISO codes to prevent RangeError
+        const symbolToIso: Record<string, string> = { "€": "EUR", "$": "USD", "£": "GBP", "¥": "JPY" }
+        const safeCurrency = (currency || "USD").trim()
+        const isoCode = symbolToIso[safeCurrency] || safeCurrency.toUpperCase()
+
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: currency || 'USD',
+            currency: isoCode,
         }).format(amount)
     }
     const visibleSubscriptions = useMemo(() => {

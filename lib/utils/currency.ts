@@ -1,7 +1,22 @@
+// Map currency symbols to ISO codes to prevent RangeError
+const SYMBOL_TO_ISO: Record<string, string> = {
+  "€": "EUR",
+  "$": "USD",
+  "£": "GBP",
+  "¥": "JPY",
+}
+
+function sanitizeCurrency(currency: string): string {
+  if (!currency) return "USD"
+  const upper = currency.toUpperCase().trim()
+  return SYMBOL_TO_ISO[currency] || SYMBOL_TO_ISO[upper] || upper
+}
+
 export function formatCurrency(amount: number, currency = "USD", locale = "en-US"): string {
+  const isoCode = sanitizeCurrency(currency)
   return new Intl.NumberFormat(locale, {
     style: "currency",
-    currency: currency,
+    currency: isoCode,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount)
