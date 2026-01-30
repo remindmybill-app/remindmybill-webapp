@@ -35,8 +35,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
 import { addSubscription, updateSubscription } from '@/app/actions/subscriptions'
-import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { safeFormatDate, safeDateInputValue } from '@/lib/utils/currency'
 
 interface DetectedSubscription {
     id: string
@@ -447,7 +447,7 @@ export function GmailImportModal({
                                                     <div className="flex items-center gap-6">
                                                         <div className="flex items-center gap-2.5 text-[10px] font-black uppercase tracking-widest text-zinc-500">
                                                             <Calendar className="h-4 w-4 text-zinc-600" />
-                                                            {format(new Date(getDate(sub)), 'MMM dd, yyyy')}
+                                                            {safeFormatDate(getDate(sub), { month: 'short', day: '2-digit', year: 'numeric' })}
                                                         </div>
                                                         <button
                                                             onClick={() => toggleExpand(sub.id)}
@@ -532,7 +532,7 @@ export function GmailImportModal({
                                                     <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Billing Date</label>
                                                     <Input
                                                         type="date"
-                                                        value={getDate(sub).split('T')[0]}
+                                                        value={safeDateInputValue(getDate(sub))}
                                                         onChange={(e) => handleEditChange(sub.id, 'date', new Date(e.target.value).toISOString())}
                                                         className="bg-zinc-900/50 border-white/5 rounded-2xl h-14 focus:ring-indigo-500 text-base font-bold px-6"
                                                     />

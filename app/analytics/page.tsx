@@ -22,6 +22,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { getNextRenewalDate } from "@/lib/utils/date-utils"
+import { convertCurrency, formatCurrency } from "@/lib/utils/currency"
+import { useProfile } from "@/lib/hooks/use-profile"
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -44,6 +46,8 @@ const getLast12Months = () => {
 
 export default function AnalyticsPage() {
   const { subscriptions, isLoading } = useSubscriptions()
+  const { profile } = useProfile()
+  const userCurrency = profile?.default_currency || "USD"
 
   const analytics = useMemo(() => {
     if (subscriptions.length === 0) {
@@ -59,14 +63,18 @@ export default function AnalyticsPage() {
       }
     }
 
-    const totalMonthlySpend = subscriptions.reduce((sum, sub) => sum + (sub.cost / (sub.shared_with_count || 1)), 0)
+    const totalMonthlySpend = subscriptions.reduce((sum, sub) => {
+      const converted = convertCurrency(sub.cost, sub.currency, userCurrency)
+      return sum + (converted / (sub.shared_with_count || 1))
+    }, 0)
     const yearlyProjection = totalMonthlySpend * 12 // Simple projection
 
     // Group by category
     const categoryMap = new Map<string, number>()
     subscriptions.forEach((sub) => {
+      const converted = convertCurrency(sub.cost, sub.currency, userCurrency)
       const current = categoryMap.get(sub.category) || 0
-      categoryMap.set(sub.category, current + (sub.cost / (sub.shared_with_count || 1)))
+      categoryMap.set(sub.category, current + (converted / (sub.shared_with_count || 1)))
     })
 
     const categoryData = Array.from(categoryMap.entries())
@@ -85,11 +93,12 @@ export default function AnalyticsPage() {
         today.setHours(0, 0, 0, 0)
         const daysUntil = Math.ceil((nextRenewalDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
 
+        const convertedCost = convertCurrency(sub.cost, sub.currency, userCurrency)
         return {
           id: sub.id,
           name: sub.name,
           date: nextRenewalDate.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
-          cost: sub.cost / (sub.shared_with_count || 1),
+          cost: convertedCost / (sub.shared_with_count || 1),
           daysUntil,
           category: sub.category
         }
@@ -99,7 +108,10 @@ export default function AnalyticsPage() {
 
     // Calculate projected savings from low trust score subscriptions
     const lowUsageSubs = (subscriptions || []).filter((sub) => sub.trust_score < 50)
-    const projectedSavings = lowUsageSubs.reduce((sum, sub) => sum + (sub.cost / (sub.shared_with_count || 1)) * 12, 0)
+    const projectedSavings = lowUsageSubs.reduce((sum, sub) => {
+      const converted = convertCurrency(sub.cost, sub.currency, userCurrency)
+      return sum + (converted / (sub.shared_with_count || 1)) * 12
+    }, 0)
 
     // Calculate Spending Trends (Last 12 Months)
     const last12Months = getLast12Months()
@@ -116,12 +128,15 @@ export default function AnalyticsPage() {
     // We look for subscriptions with low trust scores or high cancellation difficulty
     const savingsOpportunities = (subscriptions || [])
       .filter(sub => sub.trust_score < 60 || sub.cancellation_difficulty.toLowerCase() === 'hard')
-      .map(sub => ({
-        id: sub.id,
-        name: sub.name,
-        reason: sub.trust_score < 40 ? "Unusually High Cost" : "Hard to Cancel",
-        annualSaving: (sub.cost / (sub.shared_with_count || 1)) * 12
-      }))
+      .map(sub => {
+        const converted = convertCurrency(sub.cost, sub.currency, userCurrency)
+        return {
+          id: sub.id,
+          name: sub.name,
+          reason: sub.trust_score < 40 ? "Unusually High Cost" : "Hard to Cancel",
+          annualSaving: (converted / (sub.shared_with_count || 1)) * 12
+        }
+      })
       .sort((a, b) => b.annualSaving - a.annualSaving)
 
     const totalRecoverable = savingsOpportunities.reduce((sum, item) => sum + item.annualSaving, 0)
@@ -136,7 +151,7 @@ export default function AnalyticsPage() {
       spendingTrendData,
       yearlyProjection,
     }
-  }, [subscriptions])
+  }, [subscriptions, userCurrency])
 
   if (isLoading) {
     return (
@@ -194,7 +209,7 @@ export default function AnalyticsPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Monthly Spend</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-2xl font-bold tracking-tight">${analytics.totalMonthlySpend.toFixed(2)}</p>
+                    <p className="text-2xl font-bold tracking-tight">{formatCurrency(analytics.totalMonthlySpend, userCurrency)}</p>
                     <Badge variant="secondary" className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
                       <TrendingUp className="w-3 h-3 mr-1" /> +2.4%
                     </Badge>
@@ -232,7 +247,7 @@ export default function AnalyticsPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Annual Savings</p>
                   <div className="flex items-center gap-2">
-                    <p className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">${analytics.projectedSavings.toFixed(0)}</p>
+                    <p className="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">{formatCurrency(analytics.projectedSavings, userCurrency)}</p>
                     <Badge variant="secondary" className="text-[10px] bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
                       Potential
                     </Badge>
@@ -251,7 +266,7 @@ export default function AnalyticsPage() {
                 <div>
                   <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Yearly Project.</p>
                   <p className="text-2xl font-bold tracking-tight">
-                    ${analytics.yearlyProjection.toFixed(0)}
+                    {formatCurrency(analytics.yearlyProjection, userCurrency)}
                   </p>
                   <p className="text-[10px] text-muted-foreground mt-1">
                     {subscriptions.length < 5 ? "Track for 3 months to see trends" : "8% higher than last year"}
@@ -279,7 +294,7 @@ export default function AnalyticsPage() {
                     </Badge>
                   </div>
                   <p className="font-bold text-lg truncate">{renewal.name}</p>
-                  <p className="text-sm font-medium text-zinc-500">${renewal.cost.toFixed(2)}</p>
+                  <p className="text-sm font-medium text-zinc-500">{formatCurrency(renewal.cost, userCurrency)}</p>
                 </CardContent>
               </Card>
             ))}
@@ -395,7 +410,7 @@ export default function AnalyticsPage() {
                         <div className="h-2 w-2 rounded-full" style={{ backgroundColor: category.color }} />
                         <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{category.name}</span>
                       </div>
-                      <span className="text-sm font-bold text-zinc-900 dark:text-white">${category.value.toFixed(0)}</span>
+                      <span className="text-sm font-bold text-zinc-900 dark:text-white">{formatCurrency(category.value, userCurrency)}</span>
                     </div>
                   ))}
                   {analytics.categoryData.length === 0 && (
@@ -432,7 +447,7 @@ export default function AnalyticsPage() {
             <CardContent className="p-8 pt-0">
               <div className="mb-8 rounded-2xl bg-white/80 p-6 text-center shadow-inner dark:bg-zinc-900/50 backdrop-blur-sm">
                 <p className="text-5xl font-extrabold tracking-tighter text-indigo-600 dark:text-indigo-400">
-                  ${analytics.projectedSavings.toFixed(0)}
+                  {formatCurrency(analytics.projectedSavings, userCurrency)}
                 </p>
                 <p className="mt-2 text-sm font-semibold text-indigo-900/60 dark:text-indigo-300/50 uppercase tracking-widest">Est. Annual Recoverable</p>
               </div>
@@ -452,7 +467,7 @@ export default function AnalyticsPage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Save ${opportunity.annualSaving.toFixed(0)}/yr</p>
+                          <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">Save {formatCurrency(opportunity.annualSaving, userCurrency)}/yr</p>
                         </div>
                       </div>
                     ))}

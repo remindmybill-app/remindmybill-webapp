@@ -3,7 +3,7 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { DollarSign, Layers, Clock } from "lucide-react"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
-import { formatCurrency } from "@/lib/utils/currency"
+import { formatCurrency, convertCurrency } from "@/lib/utils/currency"
 import { useProfile } from "@/lib/hooks/use-profile"
 
 import { getNextRenewalDate, getRenewalDisplay } from "@/lib/utils/date-utils"
@@ -12,7 +12,11 @@ export function QuickStats() {
   const { subscriptions, isLoading } = useSubscriptions()
   const { profile } = useProfile()
 
-  const totalMonthlySpend = subscriptions.reduce((sum, sub) => sum + sub.cost, 0)
+  const userCurrency = profile?.default_currency || "USD"
+  const totalMonthlySpend = subscriptions.reduce((sum, sub) => {
+    const converted = convertCurrency(sub.cost, sub.currency, userCurrency)
+    return sum + converted
+  }, 0)
   const activeCount = subscriptions.length
 
   // Find next renewal with rollover logic
