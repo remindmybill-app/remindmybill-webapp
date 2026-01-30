@@ -25,6 +25,7 @@ import { ManualSubscriptionModal } from "@/components/manual-subscription-modal"
 import { isPro } from "@/lib/subscription-utils"
 import { CheckCircle2 } from "lucide-react"
 import { DashboardAIWidget } from "@/components/DashboardAIWidget"
+import { ScanSettingsDialog } from "@/components/dashboard/scan-settings-dialog"
 
 export default function DashboardPage() {
     const { isAuthenticated, signIn, isLoading: authLoading } = useAuth()
@@ -203,17 +204,22 @@ export default function DashboardPage() {
                             Add your first one to start tracking your recurring expenses and optimization potential.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
-                            <Button
-                                onClick={() => handleScanInbox()}
-                                disabled={isScanning}
-                                size="lg"
-                                className="flex-1 gap-2 bg-indigo-600 hover:bg-indigo-700 h-12 text-md shadow-lg shadow-indigo-500/20"
-                            >
-                                {isPro(profile?.subscription_tier) ? <Inbox className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
-                                {isScanning ? "Scanning Gmail..." :
-                                    isGmailConnected ? "Re-scan Gmail" :
-                                        isPro(profile?.subscription_tier) ? "Connect Gmail" : "Connect Gmail (Pro)"}
-                            </Button>
+                            <ScanSettingsDialog
+                                onScan={handleScanInbox}
+                                isScanning={isScanning}
+                                trigger={
+                                    <Button
+                                        disabled={isScanning}
+                                        size="lg"
+                                        className="flex-1 gap-2 bg-indigo-600 hover:bg-indigo-700 h-12 text-md shadow-lg shadow-indigo-500/20"
+                                    >
+                                        {isPro(profile?.subscription_tier) ? <Inbox className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
+                                        {isScanning ? "Scanning Gmail..." :
+                                            isGmailConnected ? "Re-scan Gmail" :
+                                                isPro(profile?.subscription_tier) ? "Connect Gmail" : "Connect Gmail (Pro)"}
+                                    </Button>
+                                }
+                            />
 
                             <ManualSubscriptionModal onSubscriptionAdded={refreshSubscriptions} />
                         </div>
@@ -256,17 +262,22 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-center gap-3">
                         <ManualSubscriptionModal onSubscriptionAdded={refreshSubscriptions} />
-                        <Button
-                            onClick={() => handleScanInbox()}
-                            disabled={isScanning}
-                            variant={isGmailConnected ? "outline" : "outline"}
-                            className={`gap-2 ${isGmailConnected ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400" : "bg-white dark:bg-zinc-900"}`}
-                        >
-                            {isGmailConnected ? <CheckCircle2 className="h-4 w-4" /> : (isPro(profile?.subscription_tier) ? <Inbox className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-500" />)}
-                            {isScanning ? "Scanning..." :
-                                isGmailConnected ? "Re-scan Inbox" :
-                                    isPro(profile?.subscription_tier) ? "Sync Gmail" : "Sync Gmail (Pro)"}
-                        </Button>
+                        <ScanSettingsDialog
+                            onScan={handleScanInbox}
+                            isScanning={isScanning}
+                            trigger={
+                                <Button
+                                    disabled={isScanning}
+                                    variant={isGmailConnected ? "outline" : "outline"}
+                                    className={`gap-2 ${isGmailConnected ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400" : "bg-white dark:bg-zinc-900"}`}
+                                >
+                                    {isGmailConnected ? <CheckCircle2 className="h-4 w-4" /> : (isPro(profile?.subscription_tier) ? <Inbox className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-500" />)}
+                                    {isScanning ? "Scanning..." :
+                                        isGmailConnected ? "Re-scan Inbox" :
+                                            isPro(profile?.subscription_tier) ? "Sync Gmail" : "Sync Gmail (Pro)"}
+                                </Button>
+                            }
+                        />
                     </div>
 
 

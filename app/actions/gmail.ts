@@ -244,14 +244,18 @@ export async function scanGmailReceipts(accessToken: string, days: number = 45, 
                 const date = ai.billing_date || ai.date || email.date
                 const frequency = ai.billing_frequency || ai.frequency || 'monthly'
 
+                // Normalize Helper for Fuzzy Matching
+                const normalize = (str: string) => str.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()
+
                 // Skip if name is still gibberish/empty (unlikely)
                 if (!name || name === '(No Subject)') return null
 
                 // Find existing sub with same name (fuzzy)
-                const match = existingSubs?.find(e =>
-                    e.name.toLowerCase().includes(name.toLowerCase()) ||
-                    name.toLowerCase().includes(e.name.toLowerCase())
-                )
+                const match = existingSubs?.find(e => {
+                    const normName = normalize(name)
+                    const normExisting = normalize(e.name)
+                    return normName === normExisting || normName.includes(normExisting) || normExisting.includes(normName)
+                })
 
                 // Calculate status
                 let status: 'NEW' | 'EXISTS' | 'UPDATE' = 'NEW'
@@ -259,7 +263,9 @@ export async function scanGmailReceipts(accessToken: string, days: number = 45, 
                 let existing_data = undefined
 
                 if (match) {
+                    // Check if price is same (allowing for small float diffs)
                     const samePrice = Math.abs(match.cost - cost) < 0.01
+
                     if (samePrice) {
                         status = 'EXISTS'
                     } else {
