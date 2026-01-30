@@ -65,6 +65,7 @@ interface GmailImportModalProps {
     onImportComplete: () => void
     onRescan: (days: number) => void
     isScanning: boolean
+    range?: number
 }
 
 export function GmailImportModal({
@@ -73,14 +74,20 @@ export function GmailImportModal({
     foundSubscriptions,
     onImportComplete,
     onRescan,
-    isScanning
+    isScanning,
+    range = 90
 }: GmailImportModalProps) {
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     const [removedIds, setRemovedIds] = useState<Set<string>>(new Set())
     const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
     const [editingId, setEditingId] = useState<string | null>(null)
     const [localEdits, setLocalEdits] = useState<Record<string, Partial<DetectedSubscription>>>({})
-    const [timeRange, setTimeRange] = useState(90)
+    const [timeRange, setTimeRange] = useState(range)
+
+    // Sync state with prop if it changes
+    useEffect(() => {
+        if (range) setTimeRange(range)
+    }, [range])
     const [isImporting, setIsImporting] = useState(false)
     const router = useRouter()
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -17,8 +17,16 @@ export function ScanSettingsDialog({ trigger, onScan, isScanning }: ScanSettings
     const [open, setOpen] = useState(false)
     const [days, setDays] = useState("30")
 
+    // Load saved preference on mount
+    useEffect(() => {
+        const saved = localStorage.getItem("gmail_scan_range")
+        if (saved) setDays(saved)
+    }, [])
+
     const handleScan = () => {
-        onScan(parseInt(days))
+        const val = parseInt(days)
+        localStorage.setItem("gmail_scan_range", days)
+        onScan(val)
         setOpen(false)
     }
 

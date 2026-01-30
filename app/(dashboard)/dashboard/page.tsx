@@ -33,6 +33,7 @@ export default function DashboardPage() {
     const { subscriptions, refreshSubscriptions } = useSubscriptions()
     const { profile, refreshProfile } = useProfile()
     const [isScanning, setIsScanning] = useState(false)
+    const [scanRange, setScanRange] = useState(45)
     const [lastSynced, setLastSynced] = useState<Date | null>(null)
     const searchParams = useSearchParams()
     const [isGmailConnected, setIsGmailConnected] = useState(false)
@@ -98,6 +99,7 @@ export default function DashboardPage() {
         }
 
         console.log(`[v0] Starting Gmail Sync flow for last ${days} days...`)
+        setScanRange(days)
         setIsScanning(true)
 
         try {
@@ -245,6 +247,7 @@ export default function DashboardPage() {
                     }}
                     onRescan={handleScanInbox}
                     isScanning={isScanning}
+                    range={scanRange}
                 />
             </div>
         )
@@ -294,6 +297,7 @@ export default function DashboardPage() {
                     }}
                     onRescan={handleScanInbox}
                     isScanning={isScanning}
+                    range={scanRange}
                 />
 
                 <div className="grid w-full gap-6 xl:grid-cols-[1fr_380px]">
