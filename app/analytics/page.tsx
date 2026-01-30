@@ -135,7 +135,7 @@ export default function AnalyticsPage() {
     // Detect Potential Savings (Real logic)
     // We look for subscriptions with low trust scores or high cancellation difficulty
     const savingsOpportunities = (validSubscriptions || [])
-      .filter(sub => sub.trust_score < 60 || sub.cancellation_difficulty.toLowerCase() === 'hard')
+      .filter(sub => sub.trust_score < 60 || (sub.cancellation_difficulty && sub.cancellation_difficulty.toLowerCase() === 'hard'))
       .map(sub => {
         const converted = convertCurrency(sub.cost, sub.currency, userCurrency)
         return {
