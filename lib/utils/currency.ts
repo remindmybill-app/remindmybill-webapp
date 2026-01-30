@@ -13,13 +13,19 @@ function sanitizeCurrency(currency: string): string {
 }
 
 export function formatCurrency(amount: number, currency = "USD", locale = "en-US"): string {
-  const isoCode = sanitizeCurrency(currency)
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency: isoCode,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount)
+  try {
+    const isoCode = sanitizeCurrency(currency)
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency: isoCode,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount)
+  } catch (error) {
+    // Fallback: NEVER crash the UI
+    console.warn("[formatCurrency] Failed to format, using fallback:", error)
+    return `${currency} ${amount.toFixed(2)}`
+  }
 }
 
 export function getCurrencySymbol(currency = "USD"): string {
