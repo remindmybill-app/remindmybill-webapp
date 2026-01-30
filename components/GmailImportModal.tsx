@@ -175,21 +175,40 @@ export function GmailImportModal({
 
         setIsImporting(true)
         let successCount = 0
+        let failCount = 0
 
-        try {
-            for (const sub of items) {
+        // Process each item individually to prevent one failure from stopping the whole batch
+        for (const sub of items) {
+            try {
                 const finalSub = {
                     ...sub,
                     ...localEdits[sub.id]
                 }
 
-                if ((sub.status === 'UPDATE' || sub.status === 'EXISTS') && sub.existing_id) {
+                if ((sub.status === 'UPDATE' || sub.status === 'EXISTS')) {
+                    // CRITICAL FIX: Ensure existing_id is valid before updating
+                    if (!sub.existing_id) {
+                        console.warn(`Skipping update for ${sub.name}: No existing_id found`)
+                        failCount++
+                        continue
+                    }
+
+                    // Check if values are actually different (Ghost Delta check)
+                    // If prices are identical, we still proceed to link/update metadata if needed,
+                    // but logic inside updateSubscription should handle it gracefully.
+
                     const result = await updateSubscription(sub.existing_id, {
                         name: finalSub.name,
                         cost: finalSub.cost,
                         renewal_date: finalSub.date
                     })
-                    if (result.success) successCount++
+
+                    if (result.success) {
+                        successCount++
+                    } else {
+                        console.error(`Failed to update ${sub.name}:`, result)
+                        failCount++
+                    }
                 } else {
                     const result = await addSubscription({
                         name: finalSub.name,
@@ -199,22 +218,36 @@ export function GmailImportModal({
                         renewal_date: finalSub.date,
                         category: 'Software'
                     })
-                    if (result.success) successCount++
-                }
-            }
 
+                    if (result.success) {
+                        successCount++
+                    } else {
+                        console.error(`Failed to add ${sub.name}:`, result)
+                        failCount++
+                    }
+                }
+            } catch (err) {
+                console.error(`Error processing subscription ${sub.name}:`, err)
+                failCount++
+            }
+        }
+
+        setIsImporting(false)
+
+        if (successCount > 0) {
             toast.success(`Processed ${successCount} subscriptions`, {
-                description: "Your dashboard has been refreshed.",
+                description: failCount > 0 ? `${failCount} failed to import.` : "Your dashboard has been refreshed.",
                 icon: <CheckCircle2 className="w-5 h-5 text-emerald-500" />
             })
-
             onImportComplete()
             onClose()
-        } catch (error: any) {
-            console.error("Import failed:", error)
-            toast.error("Import failed", { description: error.message })
-        } finally {
-            setIsImporting(false)
+        } else if (failCount > 0) {
+            toast.error(`Import failed`, {
+                description: `Failed to process ${failCount} subscriptions. Please try again.`
+            })
+        } else {
+            // Should not happen if items.length > 0
+            onClose()
         }
     }
 
@@ -533,22 +566,26 @@ export function GmailImportModal({
                                         </div>
                                     )}
 
-                                    {/* Delta Context */}
-                                    {sub.status === 'UPDATE' && selectedIds.has(sub.id) && !editingId && (
-                                        <div className="mt-6 p-6 rounded-[2.25rem] bg-amber-500/5 border border-amber-500/20 flex items-center justify-between shadow-2xl">
-                                            <div className="flex items-center gap-5">
-                                                <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center">
-                                                    <AlertTriangle className="h-6 w-6 text-amber-500" />
+                                    {/* Delta Context - Only show if prices are DIFFERENT */}
+                                    {sub.status === 'UPDATE' &&
+                                        selectedIds.has(sub.id) &&
+                                        !editingId &&
+                                        sub.existing_data &&
+                                        sub.existing_data.cost !== sub.cost && (
+                                            <div className="mt-6 p-6 rounded-[2.25rem] bg-amber-500/5 border border-amber-500/20 flex items-center justify-between shadow-2xl">
+                                                <div className="flex items-center gap-5">
+                                                    <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center">
+                                                        <AlertTriangle className="h-6 w-6 text-amber-500" />
+                                                    </div>
+                                                    <span className="text-sm font-black text-amber-500 uppercase tracking-[0.15em]">Subscription Delta Found</span>
                                                 </div>
-                                                <span className="text-sm font-black text-amber-500 uppercase tracking-[0.15em]">Subscription Delta Found</span>
+                                                <div className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-4">
+                                                    <span className="text-zinc-600 line-through decoration-zinc-800 decoration-2">{formatCurrency(sub.existing_data.cost, sub.existing_data.currency)}</span>
+                                                    <ArrowRight className="w-5 h-5 text-amber-500" />
+                                                    <span className="text-white px-5 py-2 bg-amber-500/20 rounded-xl border border-amber-500/20">{formatCurrency(sub.cost, sub.currency)}</span>
+                                                </div>
                                             </div>
-                                            <div className="text-xs font-black text-zinc-400 uppercase tracking-widest flex items-center gap-4">
-                                                <span className="text-zinc-600 line-through decoration-zinc-800 decoration-2">{formatCurrency(sub.existing_data!.cost, sub.existing_data!.currency)}</span>
-                                                <ArrowRight className="w-5 h-5 text-amber-500" />
-                                                <span className="text-white px-5 py-2 bg-amber-500/20 rounded-xl border border-amber-500/20">{formatCurrency(sub.cost, sub.currency)}</span>
-                                            </div>
-                                        </div>
-                                    )}
+                                        )}
                                 </div>
                             ))
                         )}
