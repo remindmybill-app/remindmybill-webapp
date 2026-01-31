@@ -52,6 +52,14 @@ const popularServices = [
     "Dropbox", "Planet Fitness", "HelloFresh", "Uber One", "ChatGPT Plus"
 ]
 
+const currencies = [
+    { value: "USD", label: "USD ($)", symbol: "$" },
+    { value: "EUR", label: "EUR (€)", symbol: "€" },
+    { value: "GBP", label: "GBP (£)", symbol: "£" },
+    { value: "CAD", label: "CAD (C$)", symbol: "C$" },
+    { value: "AUD", label: "AUD (A$)", symbol: "A$" },
+]
+
 interface ManualSubscriptionModalProps {
     onSubscriptionAdded: () => void
     subscriptionToEdit?: Subscription | null
@@ -328,19 +336,39 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                         {/* Cost & Cycle Grid */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="cost" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Cost</Label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium text-lg">
-                                        {watch("currency") === "USD" ? "$" : watch("currency") === "EUR" ? "€" : "£"}
-                                    </span>
-                                    <Input
-                                        id="cost"
-                                        type="number"
-                                        step="0.01"
-                                        placeholder="0.00"
-                                        {...register("cost")}
-                                        className={cn("h-12 pl-8 text-lg font-medium bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10", errors.cost && "border-rose-500")}
-                                    />
+                                <Label htmlFor="cost" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Cost & Currency</Label>
+                                <div className="flex gap-2">
+                                    <div className="w-[110px]">
+                                        <Select
+                                            onValueChange={(val) => setValue("currency", val, { shouldValidate: true })}
+                                            defaultValue={subscriptionToEdit?.currency || "USD"}
+                                            value={watch("currency")}
+                                        >
+                                            <SelectTrigger className="h-12 bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10 px-2 font-medium">
+                                                <SelectValue placeholder="USD" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {currencies.map((c) => (
+                                                    <SelectItem key={c.value} value={c.value}>
+                                                        {c.value} ({c.symbol})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="relative flex-1">
+                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium text-lg">
+                                            {currencies.find(c => c.value === watch("currency"))?.symbol || "$"}
+                                        </span>
+                                        <Input
+                                            id="cost"
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="0.00"
+                                            {...register("cost")}
+                                            className={cn("h-12 pl-8 text-lg font-medium bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10", errors.cost && "border-rose-500")}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                             <div className="space-y-2">
