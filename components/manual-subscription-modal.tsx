@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CalendarIcon, Plus, Check, Lock, Sparkles } from "lucide-react"
+import { CalendarIcon, Plus, Check, Lock, Sparkles, Minus } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase"
@@ -97,7 +97,11 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                 setValue("sharedWithCount", String(subscriptionToEdit.shared_with_count || 1))
 
                 if (subscriptionToEdit.renewal_date) {
-                    const rDate = new Date(subscriptionToEdit.renewal_date)
+                    // Fix: Parse as local date by forcing middle of day to avoid timezone shifts
+                    // If the date string is YYYY-MM-DD, appending T12:00:00 makes it noon local time, 
+                    // which is safe against small timezone offsets when parsing.
+                    const dateStr = subscriptionToEdit.renewal_date.split('T')[0] // Ensure we have just the date part
+                    const rDate = new Date(`${dateStr}T12:00:00`)
                     setDate(rDate)
                     setValue("renewalDate", rDate)
                 }
@@ -145,7 +149,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                     cost: Number(values.cost),
                     currency: values.currency,
                     frequency: values.frequency,
-                    renewal_date: values.renewalDate.toISOString(),
+                    renewal_date: format(values.renewalDate, 'yyyy-MM-dd'), // Simple date string
                     category: values.category,
                     shared_with_count: Number(values.sharedWithCount),
                 }).eq('id', subscriptionToEdit.id)
@@ -161,7 +165,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                     cost: Number(values.cost),
                     currency: values.currency,
                     frequency: values.frequency,
-                    renewal_date: values.renewalDate.toISOString(),
+                    renewal_date: format(values.renewalDate, 'yyyy-MM-dd'), // Simple date string
                     status: values.isTrial ? "active" : "active",
                     category: values.category,
                     trust_score: 50,
@@ -401,13 +405,41 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                         <div className="space-y-2">
                             <Label htmlFor="sharedWithCount" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Shared with how many people?</Label>
                             <div className="flex items-center gap-4">
-                                <Input
-                                    id="sharedWithCount"
-                                    type="number"
-                                    min="1"
-                                    {...register("sharedWithCount")}
-                                    className={cn("h-12 w-24 text-lg font-medium bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10", errors.sharedWithCount && "border-rose-500")}
-                                />
+
+                                <div className="flex items-center bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl overflow-hidden h-12">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-12 w-12 rounded-none hover:bg-black/5 dark:hover:bg-white/5"
+                                        onClick={() => {
+                                            const current = Number(watch("sharedWithCount") || 1)
+                                            if (current > 1) {
+                                                setValue("sharedWithCount", String(current - 1), { shouldValidate: true })
+                                            }
+                                        }}
+                                        disabled={Number(watch("sharedWithCount") || 1) <= 1}
+                                    >
+                                        <Minus className="h-4 w-4" />
+                                    </Button>
+                                    <div className="w-12 text-center font-bold text-lg select-none">
+                                        {watch("sharedWithCount")}
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-12 w-12 rounded-none hover:bg-black/5 dark:hover:bg-white/5"
+                                        onClick={() => {
+                                            const current = Number(watch("sharedWithCount") || 1)
+                                            setValue("sharedWithCount", String(current + 1), { shouldValidate: true })
+                                        }}
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                {/* Hidden input for form registration compatibility if needed, though we use setValue above */}
+                                <input type="hidden" {...register("sharedWithCount")} />
                                 <div className="flex-1 text-sm text-muted-foreground transition-all">
                                     {watch("sharedWithCount") && Number(watch("sharedWithCount")) > 1 ? (
                                         <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-medium">
