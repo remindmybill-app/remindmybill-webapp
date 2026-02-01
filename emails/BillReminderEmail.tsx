@@ -20,7 +20,9 @@ interface BillReminderEmailProps {
     amount: number;
     currency: string;
     dueDate: string;
-    cancellationAdvice?: string;
+    category?: string;
+    isTrial?: boolean;
+    cancellationLink?: string;
 }
 
 export const BillReminderEmail = ({
@@ -29,11 +31,15 @@ export const BillReminderEmail = ({
     amount,
     currency,
     dueDate,
-    cancellationAdvice = 'To cancel, visit the merchant\'s website at least 24 hours in advance.',
+    category = 'Subscription',
+    isTrial = false,
+    cancellationLink,
 }: BillReminderEmailProps) => {
     const baseUrl = 'https://remindmybill.com';
-    const previewText = `${serviceName} is renewing in 3 days.`;
+    const previewText = `Heads up! ${serviceName} renews in 3 days.`;
     const googleCancelUrl = `https://www.google.com/search?q=how+to+cancel+${encodeURIComponent(serviceName)}`;
+    const actionUrl = cancellationLink || googleCancelUrl;
+    const actionText = cancellationLink ? 'Manage Subscription' : `How to cancel ${serviceName}`;
 
     return (
         <Html>
@@ -42,62 +48,71 @@ export const BillReminderEmail = ({
             <Tailwind>
                 <Body className="bg-zinc-50 font-sans">
                     <Container className="mx-auto my-10 max-w-[580px] rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
+
+                        {/* Header */}
                         <Section>
                             <Heading className="text-2xl font-bold tracking-tight text-zinc-900">
-                                {serviceName} is renewing in 3 days.
+                                Heads up! {serviceName} renews in 3 days.
                             </Heading>
                             <Text className="mt-4 text-zinc-600">
                                 Hi {customerName},
                             </Text>
-                            <Text className="text-zinc-600">
-                                This is a reminder that your subscription for <strong>{serviceName}</strong> is scheduled to renew shortly.
-                            </Text>
                         </Section>
 
-                        <Section className="bg-indigo-50 rounded-xl p-6 border border-indigo-100 my-6">
-                            <Text className="m-0 text-sm font-bold text-indigo-900 mb-2 flex items-center gap-2">
-                                💡 Smart Tip
-                            </Text>
-                            <Text className="m-0 text-sm text-indigo-800 leading-relaxed">
-                                {cancellationAdvice}
-                            </Text>
-                        </Section>
+                        {/* Smart Alerts: Trial Warning */}
+                        {isTrial && (
+                            <Section className="bg-rose-50 rounded-xl p-4 border border-rose-100 my-6">
+                                <Text className="m-0 text-sm font-bold text-rose-700 flex items-center gap-2">
+                                    ⚠️ YOUR FREE TRIAL IS ENDING
+                                </Text>
+                                <Text className="m-0 text-sm text-rose-600 mt-1">
+                                    Cancel now to avoid being charged {currency} {amount.toFixed(2)}.
+                                </Text>
+                            </Section>
+                        )}
 
-                        <Section className="my-8 rounded-xl bg-zinc-50 p-6 border border-zinc-200">
-                            <Text className="m-0 text-xs font-bold uppercase tracking-widest text-zinc-400 mb-4">Payment Details</Text>
+                        {/* Details Box */}
+                        <Section className="my-6 rounded-xl bg-zinc-50 p-6 border border-zinc-200">
+                            <Text className="m-0 text-xs font-bold uppercase tracking-widest text-zinc-400 mb-4">
+                                Upcoming Charge
+                            </Text>
                             <div className="flex justify-between items-center mb-2">
-                                <Text className="m-0 text-sm text-zinc-600">Amount:</Text>
+                                <Text className="m-0 text-sm text-zinc-600">Service:</Text>
+                                <Text className="m-0 text-base font-medium text-zinc-900">{serviceName}</Text>
+                            </div>
+                            <div className="flex justify-between items-center mb-2">
+                                <Text className="m-0 text-sm text-zinc-600">Cost:</Text>
                                 <Text className="m-0 text-lg font-bold text-zinc-900">{currency} {amount.toFixed(2)}</Text>
                             </div>
-                            <div className="flex justify-between items-center mb-4">
-                                <Text className="m-0 text-sm text-zinc-600">Due Date:</Text>
+                            <div className="flex justify-between items-center mb-2">
+                                <Text className="m-0 text-sm text-zinc-600">Date:</Text>
                                 <Text className="m-0 text-sm font-bold text-zinc-900">{dueDate}</Text>
                             </div>
+                            <div className="flex justify-between items-center text-zinc-500">
+                                <Text className="m-0 text-sm">Category:</Text>
+                                <Text className="m-0 text-sm font-medium">{category}</Text>
+                            </div>
+
                             <Hr className="border-zinc-200 my-4" />
                             <Text className="m-0 text-[11px] text-zinc-400 italic">
                                 Note: These charges are usually processed in the morning of the due date.
                             </Text>
                         </Section>
 
-                        <Section className="my-8">
-                            <Heading className="text-lg font-bold text-zinc-900 mb-2">Want to cancel?</Heading>
-                            <Text className="text-zinc-600 text-sm mb-4">
-                                If you no longer need this service, we've prepared a quick link to help you find the cancellation steps:
-                            </Text>
+                        {/* Action Section */}
+                        <Section className="my-8 text-center">
                             <Button
-                                href={googleCancelUrl}
-                                className="bg-white border border-rose-200 text-rose-600 px-6 py-3 rounded-xl text-sm font-bold shadow-sm"
+                                href={actionUrl}
+                                className={`px-6 py-3 rounded-xl text-sm font-bold shadow-sm ${isTrial
+                                        ? "bg-rose-600 text-white hover:bg-rose-700"
+                                        : "bg-white border border-zinc-200 text-zinc-900 hover:bg-zinc-50"
+                                    }`}
                             >
-                                How to cancel {serviceName}
+                                {actionText}
                             </Button>
                         </Section>
 
-                        <Section className="bg-amber-50 rounded-xl p-4 border border-amber-100 my-8">
-                            <Text className="m-0 text-xs text-amber-800 leading-relaxed">
-                                ⚠️ <strong>Note:</strong> This is an automated reminder. Cancellation usually takes up to 24 hours to process before the billing date.
-                            </Text>
-                        </Section>
-
+                        {/* Footer Link */}
                         <Section className="text-center">
                             <Link
                                 href={`${baseUrl}/dashboard`}
@@ -111,7 +126,7 @@ export const BillReminderEmail = ({
 
                         <Section>
                             <Text className="text-xs text-zinc-400 text-center">
-                                Remind My Bill &bull; Secure Subscription Management &bull; {new Date().getFullYear()}
+                                Sent by RemindMyBill to help you save money.
                             </Text>
                         </Section>
                     </Container>

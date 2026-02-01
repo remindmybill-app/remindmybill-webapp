@@ -1,105 +1,91 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase-server';
+
+import { createClient } from '@/lib/supabase-server'; // Note: Ensure this exists or use check
 import { sendBillReminderEmail } from '@/lib/email';
-import { generateText } from '@/lib/openai-client';
+import { NextResponse } from 'next/server';
 
-async function getAICancellationAdvice(serviceName: string, amount: number, currency: string, date: string): Promise<string> {
-    const fallback = "Just a friendly heads up that your subscription is renewing soon.";
-    try {
-        const prompt = `Generate a brief, reassuring one-sentence explanation for this subscription reminder email. 
-        Input: 
-        - Service: ${serviceName}
-        - Amount: ${amount} ${currency}
-        - Date: ${date}
-        
-        Tone: friendly, clear, non-pushy. 
-        Output: ONE sentence, no JSON, max 25 words.`;
-
-        const text = await generateText(prompt);
-        return text || fallback;
-    } catch (error) {
-        console.error(`[OpenAI] Reminder enrichment failed for ${serviceName}:`, error);
-        return fallback;
-    }
-}
-
+// This route should be called by Vercel Cron
 export async function GET() {
     try {
-        console.log('[Cron] Starting Bill Reminder Job...');
         const supabase = await createClient();
 
-        // 1. Calculate the target date (3 days from now)
-        const targetDate = new Date();
-        targetDate.setDate(targetDate.getDate() + 3);
-        const targetDateString = targetDate.toISOString().split('T')[0];
+        // 1. Calculate target date: Today + 3 Days
+        const today = new Date();
+        const targetDate = new Date(today);
+        targetDate.setDate(today.getDate() + 3);
+        const formattedDate = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD
 
-        console.log(`[Cron] Target renewal date: ${targetDateString}`);
+        console.log(`[Cron] Checking for subscriptions renewing on: ${formattedDate}`);
 
-        // 2. Query subscriptions due on that date
-        const { data: subscriptions, error } = await supabase
+        // 2. Query Subscriptions
+        // We use !inner on profiles to ensure we only get subscriptions where we can actually email the user
+        const { data: subs, error } = await supabase
             .from('subscriptions')
             .select(`
                 *,
-                profiles (
+                profiles!inner (
                     email,
                     full_name
                 )
             `)
-            .eq('renewal_date', targetDateString)
+            .eq('renewal_date', formattedDate)
             .eq('status', 'active');
 
         if (error) {
-            console.error('[Cron] Database query error:', error);
-            throw error;
+            console.error('[Cron] Database error:', error);
+            return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        if (!subscriptions || subscriptions.length === 0) {
-            console.log('[Cron] No subscriptions due for renewal in 3 days.');
-            return NextResponse.json({ success: true, message: 'No reminders to send.' });
+        if (!subs || subs.length === 0) {
+            console.log('[Cron] No subscriptions found for renewal in 3 days.');
+            return NextResponse.json({ success: true, count: 0 });
         }
 
-        console.log(`[Cron] Found ${subscriptions.length} subscriptions to remind.`);
+        console.log(`[Cron] Found ${subs.length} subscriptions to remind.`);
 
-        // 3. Send emails
-        const results = await Promise.allSettled(
-            subscriptions.map(async (sub: any) => {
-                if (!sub.profiles?.email) {
-                    return { success: false, error: 'No user email found' };
-                }
+        // 3. Loop & Send Emails
+        let sentCount = 0;
+        const results = [];
 
-                const userName = sub.profiles.full_name?.split(' ')[0] || 'User';
+        for (const sub of subs) {
+            // @ts-ignore - Supabase types might imply array or object, strictly typing 'profiles' is tricky without generated types
+            const userProfile = sub.profiles;
 
-                // Get AI powered advice
-                const advice = await getAICancellationAdvice(
-                    sub.name,
-                    sub.cost,
-                    sub.currency,
-                    new Date(sub.renewal_date).toLocaleDateString()
-                );
+            if (!userProfile?.email) {
+                console.warn(`[Cron] Skipping sub ${sub.id} - No email found.`);
+                continue;
+            }
 
-                return await sendBillReminderEmail({
-                    email: sub.profiles.email,
-                    userName,
-                    serviceName: sub.name,
-                    amount: sub.cost,
-                    currency: sub.currency,
-                    dueDate: new Date(sub.renewal_date).toLocaleDateString(),
-                    cancellationAdvice: advice
-                });
-            })
-        );
+            const { error: emailError } = await sendBillReminderEmail({
+                email: userProfile.email,
+                userName: userProfile.full_name?.split(' ')[0] || 'User',
+                serviceName: sub.name,
+                amount: sub.cost,
+                currency: sub.currency || 'USD',
+                dueDate: formattedDate, // Or sub.renewal_date if we want exact string
+                category: sub.category,
+                isTrial: sub.is_trial || false, // Assuming is_trial column exists based on context, default to false
+                cancellationLink: sub.cancellation_link, // Assuming column exists
+            });
 
-        const summary = {
-            total: subscriptions.length,
-            sent: results.filter((r: any) => r.status === 'fulfilled' && r.value?.success).length,
-            failed: results.filter((r: any) => r.status === 'rejected' || !r.value?.success).length,
-        };
+            if (emailError) {
+                console.error(`[Cron] Failed to send email for ${sub.id}:`, emailError);
+                results.push({ id: sub.id, status: 'failed', error: emailError });
+            } else {
+                sentCount++;
+                results.push({ id: sub.id, status: 'sent' });
+            }
+        }
 
-        console.log('[Cron] Job complete:', summary);
+        console.log(`[Cron] Process complete. Sent ${sentCount} emails.`);
 
-        return NextResponse.json({ success: true, summary });
-    } catch (error: any) {
-        console.error('[Cron] Job failed:', error);
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        return NextResponse.json({
+            success: true,
+            count: sentCount,
+            date: formattedDate
+        });
+
+    } catch (err: any) {
+        console.error('[Cron] Unexpected error:', err);
+        return NextResponse.json({ error: err.message }, { status: 500 });
     }
 }

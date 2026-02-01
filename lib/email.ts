@@ -74,7 +74,9 @@ export async function sendBillReminderEmail({
     amount,
     currency,
     dueDate,
-    cancellationAdvice,
+    category,
+    isTrial,
+    cancellationLink,
 }: {
     email: string;
     userName: string;
@@ -82,18 +84,22 @@ export async function sendBillReminderEmail({
     amount: number;
     currency: string;
     dueDate: string;
-    cancellationAdvice?: string;
+    category?: string;
+    isTrial?: boolean;
+    cancellationLink?: string;
 }) {
     return sendEmail({
         to: email,
-        subject: `Reminder: Your ${serviceName} bill is due in 3 days`,
+        subject: `Heads up! ${serviceName} renews in 3 days`,
         react: React.createElement(BillReminderEmail, {
             customerName: userName,
             serviceName,
             amount,
             currency,
             dueDate,
-            cancellationAdvice,
+            category,
+            isTrial,
+            cancellationLink,
         }),
     });
 }
