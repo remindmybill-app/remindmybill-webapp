@@ -1,4 +1,4 @@
-import { renderToStaticMarkup } from 'react-dom/server';
+import { render } from '@react-email/render';
 import React from 'react';
 import { PlanChangeEmail } from '@/emails/PlanChangeEmail';
 import { BillReminderEmail } from '@/emails/BillReminderEmail';
@@ -21,7 +21,7 @@ export async function sendEmail({
     console.log("[Email] Attempting to send via Raw Fetch. Key configured:", !!process.env.RESEND_API_KEY);
 
     try {
-        const html = renderToStaticMarkup(react);
+        const html = await render(react);
 
         const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
