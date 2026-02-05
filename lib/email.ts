@@ -18,8 +18,10 @@ export async function sendEmail({
     subject,
     react,
     text,
-    from = 'Remind My Bill <updates@remindmybill.com>', // User asked for this domain
+    from = 'Remind My Bill <updates@remindmybill.com>',
 }: SendEmailOptions) {
+    console.log("[Email] Attempting to send. Key configured:", !!process.env.RESEND_API_KEY);
+
     try {
         const data = await resend.emails.send({
             from,
@@ -32,7 +34,7 @@ export async function sendEmail({
         return { success: true, data };
     } catch (error) {
         console.error('Error sending email:', error);
-        return { success: false, error };
+        throw error; // Throwing so the caller (cron) catches it
     }
 }
 
