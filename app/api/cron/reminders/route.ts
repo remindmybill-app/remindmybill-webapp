@@ -16,23 +16,20 @@ export async function GET() {
 
         console.log(`[Cron] Checking for subscriptions renewing on: ${formattedDate}`);
 
-        // 2. Query Subscriptions
-        // We use !inner on profiles to ensure we only get subscriptions where we can actually email the user
-        const { data: subs, error } = await supabase
+        // 2. Query Subscriptions (Step 1: Fetch valid subscriptions)
+        const { data: subs, error: subsError } = await supabase
             .from('subscriptions')
-            .select(`
-                *,
-                profiles!inner (
-                    email,
-                    full_name
-                )
-            `)
+            .select('*, user_id')
             .eq('renewal_date', formattedDate)
             .eq('status', 'active');
 
-        if (error) {
-            console.error('[Cron] Database error:', error);
-            return NextResponse.json({ error: error.message }, { status: 500 });
+        if (subsError) {
+            console.error('[Cron] Database error (subscriptions):', subsError);
+            return NextResponse.json({
+                success: false,
+                error: subsError.message,
+                phase: 'fetch_subscriptions'
+            }, { status: 200 }); // Returning 200 to prevent Cloudflare retries
         }
 
         if (!subs || subs.length === 0) {
@@ -40,18 +37,43 @@ export async function GET() {
             return NextResponse.json({ success: true, count: 0 });
         }
 
-        console.log(`[Cron] Found ${subs.length} subscriptions to remind.`);
+        // 3. Extract unique user IDs (Step 2: Prepare profile query)
+        const userIds = [...new Set(subs.map(s => s.user_id))].filter(Boolean);
 
-        // 3. Loop & Send Emails
+        if (userIds.length === 0) {
+            console.warn('[Cron] Subscriptions found but no user_ids extracted.');
+            return NextResponse.json({ success: true, count: 0 });
+        }
+
+        // 4. Fetch Profiles (Step 3: Fetch profiles for those users)
+        const { data: profiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, email, full_name')
+            .in('id', userIds);
+
+        if (profilesError) {
+            console.error('[Cron] Database error (profiles):', profilesError);
+            return NextResponse.json({
+                success: false,
+                error: profilesError.message,
+                phase: 'fetch_profiles'
+            }, { status: 200 });
+        }
+
+        // 5. Map them together (Step 4: Memory Mapping)
+        const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+
+        console.log(`[Cron] Found ${subs.length} subscriptions and ${profiles?.length} profiles.`);
+
+        // 6. Loop & Send Emails
         let sentCount = 0;
         const results = [];
 
         for (const sub of subs) {
-            // @ts-ignore - Supabase types might imply array or object, strictly typing 'profiles' is tricky without generated types
-            const userProfile = sub.profiles;
+            const userProfile = profileMap.get(sub.user_id);
 
             if (!userProfile?.email) {
-                console.warn(`[Cron] Skipping sub ${sub.id} - No email found.`);
+                console.warn(`[Cron] Skipping sub ${sub.id} - No email found for user ${sub.user_id}.`);
                 continue;
             }
 
@@ -61,10 +83,10 @@ export async function GET() {
                 serviceName: sub.name,
                 amount: sub.cost,
                 currency: sub.currency || 'USD',
-                dueDate: formattedDate, // Or sub.renewal_date if we want exact string
+                dueDate: formattedDate,
                 category: sub.category,
-                isTrial: sub.is_trial || false, // Assuming is_trial column exists based on context, default to false
-                cancellationLink: sub.cancellation_link, // Assuming column exists
+                isTrial: sub.is_trial || false,
+                cancellationLink: sub.cancellation_link,
             });
 
             if (emailError) {
@@ -86,6 +108,11 @@ export async function GET() {
 
     } catch (err: any) {
         console.error('[Cron] Unexpected error:', err);
-        return NextResponse.json({ error: err.message }, { status: 500 });
+        // Returning 200 to prevent Cloudflare retries hammering the server during a crash
+        return NextResponse.json({
+            success: false,
+            error: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        }, { status: 200 });
     }
 }
