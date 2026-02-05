@@ -1,9 +1,7 @@
-import { Resend } from 'resend';
+import { renderToStaticMarkup } from 'react-dom/server';
 import React from 'react';
 import { PlanChangeEmail } from '@/emails/PlanChangeEmail';
 import { BillReminderEmail } from '@/emails/BillReminderEmail';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 interface SendEmailOptions {
     to: string | string[];
@@ -20,21 +18,39 @@ export async function sendEmail({
     text,
     from = 'Remind My Bill <updates@remindmybill.com>',
 }: SendEmailOptions) {
-    console.log("[Email] Attempting to send. Key configured:", !!process.env.RESEND_API_KEY);
+    console.log("[Email] Attempting to send via Raw Fetch. Key configured:", !!process.env.RESEND_API_KEY);
 
     try {
-        const data = await resend.emails.send({
-            from,
-            to,
-            subject,
-            react,
-            text: text || '',
+        const html = renderToStaticMarkup(react);
+
+        const res = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.RESEND_API_KEY}`
+            },
+            body: JSON.stringify({
+                from,
+                to: [to], // Resend API expects an array for 'to' strings, or single string. SDK handles normalization. Raw API safer with array if unsure.
+                subject,
+                html,
+                text: text || ''
+            })
         });
+
+        if (!res.ok) {
+            const err = await res.text();
+            console.error("Resend Raw Error:", err);
+            throw new Error(`Resend Failed: ${res.status} ${err}`);
+        }
+
+        const data = await res.json();
+        console.log("[Email] Resend Success:", data);
 
         return { success: true, data };
     } catch (error) {
         console.error('Error sending email:', error);
-        throw error; // Throwing so the caller (cron) catches it
+        throw error;
     }
 }
 
