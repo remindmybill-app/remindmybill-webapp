@@ -6,6 +6,12 @@ import { NextResponse } from 'next/server';
 // This route should be called by Vercel Cron
 export async function GET() {
     try {
+        // 0. Configuration check
+        if (!process.env.RESEND_API_KEY) {
+            console.error('[Cron] Missing RESEND_API_KEY');
+            return NextResponse.json({ success: false, error: 'Configuration error: Missing API Key' }, { status: 200 });
+        }
+
         const supabase = await createClient();
 
         // 1. Calculate target date: Today + 3 Days
@@ -14,7 +20,7 @@ export async function GET() {
         targetDate.setDate(today.getDate() + 3);
         const formattedDate = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD
 
-        console.log(`[Cron DEBUG] Starting dry run. Checking date: ${formattedDate}`);
+        console.log(`[Cron] Starting LIVE processing. Target date: ${formattedDate}`);
 
         // 2. Query Subscriptions (Step 1: Fetch valid subscriptions)
         console.time('DB_Fetch_Subscriptions');
@@ -26,30 +32,30 @@ export async function GET() {
         console.timeEnd('DB_Fetch_Subscriptions');
 
         if (subsError) {
-            console.error('[Cron DEBUG] Database error (subscriptions):', subsError);
+            console.error('[Cron] Database error (subscriptions):', subsError);
             return NextResponse.json({
                 success: false,
                 error: subsError.message,
                 phase: 'fetch_subscriptions'
-            }, { status: 200 });
+            }, { status: 200 }); // Returning 200 to prevent Cloudflare retries
         }
 
         if (!subs || subs.length === 0) {
-            console.log('[Cron DEBUG] No subscriptions found for renewal in 3 days.');
-            return NextResponse.json({ success: true, count: 0, mode: 'dry_run' });
+            console.log('[Cron] No subscriptions found for renewal in 3 days.');
+            return NextResponse.json({ success: true, count: 0 });
         }
 
-        // --- BATCH LIMIT: Max 50 (Dry Run still obeys this) ---
+        // --- BATCH LIMIT: Max 50 ---
         const totalFound = subs.length;
         const subsToProcess = subs.slice(0, 50);
-        console.log(`[Cron DEBUG] Found ${totalFound} subscriptions. Dry-running first ${subsToProcess.length}.`);
+        console.log(`[Cron] Found ${totalFound} subscriptions. Processing first ${subsToProcess.length}.`);
 
         // 3. Extract unique user IDs (Step 2: Prepare profile query)
         const userIds = [...new Set(subsToProcess.map(s => s.user_id))].filter(Boolean);
 
         if (userIds.length === 0) {
-            console.warn('[Cron DEBUG] No user_ids extracted.');
-            return NextResponse.json({ success: true, count: 0, mode: 'dry_run' });
+            console.warn('[Cron] No user_ids extracted.');
+            return NextResponse.json({ success: true, count: 0 });
         }
 
         // 4. Fetch Profiles (Step 3: Fetch profiles for those users)
@@ -61,7 +67,7 @@ export async function GET() {
         console.timeEnd('DB_Fetch_Profiles');
 
         if (profilesError) {
-            console.error('[Cron DEBUG] Database error (profiles):', profilesError);
+            console.error('[Cron] Database error (profiles):', profilesError);
             return NextResponse.json({
                 success: false,
                 error: profilesError.message,
@@ -72,48 +78,66 @@ export async function GET() {
         // 5. Map them together (Step 4: Memory Mapping)
         const profileMap = new Map((profiles || []).map(p => [p.id, p]));
 
-        console.log(`[Cron DEBUG] Loaded ${profiles?.length} profiles.`);
+        console.log(`[Cron] Loaded ${profiles?.length} profiles.`);
 
-        // 6. DEBUG: Dry Run loop (No actual emails sent)
-        console.time('Dry_Run_Execution');
+        // 6. Action: Parallel Email Sending (Step 5: LIVE Execution)
+        console.time('Email_Phase_Parallel');
 
-        const dryRunResults = subsToProcess.map((sub) => {
+        const emailPromises = subsToProcess.map(async (sub) => {
             const userProfile = profileMap.get(sub.user_id);
 
             if (!userProfile?.email) {
-                console.warn(`[Cron DEBUG] Missing email for user ${sub.user_id}.`);
+                console.warn(`[Cron] Skipping ${sub.id} - No email for user ${sub.user_id}.`);
                 return { id: sub.id, status: 'skipped', reason: 'no_email' };
             }
 
-            console.log(`[Cron DEBUG] [DRY RUN] Would have sent email to: ${userProfile.email} for ${sub.name}`);
+            try {
+                // Actual email send
+                const { error: emailError } = await sendBillReminderEmail({
+                    email: userProfile.email,
+                    userName: userProfile.full_name?.split(' ')[0] || 'User',
+                    serviceName: sub.name,
+                    amount: sub.cost,
+                    currency: sub.currency || 'USD',
+                    dueDate: formattedDate,
+                    category: sub.category,
+                    isTrial: sub.is_trial || false,
+                    cancellationLink: sub.cancellation_link,
+                });
 
-            return {
-                id: sub.id,
-                status: 'dry_run_success',
-                target: userProfile.email,
-                userName: userProfile.full_name,
-                serviceName: sub.name,
-                amount: sub.cost
-            };
+                if (emailError) {
+                    console.error(`[Cron] Failed send to ${userProfile.email} for ${sub.id}:`, emailError);
+                    return { id: sub.id, status: 'failed', email: userProfile.email, error: emailError };
+                }
+
+                return { id: sub.id, status: 'sent', email: userProfile.email };
+            } catch (err: any) {
+                console.error(`[Cron] Unexpected error sending to ${userProfile.email}:`, err);
+                return { id: sub.id, status: 'failed', email: userProfile.email, error: err.message };
+            }
         });
 
-        console.timeEnd('Dry_Run_Execution');
+        const results = await Promise.all(emailPromises);
+        console.timeEnd('Email_Phase_Parallel');
+
+        const sentCount = results.filter(r => r.status === 'sent').length;
+        const failedCount = results.filter(r => r.status === 'failed').length;
+
+        console.log(`[Cron] LIVE Process complete. Sent: ${sentCount}, Failed: ${failedCount}.`);
 
         return NextResponse.json({
             success: true,
-            mode: 'dry_run',
             total_found: totalFound,
             processed_count: subsToProcess.length,
-            date: formattedDate,
-            results: dryRunResults
+            sent_count: sentCount,
+            failed_count: failedCount
         });
 
     } catch (err: any) {
-        console.error('[Cron DEBUG] Unexpected crash:', err);
+        console.error('[Cron] Unexpected crash in route:', err);
         return NextResponse.json({
             success: false,
-            error: err.message,
-            mode: 'dry_run'
+            error: err.message
         }, { status: 200 });
     }
 }
