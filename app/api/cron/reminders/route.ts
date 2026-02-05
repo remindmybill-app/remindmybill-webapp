@@ -1,13 +1,18 @@
 
-import { createClient } from '@/lib/supabase-server'; // Note: Ensure this exists or use check
+import { createClient } from '@/lib/supabase-server';
 import { sendBillReminderEmail } from '@/lib/email';
 import { NextResponse } from 'next/server';
+
+export const runtime = 'nodejs';
 
 // This route should be called by Vercel Cron
 export async function GET() {
     try {
-        // 0. Configuration check
-        if (!process.env.RESEND_API_KEY) {
+        // 0. Configuration check & Logging
+        const hasResendKey = !!process.env.RESEND_API_KEY;
+        console.log(`[Cron DEBUG] Starting Fail-Fast logic. RESEND_API_KEY Exists: ${hasResendKey}`);
+
+        if (!hasResendKey) {
             console.error('[Cron] Missing RESEND_API_KEY');
             return NextResponse.json({ success: false, error: 'Configuration error: Missing API Key' }, { status: 200 });
         }
@@ -20,7 +25,7 @@ export async function GET() {
         targetDate.setDate(today.getDate() + 3);
         const formattedDate = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD
 
-        console.log(`[Cron] Starting LIVE processing. Target date: ${formattedDate}`);
+        console.log(`[Cron] Target date: ${formattedDate}`);
 
         // 2. Query Subscriptions (Step 1: Fetch valid subscriptions)
         console.time('DB_Fetch_Subscriptions');
@@ -37,7 +42,7 @@ export async function GET() {
                 success: false,
                 error: subsError.message,
                 phase: 'fetch_subscriptions'
-            }, { status: 200 }); // Returning 200 to prevent Cloudflare retries
+            }, { status: 200 });
         }
 
         if (!subs || subs.length === 0) {
@@ -80,8 +85,15 @@ export async function GET() {
 
         console.log(`[Cron] Loaded ${profiles?.length} profiles.`);
 
-        // 6. Action: Parallel Email Sending (Step 5: LIVE Execution)
-        console.time('Email_Phase_Parallel');
+        // 6. Action: Parallel Email Sending with 5s Timeout (Step 5: FAIL FAST)
+        console.time('Email_Phase_FailFast');
+
+        const sendWithTimeout = (data: any) => Promise.race([
+            sendBillReminderEmail(data),
+            new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Email Timeout (5s)')), 5000)
+            )
+        ]);
 
         const emailPromises = subsToProcess.map(async (sub) => {
             const userProfile = profileMap.get(sub.user_id);
@@ -92,8 +104,8 @@ export async function GET() {
             }
 
             try {
-                // Actual email send
-                const { error: emailError } = await sendBillReminderEmail({
+                // Actual email send with timeout race
+                const { error: emailError } = await sendWithTimeout({
                     email: userProfile.email,
                     userName: userProfile.full_name?.split(' ')[0] || 'User',
                     serviceName: sub.name,
@@ -103,34 +115,35 @@ export async function GET() {
                     category: sub.category,
                     isTrial: sub.is_trial || false,
                     cancellationLink: sub.cancellation_link,
-                });
+                }) as any;
 
                 if (emailError) {
-                    console.error(`[Cron] Failed send to ${userProfile.email} for ${sub.id}:`, emailError);
+                    console.error(`[Cron] Failed send to ${userProfile.email}:`, emailError);
                     return { id: sub.id, status: 'failed', email: userProfile.email, error: emailError };
                 }
 
                 return { id: sub.id, status: 'sent', email: userProfile.email };
             } catch (err: any) {
-                console.error(`[Cron] Unexpected error sending to ${userProfile.email}:`, err);
+                console.error(`[Cron] Error (Timeout or Exception) for ${userProfile.email}:`, err.message);
                 return { id: sub.id, status: 'failed', email: userProfile.email, error: err.message };
             }
         });
 
         const results = await Promise.all(emailPromises);
-        console.timeEnd('Email_Phase_Parallel');
+        console.timeEnd('Email_Phase_FailFast');
 
         const sentCount = results.filter(r => r.status === 'sent').length;
         const failedCount = results.filter(r => r.status === 'failed').length;
 
-        console.log(`[Cron] LIVE Process complete. Sent: ${sentCount}, Failed: ${failedCount}.`);
+        console.log(`[Cron] FAIL FAST complete. Sent: ${sentCount}, Failed/TimedOut: ${failedCount}.`);
 
         return NextResponse.json({
             success: true,
             total_found: totalFound,
             processed_count: subsToProcess.length,
             sent_count: sentCount,
-            failed_count: failedCount
+            failed_count: failedCount,
+            results: results
         });
 
     } catch (err: any) {
