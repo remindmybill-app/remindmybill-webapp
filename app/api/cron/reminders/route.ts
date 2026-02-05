@@ -91,7 +91,7 @@ export async function GET() {
         const sendWithTimeout = (data: any) => Promise.race([
             sendBillReminderEmail(data),
             new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Email Timeout (5s)')), 5000)
+                setTimeout(() => reject(new Error('Email Timeout (9s)')), 9000)
             )
         ]);
 
