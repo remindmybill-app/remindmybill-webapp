@@ -28,22 +28,19 @@ export default function PricingPage() {
     }
 
     setIsUpdating(true)
-    const supabase = getSupabaseBrowserClient()
 
-    console.log("Calling create-checkout-session...")
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-        body: {
-          subscription_tier: 'pro',
-          period
-        }
-      })
+      // Import server action and price IDs
+      const { createCheckoutSession } = await import("@/app/actions/stripe")
+      const { PRO_PRICE_ID_MONTHLY, PRO_PRICE_ID_YEARLY } = await import("@/lib/stripe")
 
-      if (error) throw error
-      if (data?.error) throw new Error(data.error)
+      const priceId = period === 'yearly' ? PRO_PRICE_ID_YEARLY : PRO_PRICE_ID_MONTHLY
 
-      if (data?.url) {
-        window.location.href = data.url
+      console.log(`Creating Stripe checkout for ${period} with priceId: ${priceId}`)
+      const result = await createCheckoutSession(profile.id, profile.email, priceId)
+
+      if (result?.url) {
+        window.location.href = result.url
       } else {
         throw new Error("No checkout URL returned")
       }
@@ -219,18 +216,8 @@ export default function PricingPage() {
                         return
                       }
 
-                      // Handle Upgrade using Server Action
-                      setIsUpdating(true)
-                      try {
-                        await upgradeUserToPro(profile!.id)
-                        // Trigger SWR revalidation globally (instant state sync)
-                        await mutate()
-                        toast.success("Welcome to Pro! 🎉")
-                        setIsUpdating(false)
-                      } catch (err: any) {
-                        toast.error(err.message || "Upgrade failed")
-                        setIsUpdating(false)
-                      }
+                      // Handle Upgrade using Real Stripe Checkout
+                      handleStripeCheckout(isAnnual ? 'yearly' : 'monthly')
                     }
                   }}
                 >
