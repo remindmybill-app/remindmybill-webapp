@@ -5,23 +5,13 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { TrendingUp } from "lucide-react"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
+import { calculateHealthScore } from "@/lib/analytics"
 
 export function FinancialHealthCard() {
   const { subscriptions, isLoading } = useSubscriptions()
 
-  const calculateHealthScore = () => {
-    if (subscriptions.length === 0) return 0
-
-    const avgTrustScore = subscriptions.reduce((sum, sub) => sum + sub.trust_score, 0) / subscriptions.length
-    const unusedCount = subscriptions.filter(
-      (sub) => sub.last_used_date && new Date(sub.last_used_date) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    ).length
-    const usageScore = ((subscriptions.length - unusedCount) / subscriptions.length) * 100
-
-    return Math.round(avgTrustScore * 0.6 + usageScore * 0.4)
-  }
-
-  const score = isLoading ? 0 : calculateHealthScore()
+  // Use the centralized health score algorithm from lib/analytics
+  const score = isLoading ? 0 : calculateHealthScore(subscriptions)
 
   const getOptimizationLevel = (score: number): "low" | "medium" | "high" => {
     if (score >= 80) return "high"

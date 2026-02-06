@@ -147,15 +147,30 @@ export default function TrustCenterPage() {
     if (!requestServiceName) return
 
     setIsSubmittingRequest(true)
-    await new Promise(resolve => setTimeout(resolve, 800))
 
-    toast.success("Request sent!", {
-      description: `We'll audit ${requestServiceName} and add it to our database shortly.`
-    })
+    try {
+      const { submitServiceRequest } = await import("@/app/actions/service-request")
+      const result = await submitServiceRequest(requestServiceName)
 
-    setRequestServiceName("")
-    setIsRequestModalOpen(false)
-    setIsSubmittingRequest(false)
+      if (result.success) {
+        toast.success("Request sent!", {
+          description: `We'll audit ${requestServiceName} and add it to our database shortly.`
+        })
+        setRequestServiceName("")
+        setIsRequestModalOpen(false)
+      } else {
+        toast.error("Request failed", {
+          description: result.error || "Could not submit your request."
+        })
+      }
+    } catch (err) {
+      console.error("Request submission error:", err)
+      toast.error("Something went wrong", {
+        description: "Please try again later."
+      })
+    } finally {
+      setIsSubmittingRequest(false)
+    }
   }
 
   const handleAnalyze = async () => {
