@@ -13,7 +13,6 @@ import { Mail, Lock, Bell, CreditCard, Smartphone, DollarSign, AlertTriangle } f
 import { useProfile } from "@/lib/hooks/use-profile"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { DowngradeConfirmationDialog } from "@/components/downgrade-confirmation-dialog"
-import { SubscriptionSelectorModal } from "@/components/subscription-selector-modal"
 import { isPro, getTierDisplayName, getTierLimit } from "@/lib/subscription-utils"
 import { downgradeUserToFree } from "@/app/actions/mock-upgrade"
 import { toast } from "sonner"
@@ -30,7 +29,6 @@ function SettingsContent() {
 
   // Downgrade State
   const [showDowngradeDialog, setShowDowngradeDialog] = useState(false)
-  const [showSubscriptionSelector, setShowSubscriptionSelector] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -43,30 +41,13 @@ function SettingsContent() {
     console.log("[v0] Currency updated to:", newCurrency)
   }
 
-  const handleDowngrade = async (selectedIds?: string[]) => {
+  // Simplified: Soft Downgrade (no data deletion)
+  const handleDowngrade = async () => {
     if (!profile) return
     setIsProcessing(true)
 
     try {
-      const supabase = createClient()
-
-      // If we have selected IDs (meaning user was over limit), cancel the unselected ones
-      if (selectedIds) {
-        const subscriptionsToCancel = subscriptions
-          .filter(sub => !selectedIds.includes(sub.id) && sub.status === 'active')
-          .map(sub => sub.id)
-
-        if (subscriptionsToCancel.length > 0) {
-          const { error } = await supabase
-            .from('subscriptions')
-            .delete()
-            .in('id', subscriptionsToCancel)
-
-          if (error) throw error
-        }
-      }
-
-      // Perform the downgrade
+      // Perform the soft downgrade (sets is_pro = false, triggers lock sync)
       await downgradeUserToFree(profile.id)
 
       // Refresh everything
@@ -75,7 +56,6 @@ function SettingsContent() {
 
       toast.success("Plan downgraded to Free")
       setShowDowngradeDialog(false)
-      setShowSubscriptionSelector(false)
     } catch (error: any) {
       console.error("Downgrade error:", error)
       toast.error("Failed to downgrade: " + error.message)
@@ -105,19 +85,6 @@ function SettingsContent() {
     } catch (error: any) {
       console.error("Gmail connect error:", error)
       toast.error("Failed to connect Gmail: " + error.message)
-    }
-  }
-
-  const onConfirmDowngradeInitial = () => {
-    // Check if user is over the limit (3 for free)
-    // Filter effectively active subscriptions
-    const activeSubsCount = subscriptions.filter(s => s.status === 'active').length
-
-    if (activeSubsCount > 3) {
-      setShowDowngradeDialog(false)
-      setShowSubscriptionSelector(true)
-    } else {
-      handleDowngrade()
     }
   }
 
@@ -378,19 +345,13 @@ function SettingsContent() {
       <DowngradeConfirmationDialog
         open={showDowngradeDialog}
         onOpenChange={setShowDowngradeDialog}
-        onConfirm={onConfirmDowngradeInitial}
+        onConfirm={handleDowngrade}
         onCancel={() => setShowDowngradeDialog(false)}
         subscriptionCount={subscriptions.filter(s => s.status === 'active').length}
-      />
-
-      <SubscriptionSelectorModal
-        open={showSubscriptionSelector}
-        onOpenChange={setShowSubscriptionSelector}
-        subscriptions={subscriptions.filter(s => s.status === 'active')}
-        onConfirm={handleDowngrade}
         isProcessing={isProcessing}
       />
     </div>
+
   )
 }
 

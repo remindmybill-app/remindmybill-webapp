@@ -50,9 +50,11 @@ export async function upgradeUserToPro(userId: string) {
 export async function downgradeUserToFree(userId: string) {
     const supabase = await createClient()
 
+    // 1. Update profile to free tier (SOFT downgrade - no data deletion)
     const { error } = await supabase
         .from('profiles')
         .update({
+            is_pro: false,
             subscription_tier: 'free',
             subscription_limit: 3,
             subscription_status: 'active'
@@ -63,7 +65,17 @@ export async function downgradeUserToFree(userId: string) {
         throw new Error(error.message)
     }
 
-    // Send Plan Change Email (Non-blocking)
+    // 2. Trigger lock sync to apply the "locked" state to excess subscriptions
+    try {
+        const { syncSubscriptionLockStatus } = await import('./subscription-lock')
+        await syncSubscriptionLockStatus(userId)
+        console.log('[Action] Lock status synced after downgrade')
+    } catch (lockError) {
+        console.error('[Action] Lock sync failed after downgrade:', lockError)
+        // Non-blocking: locks will be applied on next dashboard load anyway
+    }
+
+    // 3. Send Plan Change Email (Non-blocking)
     try {
         const { data: profile } = await supabase
             .from('profiles')
