@@ -216,6 +216,7 @@ export default function DashboardPage() {
 
     const hasSubscriptions = subscriptions.length > 0
     const isProUser = isPro(profile?.subscription_tier, profile?.is_pro);
+    // CRITICAL: Ensure Pro users NEVER hit the limit
     const isLimitReached = !isProUser && subscriptions.length >= 3;
 
     if (!hasSubscriptions) {

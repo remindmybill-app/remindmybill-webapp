@@ -226,7 +226,8 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                 </DialogHeader>
 
                 {/* Limit Enforcement - Show "Limit Reached" Card if at capacity */}
-                {!subscriptionToEdit && profile && profile.current_usage >= profile.subscription_limit ? (
+                {/* CRITICAL FIX: Only enforce limit if user is NOT Pro */}
+                {!subscriptionToEdit && profile && !profile.is_pro && profile.current_usage >= profile.subscription_limit ? (
                     <div className="p-6 space-y-6 relative z-10">
                         {/* Limit Reached Card */}
                         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500/10 via-orange-500/5 to-amber-500/10 border border-rose-200/50 dark:border-rose-500/20 p-8 text-center">
