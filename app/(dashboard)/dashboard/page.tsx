@@ -92,6 +92,18 @@ export default function DashboardPage() {
             router.replace('/dashboard')
         }
 
+        // Handle Stripe upgrade success - FORCE refresh profile to get is_pro
+        if (success === 'true') {
+            toast.success("Welcome to Pro! 🚀", {
+                description: "Your subscription is now active. Enjoy unlimited features!",
+                duration: 6000,
+            })
+            // Force refresh profile to get the updated is_pro status
+            refreshProfile()
+            // Clear the success param
+            router.replace('/dashboard')
+        }
+
         if (success === 'gmail_connected') {
             toast.success("Gmail Connected Successfully!", {
                 description: "Scanning your inbox for subscriptions...",
@@ -108,7 +120,7 @@ export default function DashboardPage() {
             // Clear params
             router.replace('/dashboard')
         }
-    }, [searchParams, router])
+    }, [searchParams, router, refreshProfile])
 
     const handleScanInbox = async (days: number = 45) => {
         if (!isPro(profile?.subscription_tier, profile?.is_pro)) {
