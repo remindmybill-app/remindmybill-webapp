@@ -30,14 +30,12 @@ export default function PricingPage() {
     setIsUpdating(true)
 
     try {
-      // Import server action and price IDs
+      // Import server action
       const { createCheckoutSession } = await import("@/app/actions/stripe")
-      const { PRO_PRICE_ID_MONTHLY, PRO_PRICE_ID_YEARLY } = await import("@/lib/stripe")
 
-      const priceId = period === 'yearly' ? PRO_PRICE_ID_YEARLY : PRO_PRICE_ID_MONTHLY
-
-      console.log(`Creating Stripe checkout for ${period} with priceId: ${priceId}`)
-      const result = await createCheckoutSession(profile.id, profile.email, priceId)
+      console.log(`Creating Stripe checkout for ${period}...`)
+      // Pass the abstract 'period' to let the server resolve the secure Price ID
+      const result = await createCheckoutSession(profile.id, profile.email, period)
 
       if (result?.url) {
         window.location.href = result.url
