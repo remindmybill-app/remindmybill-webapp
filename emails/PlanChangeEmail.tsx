@@ -19,7 +19,7 @@ interface PlanChangeEmailProps {
     newPlanName: string;
     price: string;
     limit: number;
-    isUpgrade: boolean;
+    type: 'upgrade' | 'downgrade';
     date: string;
 }
 
@@ -28,10 +28,12 @@ export const PlanChangeEmail = ({
     newPlanName,
     price,
     limit,
-    isUpgrade,
+    type,
     date,
 }: PlanChangeEmailProps) => {
-    const baseUrl = 'https://remindmybill.com';
+    const baseUrl = 'https://remindmybill.com'; // In a real app, this might be dynamic too, but usually static for emails
+    const isUpgrade = type === 'upgrade';
+
     const previewText = isUpgrade
         ? `You are now on the ${newPlanName}!`
         : `Your RemindMyBill Plan has been updated to ${newPlanName}.`;
@@ -45,15 +47,15 @@ export const PlanChangeEmail = ({
                     <Container className="mx-auto my-10 max-w-[580px] rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm">
                         <Section>
                             <Heading className="text-2xl font-bold tracking-tight text-zinc-900">
-                                {isUpgrade ? `Welcome to ${newPlanName}! 🚀` : "Plan Updated successfully"}
+                                {isUpgrade ? "Welcome to Pro! 🚀" : "Plan Changed to Free"}
                             </Heading>
                             <Text className="mt-4 text-zinc-600">
                                 Hi {customerName},
                             </Text>
                             <Text className="text-zinc-600">
                                 {isUpgrade
-                                    ? `You are now on the ${newPlanName}! You can track up to ${limit} subscriptions. Your upgrade date is ${date}.`
-                                    : `You have switched to the ${newPlanName} plan. Please note your limit is now ${limit} subscriptions.`}
+                                    ? `Thanks for upgrading to the ${newPlanName}! You can now track unlimited subscriptions and access all premium features. Your upgrade date is ${date}.`
+                                    : `You have been downgraded to the ${newPlanName} plan. Please note your limit is now ${limit} subscriptions. Excess subscriptions will be locked.`}
                             </Text>
                             <Text className="text-zinc-600 font-bold">
                                 New Price: {price}/month

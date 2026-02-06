@@ -60,7 +60,7 @@ export async function sendPlanChangeEmail({
     planName,
     price,
     limit,
-    isUpgrade,
+    type,
     date,
 }: {
     email: string;
@@ -68,18 +68,22 @@ export async function sendPlanChangeEmail({
     planName: string;
     price: string;
     limit: number;
-    isUpgrade: boolean;
+    type: 'upgrade' | 'downgrade';
     date: string;
 }) {
+    const subject = type === 'upgrade'
+        ? `Welcome to ${planName}! 🚀`
+        : 'Your RemindMyBill Plan has been updated';
+
     return sendEmail({
         to: email,
-        subject: isUpgrade ? `Welcome to ${planName}! 🚀` : 'Your RemindMyBill Plan has been updated',
+        subject,
         react: React.createElement(PlanChangeEmail, {
             customerName: userName,
             newPlanName: planName,
-            price: price,
+            price,
             limit,
-            isUpgrade,
+            type,
             date,
         }),
     });

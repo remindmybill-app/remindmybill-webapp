@@ -17,6 +17,9 @@ export async function createCheckoutSession(userId: string, email: string, perio
         throw new Error(`Invalid Price ID configuration. Please set ${varName} in your environment variables.`);
     }
 
+    // Define origin for redirects
+    const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+
     try {
         const session = await stripe.checkout.sessions.create({
             customer_email: email,
@@ -28,8 +31,8 @@ export async function createCheckoutSession(userId: string, email: string, perio
                 },
             ],
             mode: 'subscription',
-            success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard?success=true`,
-            cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/pricing`,
+            success_url: `${origin}/dashboard?success=true`,
+            cancel_url: `${origin}/pricing`,
         });
 
         if (session.url) {
