@@ -33,7 +33,8 @@ export async function GET() {
             .from('subscriptions')
             .select('*, user_id')
             .eq('renewal_date', formattedDate)
-            .eq('status', 'active');
+            .eq('status', 'active')
+            .eq('is_locked', false); // Exclude locked subscriptions
         console.timeEnd('DB_Fetch_Subscriptions');
 
         if (subsError) {

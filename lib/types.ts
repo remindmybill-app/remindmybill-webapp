@@ -35,6 +35,7 @@ export interface Profile {
   subscription_status?: string
   subscription_limit: number
   current_usage: number
+  is_pro: boolean
   created_at: string
   updated_at: string
 }
@@ -54,6 +55,7 @@ export interface Subscription {
   auto_renewal: boolean
   cancellation_difficulty: "easy" | "medium" | "hard"
   shared_with_count: number
+  is_locked: boolean
   created_at: string
   updated_at: string
 }

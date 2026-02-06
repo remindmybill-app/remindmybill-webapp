@@ -2,9 +2,11 @@
 import React, { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Tv, Music, Code, Dumbbell, Cloud, Mail, Package, Gamepad2, Inbox, Sparkles, TrendingUp, Calendar, MoreHorizontal, Pencil, Trash2, Loader2, Zap, XCircle, ChevronRight } from "lucide-react"
+import { Tv, Music, Code, Dumbbell, Cloud, Mail, Package, Gamepad2, Inbox, Sparkles, TrendingUp, Calendar, MoreHorizontal, Pencil, Trash2, Loader2, Zap, XCircle, ChevronRight, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
+import { useProfile } from "@/lib/hooks/use-profile"
+import { isPro } from "@/lib/subscription-utils"
 import { formatCurrency } from "@/lib/utils/currency"
 import { formatDistanceToNow, parseISO } from "date-fns"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -86,7 +88,11 @@ export function SubscriptionsTable() {
     setConfirmCancelSub(null)
   }
 
+  const { profile } = useProfile();
+  const isProStatus = isPro(profile?.subscription_tier, profile?.is_pro);
+
   if (!isLoading && subscriptions.length === 0) {
+    // ... (existing empty state code) ...
     return (
       <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
         <CardHeader className="p-8">
@@ -175,17 +181,18 @@ export function SubscriptionsTable() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
-                    {subscriptions.map((sub) => {
+                    {subscriptions.map((sub, index) => {
                       const Icon = categoryIcons[sub.category] || Package
-
                       const nextDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
                       const { label, statusColor } = getRenewalDisplay(nextDate)
-
                       const logoUrl = `https://logo.clearbit.com/${sub.name.toLowerCase().replace(/\s+/g, '')}.com`
 
+                      const isLocked = !isProStatus && index >= 3
+                      const lockedClass = isLocked ? "opacity-50 grayscale pointer-events-none select-none relative" : ""
+
                       return (
-                        <tr key={sub.id} className="group transition-all hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 cursor-default">
-                          <td className="p-4 pl-6">
+                        <tr key={sub.id} className={`group transition-all hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 cursor-default ${isLocked ? 'bg-zinc-50/50 dark:bg-zinc-900/50' : ''}`}>
+                          <td className={`p-4 pl-6 ${lockedClass}`}>
                             <div className="flex items-center gap-4">
                               <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 group-hover:ring-indigo-500/30 transition-all dark:bg-zinc-800 dark:ring-zinc-700 overflow-hidden relative">
                                 <Icon className="h-5 w-5 text-zinc-600 dark:text-zinc-300 absolute" />
@@ -199,19 +206,20 @@ export function SubscriptionsTable() {
                                 />
                               </div>
                               <div>
-                                <span className="block text-sm font-bold text-zinc-900 dark:text-zinc-50">
+                                <span className="block text-sm font-bold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
                                   {sub.name}
-                                  {sub.shared_with_count > 1 && (
-                                    <span className="ml-2 inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-[9px] font-black uppercase tracking-tighter text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400">
-                                      👥 Shared
-                                    </span>
-                                  )}
+                                  {isLocked && <Lock className="h-3 w-3 text-zinc-400" />}
                                 </span>
+                                {sub.shared_with_count > 1 && !isLocked && (
+                                  <span className="block mt-0.5 text-[9px] font-black uppercase tracking-tighter text-indigo-600 dark:text-indigo-400">
+                                    👥 Shared
+                                  </span>
+                                )}
                                 <span className="text-[10px] font-medium text-muted-foreground uppercase">{sub.category}</span>
                               </div>
                             </div>
                           </td>
-                          <td className="p-4 text-right">
+                          <td className={`p-4 text-right ${lockedClass}`}>
                             <div className="font-black text-sm tracking-tighter text-zinc-900 dark:text-zinc-50">
                               {sub.shared_with_count > 1 ? (
                                 <div className="flex flex-col items-end">
@@ -223,10 +231,10 @@ export function SubscriptionsTable() {
                               )}
                             </div>
                           </td>
-                          <td className="p-4 text-right">
+                          <td className={`p-4 text-right ${lockedClass}`}>
                             <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{sub.frequency || 'Monthly'}</div>
                           </td>
-                          <td className="p-4 text-right">
+                          <td className={`p-4 text-right ${lockedClass}`}>
                             <div className="inline-flex items-center gap-2 justify-end">
                               <Calendar className="h-3 w-3 text-muted-foreground" />
                               <span className={`text-sm ${statusColor}`}>
@@ -234,46 +242,54 @@ export function SubscriptionsTable() {
                               </span>
                             </div>
                           </td>
-                          <td className="p-4 text-right">
-                            <Badge variant="outline" className="h-5 text-[10px] font-black uppercase tracking-widest bg-emerald-50/50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50">
-                              {sub.status || 'Active'}
+                          <td className={`p-4 text-right ${lockedClass}`}>
+                            <Badge variant="outline" className={`h-5 text-[10px] font-black uppercase tracking-widest ${isLocked ? 'bg-zinc-100 text-zinc-400 border-zinc-200' : 'bg-emerald-50/50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50'}`}>
+                              {isLocked ? 'Locked' : (sub.status || 'Active')}
                             </Badge>
                           </td>
-                          <td className="p-4 pr-6 text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <CalendarExportButton
-                                name={sub.name}
-                                cost={sub.cost / sub.shared_with_count}
-                                currency={sub.currency === 'USD' ? '$' : sub.currency === 'EUR' ? '€' : '£'}
-                                renewalDate={sub.renewal_date}
-                                frequency={sub.frequency}
-                              />
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-zinc-200 dark:hover:bg-zinc-700">
-                                    {deletingId === sub.id ? (
-                                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                                    ) : (
-                                      <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                                    )}
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => setEditingSubscription(sub)}>
-                                    <Pencil className="mr-2 h-4 w-4" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => setConfirmCancelSub({ id: sub.id, name: sub.name })}>
-                                    <XCircle className="mr-2 h-4 w-4" />
-                                    Cancel Subscription
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => setConfirmDeleteSub({ id: sub.id, name: sub.name })} className="text-destructive focus:text-destructive">
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
+                          <td className="p-4 pr-6 text-right relative">
+                            {isLocked ? (
+                              <div className="flex justify-end">
+                                <Button variant="ghost" size="sm" className="h-8 w-8 text-zinc-400 cursor-not-allowed">
+                                  <Lock className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-end gap-1">
+                                <CalendarExportButton
+                                  name={sub.name}
+                                  cost={sub.cost / sub.shared_with_count}
+                                  currency={sub.currency === 'USD' ? '$' : sub.currency === 'EUR' ? '€' : '£'}
+                                  renewalDate={sub.renewal_date}
+                                  frequency={sub.frequency}
+                                />
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-zinc-200 dark:hover:bg-zinc-700">
+                                      {deletingId === sub.id ? (
+                                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                      ) : (
+                                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                                      )}
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => setEditingSubscription(sub)}>
+                                      <Pencil className="mr-2 h-4 w-4" />
+                                      Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setConfirmCancelSub({ id: sub.id, name: sub.name })}>
+                                      <XCircle className="mr-2 h-4 w-4" />
+                                      Cancel Subscription
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => setConfirmDeleteSub({ id: sub.id, name: sub.name })} className="text-destructive focus:text-destructive">
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
+                            )}
                           </td>
                         </tr>
                       )
@@ -282,11 +298,44 @@ export function SubscriptionsTable() {
                 </table>
               </div>
 
+              {/* Mobile View with Locked State */}
               <div className="space-y-4 p-4 md:hidden">
-                {subscriptions.map((sub) => {
+                {subscriptions.map((sub, index) => {
                   const Icon = categoryIcons[sub.category] || Package
                   const nextDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
                   const { label, statusColor } = getRenewalDisplay(nextDate)
+                  const isLocked = !isProStatus && index >= 3
+
+                  if (isLocked) {
+                    return (
+                      <div
+                        key={sub.id}
+                        className="rounded-2xl border border-zinc-100 bg-zinc-50 p-6 shadow-sm opacity-60 grayscale relative overflow-hidden"
+                      >
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-10">
+                          <div className="flex flex-col items-center gap-2">
+                            <div className="p-2 bg-zinc-900 rounded-full text-white">
+                              <Lock className="h-4 w-4" />
+                            </div>
+                            <span className="text-xs font-bold text-zinc-900 uppercase">Limit Reached</span>
+                          </div>
+                        </div>
+                        {/* Blurred Content */}
+                        <div className="blur-sm select-none">
+                          <div className="mb-4 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="h-12 w-12 rounded-xl bg-zinc-200" />
+                              <div>
+                                <div className="h-4 w-24 bg-zinc-200 rounded mb-2" />
+                                <div className="h-3 w-16 bg-zinc-200 rounded" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  }
+
                   return (
                     <div
                       key={sub.id}

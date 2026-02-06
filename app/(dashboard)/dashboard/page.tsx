@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -11,7 +10,7 @@ import { SavingsAlerts } from "@/components/savings-alerts"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Inbox, Bell, Sparkles, Plus, Lock, TrendingUp } from "lucide-react"
+import { Inbox, Bell, Sparkles, Plus, Lock, TrendingUp, AlertTriangle } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { useProfile } from "@/lib/hooks/use-profile"
@@ -26,6 +25,7 @@ import { isPro } from "@/lib/subscription-utils"
 import { CheckCircle2 } from "lucide-react"
 import { DashboardAIWidget } from "@/components/DashboardAIWidget"
 import { ScanSettingsDialog } from "@/components/dashboard/scan-settings-dialog"
+import { syncSubscriptionLockStatus } from "@/app/actions/subscription-lock"
 
 export default function DashboardPage() {
     const { isAuthenticated, signIn, isLoading: authLoading } = useAuth()
@@ -58,6 +58,24 @@ export default function DashboardPage() {
             refreshProfile()
         }
     }, [isAuthenticated, refreshProfile])
+
+    // Sync Lock Status
+    useEffect(() => {
+        if (profile?.id && subscriptions.length > 0) {
+            const timer = setTimeout(() => {
+                syncSubscriptionLockStatus(profile.id)
+                    .then((res) => {
+                        if (res?.updated) {
+                            console.log("Locks synced, refreshing subs...");
+                            refreshSubscriptions(); // Refresh to get the new 'is_locked' values
+                        }
+                    })
+                    .catch(err => console.error("Lock sync failed", err));
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [profile?.id, subscriptions.length, profile?.subscription_tier, profile?.is_pro]);
+
 
     // Handle Post-Sync Success & Error Reporting
     useEffect(() => {
@@ -93,7 +111,7 @@ export default function DashboardPage() {
     }, [searchParams, router])
 
     const handleScanInbox = async (days: number = 45) => {
-        if (!isPro(profile?.subscription_tier)) {
+        if (!isPro(profile?.subscription_tier, profile?.is_pro)) {
             router.push('/pricing')
             return
         }
@@ -185,6 +203,8 @@ export default function DashboardPage() {
     }
 
     const hasSubscriptions = subscriptions.length > 0
+    const isProUser = isPro(profile?.subscription_tier, profile?.is_pro);
+    const isLimitReached = !isProUser && subscriptions.length >= 3;
 
     if (!hasSubscriptions) {
         return (
@@ -202,7 +222,7 @@ export default function DashboardPage() {
                             <Sparkles className="h-8 w-8 text-indigo-500" />
                         </div>
                         <h2 className="mb-3 text-xl font-semibold tracking-tight">No active subscriptions found.</h2>
-                        <p className="mb-8 max-w-md text-muted-foreground">
+                        <p className="mb-8 max-w-sm text-muted-foreground">
                             Add your first one to start tracking your recurring expenses and optimization potential.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
@@ -215,10 +235,10 @@ export default function DashboardPage() {
                                         size="lg"
                                         className="flex-1 gap-2 bg-indigo-600 hover:bg-indigo-700 h-12 text-md shadow-lg shadow-indigo-500/20"
                                     >
-                                        {isPro(profile?.subscription_tier) ? <Inbox className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
+                                        {isProUser ? <Inbox className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
                                         {isScanning ? "Scanning Gmail..." :
                                             isGmailConnected ? "Re-scan Gmail" :
-                                                isPro(profile?.subscription_tier) ? "Connect Gmail" : "Connect Gmail (Pro)"}
+                                                isProUser ? "Connect Gmail" : "Connect Gmail (Pro)"}
                                     </Button>
                                 }
                             />
@@ -256,6 +276,25 @@ export default function DashboardPage() {
     return (
         <div className="overflow-x-hidden bg-zinc-50/50 dark:bg-black min-h-screen">
             <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
+
+                {/* Limit Reached Banner */}
+                {isLimitReached && (
+                    <div className="mb-6 rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-center justify-between dark:bg-amber-900/10 dark:border-amber-900/30">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
+                                <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-amber-900 dark:text-amber-500">Free Tier Limit Reached</h3>
+                                <p className="text-sm text-amber-700 dark:text-amber-600">You have reached the 3-subscription limit. Upgrade to Pro to track unlimited subscriptions.</p>
+                            </div>
+                        </div>
+                        <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white border-none" asChild>
+                            <Link href="/pricing">Upgrade Now</Link>
+                        </Button>
+                    </div>
+                )}
+
                 <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-4xl">Dashboard</h1>
@@ -264,20 +303,29 @@ export default function DashboardPage() {
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
-                        <ManualSubscriptionModal onSubscriptionAdded={refreshSubscriptions} />
+                        {isLimitReached ? (
+                            <Button variant="outline" disabled className="gap-2 opacity-50 cursor-not-allowed">
+                                <Lock className="h-4 w-4" />
+                                Add Subscription
+                            </Button>
+                        ) : (
+                            <ManualSubscriptionModal onSubscriptionAdded={refreshSubscriptions} />
+                        )}
+
                         <ScanSettingsDialog
                             onScan={handleScanInbox}
                             isScanning={isScanning}
                             trigger={
                                 <Button
-                                    disabled={isScanning}
+                                    disabled={isScanning || isLimitReached}
                                     variant={isGmailConnected ? "outline" : "outline"}
-                                    className={`gap-2 ${isGmailConnected ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400" : "bg-white dark:bg-zinc-900"}`}
+                                    className={`gap-2 ${isGmailConnected ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400" : "bg-white dark:bg-zinc-900"} ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
-                                    {isGmailConnected ? <CheckCircle2 className="h-4 w-4" /> : (isPro(profile?.subscription_tier) ? <Inbox className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-500" />)}
+                                    {isGmailConnected ? <CheckCircle2 className="h-4 w-4" /> : (isProUser ? <Inbox className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-500" />)}
                                     {isScanning ? "Scanning..." :
-                                        isGmailConnected ? "Re-scan Inbox" :
-                                            isPro(profile?.subscription_tier) ? "Sync Gmail" : "Sync Gmail (Pro)"}
+                                        isLimitReached ? "Gmail Locked" :
+                                            isGmailConnected ? "Re-scan Inbox" :
+                                                isProUser ? "Sync Gmail" : "Sync Gmail (Pro)"}
                                 </Button>
                             }
                         />
@@ -315,7 +363,7 @@ export default function DashboardPage() {
 
                         {/* Premium Feature Teaser */}
                         {/* Premium Feature Teaser - Only for Free Users */}
-                        {!isPro(profile?.subscription_tier) && (
+                        {!isProUser && (
                             <div className="rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 p-6 text-white shadow-xl shadow-indigo-500/20">
                                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
                                     <Bell className="h-5 w-5 text-white" />
@@ -331,7 +379,7 @@ export default function DashboardPage() {
                         )}
 
                         {/* AI Portfolio Insights Widget */}
-                        {isPro(profile?.subscription_tier) && (
+                        {isProUser && (
                             <DashboardAIWidget subscriptions={subscriptions} />
                         )}
                     </div>

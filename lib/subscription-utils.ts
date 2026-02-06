@@ -3,8 +3,9 @@
  * Provides consistent handling of subscription tiers across the app
  */
 
-export function isPro(tier?: string | null): boolean {
-    return tier === 'pro' || tier === 'premium'
+export const isPro = (tier?: string | null, isProBool?: boolean | null): boolean => {
+    if (isProBool === true) return true;
+    return tier === 'pro' || tier === 'premium';
 }
 
 export function isFree(tier?: string | null): boolean {
