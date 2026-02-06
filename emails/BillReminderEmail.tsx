@@ -104,8 +104,8 @@ export const BillReminderEmail = ({
                             <Button
                                 href={actionUrl}
                                 className={`px-6 py-3 rounded-xl text-sm font-bold shadow-sm ${isTrial
-                                        ? "bg-rose-600 text-white hover:bg-rose-700"
-                                        : "bg-white border border-zinc-200 text-zinc-900 hover:bg-zinc-50"
+                                    ? "bg-rose-600 text-white"
+                                    : "bg-white border border-zinc-200 text-zinc-900"
                                     }`}
                             >
                                 {actionText}
