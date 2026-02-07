@@ -1,5 +1,4 @@
-
-import { createClient } from '@/lib/supabase-server';
+import { createClient } from '@supabase/supabase-js';
 import { sendBillReminderEmail } from '@/lib/email';
 import { NextResponse } from 'next/server';
 
@@ -10,14 +9,19 @@ export async function GET() {
     try {
         // 0. Configuration check & Logging
         const hasResendKey = !!process.env.RESEND_API_KEY;
-        console.log(`[Cron DEBUG] Starting Fail-Fast logic. RESEND_API_KEY Exists: ${hasResendKey}`);
+        const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+        console.log(`[Cron DEBUG] Starting Fail-Fast logic. RESEND: ${hasResendKey}, ADMIN_KEY: ${hasServiceKey}`);
 
-        if (!hasResendKey) {
-            console.error('[Cron] Missing RESEND_API_KEY');
-            return NextResponse.json({ success: false, error: 'Configuration error: Missing API Key' }, { status: 200 });
+        if (!hasResendKey || !hasServiceKey) {
+            console.error('[Cron] Missing API Keys');
+            return NextResponse.json({ success: false, error: 'Configuration error: Missing API Keys' }, { status: 200 });
         }
 
-        const supabase = await createClient();
+        // Initialize Admin Client to bypass RLS
+        const supabaseAdmin = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
 
         // 1. Calculate target date: Today + 3 Days
         const today = new Date();
@@ -31,7 +35,7 @@ export async function GET() {
         console.log(`[Cron] Searching for renewal_date MATCHING: ${formattedDate}`);
 
         console.time('DB_Fetch_Subscriptions');
-        const { data: subs, error: subsError } = await supabase
+        const { data: subs, error: subsError } = await supabaseAdmin
             .from('subscriptions')
             .select('*, user_id')
             .eq('renewal_date', formattedDate)
@@ -68,7 +72,7 @@ export async function GET() {
 
         // 4. Fetch Profiles (Step 3: Fetch profiles for those users)
         console.time('DB_Fetch_Profiles');
-        const { data: profiles, error: profilesError } = await supabase
+        const { data: profiles, error: profilesError } = await supabaseAdmin
             .from('profiles')
             .select('id, email, full_name')
             .in('id', userIds);
@@ -84,7 +88,7 @@ export async function GET() {
         }
 
         // 5. Map them together (Step 4: Memory Mapping)
-        const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+        const profileMap = new Map<string, any>((profiles || []).map((p: any) => [p.id, p]));
 
         console.log(`[Cron] Loaded ${profiles?.length} profiles.`);
 
@@ -98,7 +102,7 @@ export async function GET() {
             )
         ]);
 
-        const emailPromises = subsToProcess.map(async (sub) => {
+        const emailPromises = subsToProcess.map(async (sub: any) => {
             const userProfile = profileMap.get(sub.user_id);
 
             if (!userProfile?.email) {
