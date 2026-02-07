@@ -28,17 +28,13 @@ export async function GET() {
         console.log(`[Cron] Target date: ${formattedDate}`);
 
         // 2. Query Subscriptions (Step 1: Fetch valid subscriptions)
-        const startOfDay = `${formattedDate}T00:00:00.000Z`; // Start of target day
-        const endOfDay = `${formattedDate}T23:59:59.999Z`;   // End of target day
-
-        console.log(`[Cron] Searching for renewal_date between ${startOfDay} and ${endOfDay}`);
+        console.log(`[Cron] Searching for renewal_date MATCHING: ${formattedDate}`);
 
         console.time('DB_Fetch_Subscriptions');
         const { data: subs, error: subsError } = await supabase
             .from('subscriptions')
             .select('*, user_id')
-            .gte('renewal_date', startOfDay) // Check range start
-            .lte('renewal_date', endOfDay)   // Check range end
+            .eq('renewal_date', formattedDate)
             .eq('status', 'active')
             .eq('is_locked', false); // Exclude locked subscriptions
         console.timeEnd('DB_Fetch_Subscriptions');
