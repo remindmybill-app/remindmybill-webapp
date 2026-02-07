@@ -251,11 +251,11 @@ export function Navigation() {
             <Home className={`h-6 w-6 ${isActive('/dashboard') ? 'fill-current opacity-20' : ''}`} />
             <span className="text-[10px] font-bold uppercase tracking-widest">Dash</span>
           </Link>
-          <Link href="/portfolio" className={`flex flex-col items-center justify-center gap-1 transition-all duration-200 ${isActive('/portfolio') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
-            <Briefcase className={`h-6 w-6 ${isActive('/portfolio') ? 'fill-current opacity-20' : ''}`} />
-            <span className="text-[10px] font-bold uppercase tracking-widest">Vault</span>
+          <Link href="/trust-center" className={`flex flex-col items-center justify-center gap-1 transition-all duration-200 ${isActive('/trust-center') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
+            <Briefcase className={`h-6 w-6 ${isActive('/trust-center') ? 'fill-current opacity-20' : ''}`} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">Trust</span>
           </Link>
-          <div className="relative -top-3">
+          <div className="relative -top-3 z-50">
             <Button
               size="icon"
               className="h-14 w-14 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 shadow-xl shadow-indigo-500/30 active:scale-90 transition-transform duration-200 flex items-center justify-center ring-4 ring-background z-10"
