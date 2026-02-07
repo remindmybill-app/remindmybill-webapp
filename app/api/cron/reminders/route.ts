@@ -31,6 +31,8 @@ export async function GET() {
         const startOfDay = `${formattedDate}T00:00:00.000Z`; // Start of target day
         const endOfDay = `${formattedDate}T23:59:59.999Z`;   // End of target day
 
+        console.log(`[Cron] Searching for renewal_date between ${startOfDay} and ${endOfDay}`);
+
         console.time('DB_Fetch_Subscriptions');
         const { data: subs, error: subsError } = await supabase
             .from('subscriptions')
