@@ -159,7 +159,16 @@ export function SubscriptionsProvider({ children }: { children: React.ReactNode 
 export function useSubscriptionsContext() {
     const context = useContext(SubscriptionsContext)
     if (context === undefined) {
-        throw new Error("useSubscriptionsContext must be used within a SubscriptionsProvider")
+        // Return dummy data or null instead of throwing, so 404 pages and other non-dashboard pages don't crash
+        return {
+            subscriptions: [],
+            isLoading: false,
+            error: null,
+            refreshSubscriptions: async () => { },
+            deleteSubscription: async () => false,
+            updateSubscription: async () => false,
+            cancelSubscription: async () => false
+        }
     }
     return context
 }
