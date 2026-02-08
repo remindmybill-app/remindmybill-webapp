@@ -26,8 +26,9 @@ import { CheckCircle2 } from "lucide-react"
 import { DashboardAIWidget } from "@/components/DashboardAIWidget"
 import { ScanSettingsDialog } from "@/components/dashboard/scan-settings-dialog"
 import { syncSubscriptionLockStatus } from "@/app/actions/subscription-lock"
+import { SubscriptionsProvider } from "@/lib/contexts/subscriptions-context"
 
-export default function DashboardPage() {
+function DashboardContent() {
     const { isAuthenticated, signIn, isLoading: authLoading } = useAuth()
     const router = useRouter()
     const { subscriptions, refreshSubscriptions } = useSubscriptions()
@@ -399,5 +400,13 @@ export default function DashboardPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function DashboardPage() {
+    return (
+        <SubscriptionsProvider>
+            <DashboardContent />
+        </SubscriptionsProvider>
     )
 }

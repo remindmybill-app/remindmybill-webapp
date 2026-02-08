@@ -1,63 +1,67 @@
-'use server';
+"use server"
 
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import { getSupabaseServerClient } from "@/lib/supabase/server"
+import { headers } from "next/headers"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-// Admin client for bypassing RLS
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+// Rate limit: 1 request per hour per IP
+const RATE_LIMIT_DURATION = 60 * 60 * 1000 // 1 hour in ms
 
 export async function submitServiceRequest(serviceName: string) {
-    // Validate input
-    if (!serviceName || serviceName.trim().length < 2) {
-        return { success: false, error: 'Service name must be at least 2 characters.' };
-    }
-
     try {
-        // Create a server client to get the user session
-        const cookieStore = await cookies();
-        const supabase = createServerClient(
-            supabaseUrl,
-            supabaseAnonKey,
-            {
-                cookies: {
-                    getAll() {
-                        return cookieStore.getAll();
-                    },
-                },
+        const supabase = getSupabaseServerClient()
+        const headerList = await headers()
+
+        // Get IP address for rate limiting
+        // Fallback to 'unknown' if not found, though in production Vercel/Supabase usually provide this
+        const ip = (headerList.get("x-forwarded-for") || "unknown").split(",")[0].trim()
+
+        if (!serviceName || serviceName.trim().length < 2) {
+            return { success: false, error: "Service name is too short." }
+        }
+
+        // 1. Check Rate Limit
+        // We check the last request from this IP in the review_requests table
+        const { data: recentRequests, error: fetchError } = await supabase
+            .from("review_requests")
+            .select("created_at")
+            .eq("user_ip", ip)
+            .order("created_at", { ascending: false })
+            .limit(1)
+
+        if (fetchError) {
+            // If table doesn't exist or error, we might log it.
+            // Failing open for now to avoid blocking legitimate users.
+            console.warn("[ServiceRequest] Rate limit check failed (failing open):", fetchError.message)
+        } else {
+            if (recentRequests && recentRequests.length > 0) {
+                const lastRequestTime = new Date(recentRequests[0].created_at).getTime()
+                const now = Date.now()
+                if (now - lastRequestTime < RATE_LIMIT_DURATION) {
+                    return {
+                        success: false,
+                        error: "You have submitted a request recently. Please try again in an hour."
+                    }
+                }
             }
-        );
-
-        // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-        if (userError || !user) {
-            console.error('Auth error:', userError);
-            return { success: false, error: 'You must be logged in to submit a request.' };
         }
 
-        // Use admin client to insert (bypasses RLS)
-        const { error } = await supabaseAdmin
-            .from('service_requests')
+        // 2. Insert Request
+        const { error: insertError } = await supabase
+            .from("review_requests")
             .insert({
-                user_id: user.id,
                 service_name: serviceName.trim(),
-                status: 'pending',
-            });
+                user_ip: ip,
+                status: 'pending'
+            })
 
-        if (error) {
-            console.error('Error inserting service request:', error);
-            return { success: false, error: 'Failed to submit request.' };
+        if (insertError) {
+            console.error("[ServiceRequest] Insert failed:", insertError)
+            return { success: false, error: "Failed to submit request. Please try again later." }
         }
 
-        return { success: true };
-    } catch (err) {
-        console.error('Service request submission error:', err);
-        return { success: false, error: 'An unexpected error occurred.' };
+        return { success: true }
+    } catch (error) {
+        console.error("[ServiceRequest] Unexpected error:", error)
+        return { success: false, error: "An unexpected error occurred." }
     }
 }
-

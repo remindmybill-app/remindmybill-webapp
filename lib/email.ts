@@ -16,7 +16,7 @@ export async function sendEmail({
     subject,
     react,
     text,
-    from = 'Remind My Bill <updates@remindmybill.com>',
+    from = 'RemindMyBill Alerts <alerts@remindmybill.com>',
 }: SendEmailOptions) {
     console.log("[Email] Attempting to send via Raw Fetch. Key configured:", !!process.env.RESEND_API_KEY);
 

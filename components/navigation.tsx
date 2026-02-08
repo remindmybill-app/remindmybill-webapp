@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, Search, Bell, User, Settings, LogOut, AlertCircle, Home, Briefcase, Plus, BarChart3 } from "lucide-react"
+import { Menu, Search, Bell, User, Settings, LogOut, AlertCircle, Home, Briefcase, Plus, BarChart3, Shield } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useProfile } from "@/lib/hooks/use-profile"
 import { useNotifications } from "@/lib/hooks/use-notifications"
@@ -246,25 +246,15 @@ export function Navigation() {
       </div>
 
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-t border-border/50 pb-safe-area-inset-bottom h-16 sm:h-20">
-        <div className="grid h-full grid-cols-5 items-center justify-items-center">
+        <div className="grid h-full grid-cols-4 items-center justify-items-center">
           <Link href="/dashboard" className={`flex flex-col items-center justify-center gap-1 transition-all duration-200 ${isActive('/dashboard') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
             <Home className={`h-6 w-6 ${isActive('/dashboard') ? 'fill-current opacity-20' : ''}`} />
             <span className="text-[10px] font-bold uppercase tracking-widest">Dash</span>
           </Link>
           <Link href="/trust-center" className={`flex flex-col items-center justify-center gap-1 transition-all duration-200 ${isActive('/trust-center') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
-            <Briefcase className={`h-6 w-6 ${isActive('/trust-center') ? 'fill-current opacity-20' : ''}`} />
+            <Shield className={`h-6 w-6 ${isActive('/trust-center') ? 'fill-current opacity-20' : ''}`} />
             <span className="text-[10px] font-bold uppercase tracking-widest">Trust</span>
           </Link>
-          <div className="relative -top-3 z-50">
-            <Button
-              size="icon"
-              className="h-14 w-14 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 shadow-xl shadow-indigo-500/30 active:scale-90 transition-transform duration-200 flex items-center justify-center ring-4 ring-background z-10"
-              onClick={() => setIsAddModalOpen(true)}
-            >
-              <Plus className="h-8 w-8 text-white" />
-            </Button>
-            <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping -z-0 opacity-20" />
-          </div>
           <Link href="/analytics" className={`flex flex-col items-center justify-center gap-1 transition-all duration-200 ${isActive('/analytics') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
             <BarChart3 className={`h-6 w-6 ${isActive('/analytics') ? 'fill-current opacity-20' : ''}`} />
             <span className="text-[10px] font-bold uppercase tracking-widest">Stats</span>
