@@ -427,108 +427,111 @@ export default function TrustCenterPage() {
           </AnimatePresence>
         </div>
 
-        {/* ONLY SHOW THESE IF NO ANALYSIS ACTIVE */}
-        {!analysis && (
-          <>
-            {/* Trust Leaderboards - Split View with Independent Scrolling */}
-            <div className="grid gap-8 lg:grid-cols-2 mb-16 items-start">
-              {/* Top Trusted */}
-              <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40 p-6">
-                <div className="mb-6 flex items-center justify-between">
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    <span className="text-2xl">🏆</span> Trusted Services
-                  </h2>
-                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-                    Safe to Subscribe
-                  </Badge>
-                </div>
-                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800">
-                  {loadingLeaderboard ? (
-                    [1, 2, 3, 4, 5].map(i => (
-                      <div key={i} className="h-16 w-full rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
-                    ))
-                  ) : trustedServices.map((service) => (
-                    <div key={service.id} className="group flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/50 p-4 transition-all hover:bg-white hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/20 dark:hover:bg-zinc-800">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
-                          {service.name.substring(0, 1)}
-                        </div>
-                        <div>
-                          <p className="font-bold text-zinc-900 dark:text-zinc-50">{service.name}</p>
-                          <p className="text-xs text-muted-foreground line-clamp-1">{service.category || 'Subscription'}</p>
-                        </div>
-                      </div>
-                      <div className="text-right flex flex-col items-end gap-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{service.trust_score}</span>
-                          <span className="text-[10px] text-zinc-400 font-medium">/100</span>
-                        </div>
-                        <Badge variant="outline" className="h-5 px-1.5 text-[10px] uppercase font-bold tracking-wider border-emerald-200 text-emerald-600 dark:border-emerald-800 dark:text-emerald-400">
-                          {service.difficulty_level}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+        {/* ALWAYS SHOW LEADERBOARDS (Filtered by Search) */}
+        <div className="mt-16">
+          <div className="grid gap-8 lg:grid-cols-2 mb-16 items-start">
+            {/* Top Trusted */}
+            <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40 p-6">
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <span className="text-2xl">🏆</span> Trusted Services
+                </h2>
+                <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                  Safe
+                </Badge>
               </div>
-
-              {/* Hall of Shame */}
-              <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40 p-6">
-                <div className="mb-6 flex items-center justify-between">
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    <span className="text-2xl">⚠️</span> High Risk Services
-                  </h2>
-                  <Badge variant="secondary" className="bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400">
-                    Hard to Cancel
-                  </Badge>
-                </div>
-                <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800">
-                  {loadingLeaderboard ? (
-                    [1, 2, 3, 4, 5].map(i => (
-                      <div key={i} className="h-16 w-full rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
-                    ))
-                  ) : riskyServices.map((service) => (
-                    <div key={service.id} className="group flex items-center justify-between rounded-xl border border-rose-100 bg-rose-50/10 p-4 transition-all hover:bg-rose-50 hover:shadow-md dark:border-rose-900/30 dark:bg-rose-950/20 dark:hover:bg-rose-900/30">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold text-sm">
-                          {service.name.substring(0, 1)}
+              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+                {loadingLeaderboard ? (
+                  [1, 2, 3].map(i => <div key={i} className="h-16 w-full rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />)
+                ) : trustedServices.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground">No matches in Trusted list.</div>
+                ) : (
+                  trustedServices
+                    .filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .map((service) => (
+                      <div key={service.id} className="group flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/50 p-4 transition-all hover:bg-white hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/20 dark:hover:bg-zinc-800" onClick={() => handleSelectService(service)}>
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                            {service.name.substring(0, 1)}
+                          </div>
+                          <div>
+                            <p className="font-bold text-zinc-900 dark:text-zinc-50">{service.name}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-1">{service.category || 'Subscription'}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-zinc-900 dark:text-zinc-50">{service.name}</p>
-                          <p className="text-xs text-rose-600/80 dark:text-rose-400/80 line-clamp-1">{service.cancellation_method || 'Phone Call Required'}</p>
+                        <div className="text-right flex flex-col items-end gap-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{service.trust_score}</span>
+                            <span className="text-[10px] text-zinc-400 font-medium">/100</span>
+                          </div>
+                          <Badge variant="outline" className="h-5 px-1.5 text-[10px] uppercase font-bold tracking-wider border-emerald-200 text-emerald-600 dark:border-emerald-800 dark:text-emerald-400">
+                            {service.difficulty_level}
+                          </Badge>
                         </div>
                       </div>
-                      <div className="text-right flex flex-col items-end gap-1">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-bold text-rose-600 dark:text-rose-400">{service.trust_score}</span>
-                          <span className="text-[10px] text-zinc-400 font-medium">/100</span>
-                        </div>
-                        <Badge variant="outline" className="h-5 px-1.5 text-[10px] uppercase font-bold tracking-wider border-rose-200 text-rose-600 dark:border-rose-800 dark:text-rose-400">
-                          {service.difficulty_level}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    )))}
               </div>
             </div>
 
-            {/* Educational Content */}
-            <div className="mt-20 grid gap-10 md:grid-cols-3">
-              {[
-                { icon: AlertTriangle, title: "Dark Patterns", desc: "We scan for fake countdowns, hidden exit buttons, and monthly traps.", color: "text-rose-500", bg: "bg-rose-50 dark:bg-rose-500/10" },
-                { icon: Lock, title: "Verified Audit", desc: "AI scans 50+ pages of T&Cs to find the small print that costs you money.", color: "text-indigo-500", bg: "bg-indigo-50 dark:bg-indigo-500/10" },
-                { icon: Shield, title: "User Shield", desc: "Data is crowdsourced and validated against real manual cancellation attempts.", color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-500/10" }
-              ].map((feature, i) => (
-                <div key={i} className="flex flex-col items-center text-center group transition-transform hover:-translate-y-1">
-                  <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl ${feature.bg} shadow-sm transition-all group-hover:shadow-md`}><feature.icon className={`h-6 w-6 ${feature.color}`} /></div>
-                  <h3 className="mb-2 text-lg font-bold text-zinc-900 dark:text-zinc-50">{feature.title}</h3>
-                  <p className="text-sm leading-relaxed text-muted-foreground px-4">{feature.desc}</p>
-                </div>
-              ))}
+            {/* Hall of Shame */}
+            <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40 p-6">
+              <div className="mb-6 flex items-center justify-between">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <span className="text-2xl">⚠️</span> High Risk Services
+                </h2>
+                <Badge variant="secondary" className="bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400">
+                  Risky
+                </Badge>
+              </div>
+              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+                {loadingLeaderboard ? (
+                  [1, 2, 3].map(i => <div key={i} className="h-16 w-full rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />)
+                ) : riskyServices.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
+                  <div className="p-4 text-center text-sm text-muted-foreground">No matches in High Risk list.</div>
+                ) : (
+                  riskyServices
+                    .filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                    .map((service) => (
+                      <div key={service.id} className="group flex items-center justify-between rounded-xl border border-rose-100 bg-rose-50/10 p-4 transition-all hover:bg-rose-50 hover:shadow-md dark:border-rose-900/30 dark:bg-rose-950/20 dark:hover:bg-rose-900/30" onClick={() => handleSelectService(service)}>
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold text-sm">
+                            {service.name.substring(0, 1)}
+                          </div>
+                          <div>
+                            <p className="font-bold text-zinc-900 dark:text-zinc-50">{service.name}</p>
+                            <p className="text-xs text-rose-600/80 dark:text-rose-400/80 line-clamp-1">{service.cancellation_method || 'Phone Call Required'}</p>
+                          </div>
+                        </div>
+                        <div className="text-right flex flex-col items-end gap-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-bold text-rose-600 dark:text-rose-400">{service.trust_score}</span>
+                            <span className="text-[10px] text-zinc-400 font-medium">/100</span>
+                          </div>
+                          <Badge variant="outline" className="h-5 px-1.5 text-[10px] uppercase font-bold tracking-wider border-rose-200 text-rose-600 dark:border-rose-800 dark:text-rose-400">
+                            {service.difficulty_level}
+                          </Badge>
+                        </div>
+                      </div>
+                    )))}
+              </div>
             </div>
-          </>
-        )}
+          </div>
+
+          {/* Educational Content */}
+          <div className="mt-20 grid gap-10 md:grid-cols-3">
+            {[
+              { icon: AlertTriangle, title: "Dark Patterns", desc: "We scan for fake countdowns, hidden exit buttons, and monthly traps.", color: "text-rose-500", bg: "bg-rose-50 dark:bg-rose-500/10" },
+              { icon: Lock, title: "Verified Audit", desc: "AI scans 50+ pages of T&Cs to find the small print that costs you money.", color: "text-indigo-500", bg: "bg-indigo-50 dark:bg-indigo-500/10" },
+              { icon: Shield, title: "User Shield", desc: "Data is crowdsourced and validated against real manual cancellation attempts.", color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-500/10" }
+            ].map((feature, i) => (
+              <div key={i} className="flex flex-col items-center text-center group transition-transform hover:-translate-y-1">
+                <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl ${feature.bg} shadow-sm transition-all group-hover:shadow-md`}><feature.icon className={`h-6 w-6 ${feature.color}`} /></div>
+                <h3 className="mb-2 text-lg font-bold text-zinc-900 dark:text-zinc-50">{feature.title}</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground px-4">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Request Service Modal */}
         <Dialog open={isRequestModalOpen} onOpenChange={setIsRequestModalOpen}>

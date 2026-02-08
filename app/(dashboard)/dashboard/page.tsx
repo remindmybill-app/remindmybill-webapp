@@ -405,8 +405,6 @@ function DashboardContent() {
 
 export default function DashboardPage() {
     return (
-        <SubscriptionsProvider>
-            <DashboardContent />
-        </SubscriptionsProvider>
+        <DashboardContent />
     )
 }
