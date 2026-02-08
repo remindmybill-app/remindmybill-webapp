@@ -178,8 +178,8 @@ export default function AnalyticsPage() {
     )
   }
 
-  // Handle Empty State
-  if (subscriptions.length === 0) {
+  // Handle Empty State with retry
+  if (!isLoading && subscriptions.length === 0) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center">
         <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-indigo-50 dark:bg-indigo-500/10 shadow-xl shadow-indigo-500/10">
@@ -187,11 +187,16 @@ export default function AnalyticsPage() {
         </div>
         <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Analytics Unavailable</h2>
         <p className="mt-2 text-lg text-muted-foreground max-w-md">
-          Add your first subscription to see spending trends, category breakdowns, and optimization insights.
+          We couldn't find any active subscriptions to analyze.
         </p>
-        <Button className="mt-8 rounded-xl h-12 px-8 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20" asChild>
-          <a href="/dashboard">Add Your First Subscription</a>
-        </Button>
+        <div className="flex gap-4 mt-8">
+          <Button variant="outline" className="rounded-xl h-12 px-6" onClick={() => window.location.reload()}>
+            Refresh Data
+          </Button>
+          <Button className="rounded-xl h-12 px-8 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-500/20" asChild>
+            <a href="/dashboard">Add Subscription</a>
+          </Button>
+        </div>
       </div>
     )
   }
