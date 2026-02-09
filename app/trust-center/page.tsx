@@ -14,6 +14,7 @@ import { debounce } from "lodash"
 import { motion, AnimatePresence } from "framer-motion"
 import { analyzeCompanySafety } from "@/app/actions/trust-ai"
 import { submitServiceRequest } from "@/app/actions/service-request"
+import { RequestReviewModal } from "@/components/trust-center/request-review-modal"
 
 // Updated Interface to match 'service_benchmarks' table
 interface Platform {
@@ -55,7 +56,6 @@ export default function TrustCenterPage() {
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true)
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false)
   const [requestServiceName, setRequestServiceName] = useState("")
-  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false)
 
   const supabase = getSupabaseBrowserClient()
 
@@ -145,35 +145,6 @@ export default function TrustCenterPage() {
     setIsAnalyzing(false)
   }
 
-  const handleRequestSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!requestServiceName) return
-
-    setIsSubmittingRequest(true)
-
-    try {
-      const result = await submitServiceRequest(requestServiceName)
-
-      if (result.success) {
-        toast.success("Request submitted!", {
-          description: `We will review ${requestServiceName} and add it to our database.`
-        })
-        setRequestServiceName("")
-        setIsRequestModalOpen(false)
-      } else {
-        toast.error("Request failed", {
-          description: result.error || "Could not submit your request."
-        })
-      }
-    } catch (err) {
-      console.error("Request submission error:", err)
-      toast.error("Something went wrong", {
-        description: "Please try again later."
-      })
-    } finally {
-      setIsSubmittingRequest(false)
-    }
-  }
 
   const handleAnalyze = async () => {
     // If not selected from dropdown, try to find exact match or run AI
@@ -534,25 +505,11 @@ export default function TrustCenterPage() {
         </div>
 
         {/* Request Service Modal */}
-        <Dialog open={isRequestModalOpen} onOpenChange={setIsRequestModalOpen}>
-          <DialogContent className="sm:max-w-[425px] rounded-3xl">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold">Request a Service</DialogTitle>
-              <DialogDescription>Don't see a service? Let us know and we'll audit it for dark patterns.</DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleRequestSubmit} className="space-y-4 py-4">
-              <div className="space-y-2">
-                <label htmlFor="service-name" className="text-sm font-bold uppercase tracking-widest text-muted-foreground ml-1">Service Name</label>
-                <Input id="service-name" placeholder="e.g. Paramount+, New York Times" value={requestServiceName} onChange={(e) => setRequestServiceName(e.target.value)} className="h-12 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700" required autoFocus />
-              </div>
-              <DialogFooter className="pt-4">
-                <Button type="submit" className="w-full h-12 rounded-2xl bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 font-bold shadow-xl" disabled={isSubmittingRequest || !requestServiceName}>
-                  {isSubmittingRequest ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...</> : "Submit Request"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <RequestReviewModal
+          open={isRequestModalOpen}
+          onOpenChange={setIsRequestModalOpen}
+          defaultServiceName={requestServiceName}
+        />
       </div>
     </div>
   )
