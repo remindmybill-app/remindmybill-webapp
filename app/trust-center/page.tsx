@@ -13,7 +13,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { debounce } from "lodash"
 import { motion, AnimatePresence } from "framer-motion"
 import { analyzeCompanySafety } from "@/app/actions/trust-ai"
-import { submitServiceRequest } from "@/app/actions/service-request"
+import { requestReview } from "@/app/actions/service-request"
 import { RequestReviewModal } from "@/components/trust-center/request-review-modal"
 
 // Updated Interface to match 'service_benchmarks' table
@@ -166,19 +166,8 @@ export default function TrustCenterPage() {
         return;
       }
 
-      // If not in DB, fall back to AI
-      const result = await analyzeCompanySafety(searchQuery)
-
-      if (!result.success) {
-        throw new Error(result.error)
-      }
-
-      setAnalysis(result.data as any)
-
-      if (result.source === 'ai') {
-        toast.success("AI Analysis Complete", {
-          description: `Generated a real-time safety report for ${searchQuery}`
-        })
+      if (searchResults.length === 0) {
+        setError(`No verified data found for "${searchQuery}".`)
       }
     } catch (err: any) {
       console.error("Analysis error (fallback triggered):", err)

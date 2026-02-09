@@ -13,7 +13,7 @@ import {
     DialogDescription,
     DialogFooter,
 } from "@/components/ui/dialog"
-import { submitServiceRequest } from "@/app/actions/service-request"
+import { requestReview } from "@/app/actions/service-request"
 
 interface RequestReviewModalProps {
     open: boolean
@@ -46,7 +46,7 @@ export function RequestReviewModal({
         setError(null)
 
         try {
-            const result = await submitServiceRequest(serviceName)
+            const result = await requestReview(serviceName)
 
             if (result.success) {
                 toast.success("Request Submitted!", {
