@@ -231,7 +231,7 @@ export default function TrustCenterPage() {
                 />
 
                 {searchQuery.length > 1 && (
-                  <div className="absolute top-full left-0 mt-2 w-full rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 z-50 max-h-[300px] overflow-y-auto">
+                  <div className="absolute top-full left-0 mt-2 w-full rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 z-50 max-h-[300px] overflow-y-auto custom-scrollbar">
                     {isSearching ? (
                       <div className="p-4 flex justify-center text-muted-foreground">
                         <Loader2 className="h-5 w-5 animate-spin" />
