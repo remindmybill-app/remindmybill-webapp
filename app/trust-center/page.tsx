@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Shield, AlertTriangle, CheckCircle2, Search, ArrowRight, Lock, TrendingUp, AlertCircle, HelpCircle, Globe, Zap, Fingerprint, Loader2 } from "lucide-react"
+import { Shield, AlertTriangle, CheckCircle2, Search, ArrowRight, Lock, TrendingUp, AlertCircle, HelpCircle, Globe, Zap, Fingerprint, Loader2, X } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -122,6 +122,12 @@ export default function TrustCenterPage() {
     performSearch(val)
   }
 
+  const handleClearSearch = () => {
+    setSearchQuery("")
+    setSearchResults([])
+    setIsSearching(false)
+  }
+
   const handleSelectService = (service: Platform) => {
     // Generate analysis based on DB data
     const isHard = service.difficulty_level === 'Hard' || service.difficulty_level === 'Impossible';
@@ -229,6 +235,16 @@ export default function TrustCenterPage() {
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleAnalyze()}
                 />
+
+                {searchQuery && (
+                  <button
+                    onClick={handleClearSearch}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-muted-foreground transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
 
                 {searchQuery.length > 1 && (
                   <div className="absolute top-full left-0 mt-2 w-full rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 z-50 max-h-[300px] overflow-y-auto custom-scrollbar">
@@ -400,7 +416,7 @@ export default function TrustCenterPage() {
                   Safe
                 </Badge>
               </div>
-              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                 {loadingLeaderboard ? (
                   [1, 2, 3].map(i => <div key={i} className="h-16 w-full rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />)
                 ) : trustedServices.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
@@ -443,7 +459,7 @@ export default function TrustCenterPage() {
                   Risky
                 </Badge>
               </div>
-              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-zinc-300 dark:scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                 {loadingLeaderboard ? (
                   [1, 2, 3].map(i => <div key={i} className="h-16 w-full rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />)
                 ) : riskyServices.filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 ? (
