@@ -218,7 +218,7 @@ export default function TrustCenterPage() {
               <Shield className="h-8 w-8 text-white" />
             </div>
             <h1 className="mb-4 text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-5xl">Trust Center</h1>
-            <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+            <p className="mx-auto max-w-2xl text-lg text-zinc-400 dark:text-zinc-400">
               Exposing hidden dark patterns and cancellation traps using our verified database.
             </p>
           </div>
@@ -227,7 +227,7 @@ export default function TrustCenterPage() {
           <div className="mx-auto max-w-2xl relative z-20">
             <div className="group relative rounded-3xl bg-white p-2 shadow-2xl shadow-zinc-200 dark:bg-zinc-900 dark:shadow-none ring-1 ring-zinc-200 dark:ring-zinc-800 focus-within:ring-2 focus-within:ring-indigo-500/50 transition-all">
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
                 <Input
                   placeholder="Check any service (e.g. Netflix, Adobe)"
                   className="h-14 border-none bg-transparent pl-12 text-lg focus-visible:ring-0 shadow-none outline-none w-full"
@@ -249,7 +249,7 @@ export default function TrustCenterPage() {
                 {searchQuery.length > 1 && (
                   <div className="absolute top-full left-0 mt-2 w-full rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 z-50 max-h-[300px] overflow-y-auto custom-scrollbar">
                     {isSearching ? (
-                      <div className="p-4 flex justify-center text-muted-foreground">
+                      <div className="p-4 flex justify-center text-zinc-400">
                         <Loader2 className="h-5 w-5 animate-spin" />
                       </div>
                     ) : searchResults.length > 0 ? (
@@ -339,14 +339,14 @@ export default function TrustCenterPage() {
                         </svg>
                         <div className="absolute flex flex-col items-center">
                           <span className={`text-6xl font-black tracking-tighter ${getScoreColor(analysis.trust_score)}`}>{analysis.trust_score}</span>
-                          <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Score</span>
+                          <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Score</span>
                         </div>
                       </div>
                       <div className="text-center">
                         <div className={`mb-4 inline-flex px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider ${getScoreBg(analysis.trust_score)} ${getScoreColor(analysis.trust_score)}`}>
                           {analysis.trust_score >= 80 ? "Trustworthy" : analysis.trust_score >= 50 ? "Be Cautious" : "High Risk"}
                         </div>
-                        <p className="text-sm font-medium leading-relaxed text-muted-foreground px-4">
+                        <p className="text-sm font-medium leading-relaxed text-zinc-400 px-4">
                           {analysis.trust_score >= 80 ? "Top-tier transparency. No dark patterns detected." : analysis.trust_score >= 50 ? "Noticeable friction in cancellation." : "Significant deceptive patterns detected."}
                         </p>
                       </div>
@@ -361,8 +361,8 @@ export default function TrustCenterPage() {
                             <Zap className="h-5 w-5 text-indigo-500" />
                           </div>
                           <div>
-                            <CardTitle className="text-xl font-bold leading-none">Pattern Breakdown</CardTitle>
-                            <CardDescription className="mt-1">Technical analysis of service behavior</CardDescription>
+                            <CardTitle className="text-xl font-bold leading-none text-zinc-900 dark:text-zinc-50">Pattern Breakdown</CardTitle>
+                            <CardDescription className="mt-1 text-zinc-500">Technical analysis of service behavior</CardDescription>
                           </div>
                         </div>
                       </CardHeader>
@@ -432,13 +432,13 @@ export default function TrustCenterPage() {
                           </div>
                           <div>
                             <p className="font-bold text-zinc-900 dark:text-zinc-50">{service.name}</p>
-                            <p className="text-xs text-muted-foreground line-clamp-1">{service.category || 'Subscription'}</p>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-1">{service.category || 'Subscription'}</p>
                           </div>
                         </div>
                         <div className="text-right flex flex-col items-end gap-1">
                           <div className="flex items-center gap-1.5">
                             <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{service.trust_score}</span>
-                            <span className="text-[10px] text-zinc-400 font-medium">/100</span>
+                            <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-medium">/100</span>
                           </div>
                           <Badge variant="outline" className="h-5 px-1.5 text-[10px] uppercase font-bold tracking-wider border-emerald-200 text-emerald-600 dark:border-emerald-800 dark:text-emerald-400">
                             {service.difficulty_level}
@@ -503,7 +503,7 @@ export default function TrustCenterPage() {
               <div key={i} className="flex flex-col items-center text-center group transition-transform hover:-translate-y-1">
                 <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl ${feature.bg} shadow-sm transition-all group-hover:shadow-md`}><feature.icon className={`h-6 w-6 ${feature.color}`} /></div>
                 <h3 className="mb-2 text-lg font-bold text-zinc-900 dark:text-zinc-50">{feature.title}</h3>
-                <p className="text-sm leading-relaxed text-muted-foreground px-4">{feature.desc}</p>
+                <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 px-4">{feature.desc}</p>
               </div>
             ))}
           </div>
