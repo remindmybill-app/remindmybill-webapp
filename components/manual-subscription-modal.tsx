@@ -24,7 +24,7 @@ import { useRouter } from "next/navigation"
 
 const formSchema = z.object({
     name: z.string().min(1, "Service name is required"),
-    cost: z.string().min(1, "Cost is required").refine((val) => !isNaN(Number(val)) && Number(val) > 0, "Cost must be a positive number"),
+    cost: z.string().min(1, "Cost is required").refine((val) => !isNaN(Number(val)) && Number(val) > 0, "Price must be greater than 0."),
     currency: z.string().min(1, "Currency is required"),
     frequency: z.string().min(1, "Frequency is required"),
     renewalDate: z.date({
@@ -364,8 +364,14 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                                         <Input
                                             id="cost"
                                             type="number"
+                                            min="0"
                                             step="0.01"
-                                            placeholder="0.00"
+                                            placeholder="10.99"
+                                            onKeyDown={(e) => {
+                                                if (e.key === "-" || e.key === "e" || e.key === "E") {
+                                                    e.preventDefault()
+                                                }
+                                            }}
                                             {...register("cost")}
                                             className={cn("h-12 pl-8 text-lg font-medium bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10", errors.cost && "border-rose-500")}
                                         />
