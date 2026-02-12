@@ -5,20 +5,23 @@ import { ArrowUp, ArrowDown, Minus } from "lucide-react"
 import { formatCurrency } from "@/lib/utils/currency"
 
 export function CategoryCard({ name, value, previousValue, color, currency }) {
-    const delta = previousValue ? ((value - previousValue) / previousValue) * 100 : 0
-    const isIncrease = value > previousValue
-    const isDecrease = value < previousValue
-    const isNeutral = value === previousValue || !previousValue
+    // Enforce 2 decimal places for math precision
+    const currentVal = Number(value.toFixed(2))
+    const prevVal = Number((previousValue || 0).toFixed(2))
+
+    const delta = (prevVal && prevVal !== 0)
+        ? ((currentVal - prevVal) / prevVal) * 100
+        : (currentVal > 0 ? 100 : 0)
 
     const getDeltaColor = () => {
-        if (isIncrease) return "text-red-500"
-        if (isDecrease) return "text-emerald-500"
+        if (delta > 0.01) return "text-red-500"
+        if (delta < -0.01) return "text-emerald-500"
         return "text-zinc-400"
     }
 
     const getDeltaIcon = () => {
-        if (isIncrease) return <ArrowUp className="h-3 w-3" />
-        if (isDecrease) return <ArrowDown className="h-3 w-3" />
+        if (delta > 0.01) return <ArrowUp className="h-3 w-3" />
+        if (delta < -0.01) return <ArrowDown className="h-3 w-3" />
         return <Minus className="h-3 w-3" />
     }
 
@@ -35,7 +38,7 @@ export function CategoryCard({ name, value, previousValue, color, currency }) {
                 </div>
             </div>
             <div className="text-right">
-                <p className="font-bold text-sm">{formatCurrency(value, currency)}</p>
+                <p className="font-bold text-sm">{formatCurrency(currentVal, currency)}</p>
             </div>
         </div>
     )

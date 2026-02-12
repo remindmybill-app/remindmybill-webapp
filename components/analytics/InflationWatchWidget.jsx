@@ -43,8 +43,8 @@ export function InflationWatchWidget({ alerts, currency }) {
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="text-right mr-2">
-                                    <p className="text-xs text-muted-foreground line-through">{formatCurrency(alert.previousCost, currency)}</p>
-                                    <p className="font-bold text-sm">{formatCurrency(alert.currentCost, currency)}</p>
+                                    <p className="text-xs text-muted-foreground line-through">{formatCurrency(Number(alert.previousCost.toFixed(2)), currency)}</p>
+                                    <p className="font-bold text-sm">{formatCurrency(Number(alert.currentCost.toFixed(2)), currency)}</p>
                                 </div>
                                 <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full hover:bg-orange-100">
                                     <ChevronRight className="h-4 w-4" />

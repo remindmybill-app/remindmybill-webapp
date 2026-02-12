@@ -20,11 +20,11 @@ export function ForecastArcWidget({ paid, total, currency }) {
                     <div className="flex justify-between items-end">
                         <div>
                             <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Remaining</p>
-                            <p className="text-xl font-bold">{formatCurrency(remaining, currency)}</p>
+                            <p className="text-xl font-bold">{formatCurrency(Number(remaining.toFixed(2)), currency)}</p>
                         </div>
                         <div className="text-right">
                             <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Total</p>
-                            <p className="text-sm font-semibold opacity-70">{formatCurrency(total, currency)}</p>
+                            <p className="text-sm font-semibold opacity-70">{formatCurrency(Number(total.toFixed(2)), currency)}</p>
                         </div>
                     </div>
                 </div>

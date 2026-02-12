@@ -64,7 +64,7 @@ export function SpendingTrendsChart({ data, onBarClick }) {
                                     fontSize: '12px',
                                     padding: '8px 12px'
                                 }}
-                                formatter={(value) => [`$${value}`, "Spending"]}
+                                formatter={(value) => [formatCurrency(Number(value.toFixed(2)), "USD"), "Spending"]}
                             />
                             <Bar
                                 dataKey="spending"

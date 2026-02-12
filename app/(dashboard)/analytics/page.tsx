@@ -255,9 +255,17 @@ export default function AnalyticsPage() {
                     <CardTitle className="text-xl font-bold">Payment Timeline</CardTitle>
                   </div>
                   {filterMonth && (
-                    <Badge variant="secondary" className="cursor-pointer" onClick={() => setFilterMonth(null)}>
-                      Showing: {filterMonth} ×
-                    </Badge>
+                    <div className="flex items-center gap-3">
+                      <Badge variant="secondary" className="px-3 py-1">
+                        Showing: {filterMonth}
+                      </Badge>
+                      <button
+                        onClick={() => setFilterMonth(null)}
+                        className="text-xs text-indigo-600 hover:text-indigo-800 font-bold uppercase tracking-wider underline underline-offset-4"
+                      >
+                        Reset View
+                      </button>
+                    </div>
                   )}
                 </div>
               </CardHeader>
@@ -272,13 +280,13 @@ export default function AnalyticsPage() {
                           <h4 className="text-sm font-bold text-zinc-500">
                             {group.date.toLocaleDateString("en-US", { weekday: 'short', month: 'short', day: 'numeric' })}
                           </h4>
-                          <span className="text-xs font-bold text-muted-foreground">{formatCurrency(group.totalDayCost, userCurrency)}</span>
+                          <span className="text-xs font-bold text-muted-foreground">{formatCurrency(Number(group.totalDayCost.toFixed(2)), userCurrency)}</span>
                         </div>
                         <div className="grid gap-3">
                           {group.subs.map((sub: any) => (
                             <div key={sub.id} className="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 border border-zinc-100 dark:bg-zinc-900/20 dark:border-zinc-800">
                               <span className="text-sm font-medium">{sub.name}</span>
-                              <span className="text-sm font-bold">{formatCurrency(sub.costInUserCurrency, userCurrency)}</span>
+                              <span className="text-sm font-bold">{formatCurrency(Number(sub.costInUserCurrency.toFixed(2)), userCurrency)}</span>
                             </div>
                           ))}
                         </div>

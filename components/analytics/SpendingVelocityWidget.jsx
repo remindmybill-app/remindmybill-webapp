@@ -21,8 +21,8 @@ export function SpendingVelocityWidget({ currentSpend, lastMonthSameDaySpend, cu
                     </div>
                 </div>
                 <div className="space-y-1">
-                    <h3 className="text-2xl font-bold tracking-tight">{formatCurrency(currentSpend, currency)}</h3>
-                    <p className="text-xs text-muted-foreground">vs {formatCurrency(lastMonthSameDaySpend, currency)} same day last month</p>
+                    <h3 className="text-2xl font-bold tracking-tight">{formatCurrency(Number(currentSpend.toFixed(2)), currency)}</h3>
+                    <p className="text-xs text-muted-foreground">vs {formatCurrency(Number(lastMonthSameDaySpend.toFixed(2)), currency)} same day last month</p>
                 </div>
             </CardContent>
         </Card>
