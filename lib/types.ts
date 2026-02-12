@@ -56,6 +56,9 @@ export interface Subscription {
   cancellation_difficulty: "easy" | "medium" | "hard"
   shared_with_count: number
   is_locked: boolean
+  previous_cost: number | null
+  last_price_change_date: string | null
+  last_accessed_date: string | null
   created_at: string
   updated_at: string
 }
