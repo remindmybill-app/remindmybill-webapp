@@ -4,6 +4,13 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { BarChart3 } from "lucide-react"
 
+const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-IE', {
+        style: 'currency',
+        currency: 'EUR'
+    }).format(amount);
+};
+
 export function SpendingTrendsChart({ data, onBarClick }) {
     if (!data || data.length === 0) {
         return (
@@ -64,7 +71,7 @@ export function SpendingTrendsChart({ data, onBarClick }) {
                                     fontSize: '12px',
                                     padding: '8px 12px'
                                 }}
-                                formatter={(value) => [formatCurrency(Number(value.toFixed(2)), "USD"), "Spending"]}
+                                formatter={(value) => [formatCurrency(Number(value.toFixed(2))), "Spending"]}
                             />
                             <Bar
                                 dataKey="spending"
