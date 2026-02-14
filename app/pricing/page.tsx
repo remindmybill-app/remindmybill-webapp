@@ -1,26 +1,34 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { Check, Mail, MessageSquare, TrendingUp, FileText, ShieldCheck, Loader2, XCircle, Shield, CreditCard, Zap, Lock } from "lucide-react"
+import {
+  Check, X, Mail, MessageSquare, TrendingUp, FileText,
+  ShieldCheck, Loader2, Shield, Crown, Sparkles, Zap,
+  ChevronDown, ChevronUp,
+} from "lucide-react"
 import { useProfile } from "@/lib/hooks/use-profile"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { getSupabaseBrowserClient } from "@/lib/supabase/client"
-import { upgradeUserToPro, downgradeUserToFree } from "@/app/actions/mock-upgrade"
-import { isPro, isFree } from "@/lib/subscription-utils"
+import { TIER_PRICING, TIER_BADGES } from "@/lib/tier-config"
+import { isPro, isFree, isLifetime } from "@/lib/subscription-utils"
 
 export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(false)
-  const { profile, mutate } = useProfile()
+  const [addSms, setAddSms] = useState(false)
+  const [showSmsDetails, setShowSmsDetails] = useState(false)
+  const { profile } = useProfile()
   const [isUpdating, setIsUpdating] = useState(false)
   const router = useRouter()
 
-  const handleStripeCheckout = async (period: 'monthly' | 'yearly') => {
+  const userTier = profile?.user_tier || 'free'
+
+  // ─── Checkout Handler ───────────────────────────────────────────
+  const handleCheckout = async (tier: 'pro' | 'lifetime') => {
     if (!profile) {
       toast.error("Please sign in to upgrade")
       router.push("/auth/login")
@@ -30,261 +38,421 @@ export default function PricingPage() {
     setIsUpdating(true)
 
     try {
-      // Import server action
       const { createCheckoutSession } = await import("@/app/actions/stripe")
-
-      console.log(`Creating Stripe checkout for ${period}...`)
-      // Pass the abstract 'period' to let the server resolve the secure Price ID
-      const result = await createCheckoutSession(profile.id, profile.email, period)
+      const result = await createCheckoutSession({
+        userId: profile.id,
+        email: profile.email,
+        tier,
+        interval: isAnnual ? 'yearly' : 'monthly',
+        addSmsAddon: tier === 'pro' ? addSms : false,
+      })
 
       if (result?.url) {
         window.location.href = result.url
       } else {
         throw new Error("No checkout URL returned")
       }
-
     } catch (error: any) {
-      console.error("Upgrade Failed:", error)
+      console.error("Checkout failed:", error)
       toast.error("Checkout failed: " + (error.message || "Unknown error"))
       setIsUpdating(false)
     }
   }
 
-  const handleManageSubscription = () => {
-    toast.info("Manage your subscription in the Settings page.")
-    router.push("/settings")
-  }
+  const proMonthly = TIER_PRICING.pro.monthly
+  const proAnnualPerMonth = +(TIER_PRICING.pro.annual / 12).toFixed(2)
+  const annualSavingsPercent = Math.round(
+    ((proMonthly * 12 - TIER_PRICING.pro.annual) / (proMonthly * 12)) * 100
+  )
 
+  // ─── Plan Definitions ──────────────────────────────────────────
   const plans = [
     {
-      name: "Essential",
+      id: 'free' as const,
+      name: "Guardian",
+      tagline: "Essential Protection",
       price: 0,
-      description: "Perfect for getting started with subscription tracking",
-      badge: null,
+      priceSuffix: "forever",
+      icon: Shield,
+      iconColor: "text-zinc-400",
+      borderClass: "border-zinc-700/50 hover:border-zinc-600/70",
+      bgClass: "bg-zinc-900/40",
       features: [
-        { text: "Up to 3 subscriptions", included: true, highlight: false },
-        { text: "Basic renewal alerts", included: true, highlight: false },
-        { text: "Manual tracking", included: true, highlight: false },
-        { text: "Email notifications", included: true, highlight: false },
-        { text: "AI Inbox Hunter", included: false, highlight: false },
-        { text: "Priority support", included: false, highlight: false },
+        { text: "Track up to 7 subscriptions", included: true },
+        { text: "Monthly spending overview", included: true },
+        { text: "Health Score calculation", included: true },
+        { text: "3 email alerts per month", included: true },
+        { text: "Trust Center read-only access", included: true },
+        { text: "Mobile-responsive web app", included: true },
+        { text: "Advanced Analytics", included: false },
+        { text: "Export reports (CSV/PDF)", included: false },
+        { text: "Payment Calendar", included: false },
+        { text: "Priority support", included: false },
       ],
-      cta: "Get Started",
-      highlight: false,
+      cta: userTier === 'free' ? "Current Plan" : "Get Started",
+      ctaVariant: "outline" as const,
+      disabled: userTier === 'free',
     },
     {
-      name: "Pro Plan",
-      price: isAnnual ? 3.33 : 3.99,
-      originalPrice: isAnnual ? 3.99 : null,
-      description: "Complete automation and insights for power users",
-      badge: "Most Popular",
+      id: 'pro' as const,
+      name: "Shield",
+      tagline: "Full Protection Suite",
+      price: isAnnual ? proAnnualPerMonth : proMonthly,
+      priceSuffix: isAnnual ? `/mo (billed $${TIER_PRICING.pro.annual}/yr)` : "/month",
+      icon: Sparkles,
+      iconColor: "text-blue-400",
+      borderClass: "border-blue-500/40 ring-1 ring-blue-500/20 shadow-lg shadow-blue-500/10",
+      bgClass: "bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5",
       features: [
-        { text: "Unlimited subscriptions", included: true, highlight: false },
-        { text: "AI Inbox Hunter", included: true, highlight: true },
-        // { text: "SMS alerts", included: true, highlight: true }, // Removed as per feedback
-        { text: "Advanced analytics", included: true, highlight: false },
-        { text: "Dark pattern detection", included: true, highlight: false },
-        { text: "Priority support", included: true, highlight: false },
-        { text: "Export & reporting", included: true, highlight: false },
+        { text: "Unlimited subscription tracking", included: true },
+        { text: "Unlimited email alerts", included: true },
+        { text: "Advanced Analytics dashboard", included: true },
+        { text: "Interactive Payment Calendar", included: true },
+        { text: "Export reports (CSV/PDF)", included: true },
+        { text: "Trust Center contributions", included: true },
+        { text: "Priority email support (24hr)", included: true },
+        { text: "Early access to new features", included: true },
       ],
-      cta: "Upgrade to Pro",
+      cta: isPro(userTier) && !isLifetime(userTier) ? "Current Plan" : "Upgrade Now",
+      ctaVariant: "default" as const,
+      disabled: isPro(userTier) && !isLifetime(userTier),
       highlight: true,
+    },
+    {
+      id: 'lifetime' as const,
+      name: "Fortress",
+      tagline: "Lifetime Protection",
+      price: TIER_PRICING.lifetime.oneTime,
+      priceSuffix: "one-time payment",
+      icon: Crown,
+      iconColor: "text-amber-400",
+      borderClass: "border-amber-500/30 hover:border-amber-500/50",
+      bgClass: "bg-gradient-to-br from-amber-500/5 via-transparent to-yellow-500/5",
+      features: [
+        { text: "All Pro features, forever", included: true },
+        { text: "Immune to future price increases", included: true },
+        { text: 'Exclusive "Lifetime Member" badge', included: true },
+        { text: "All future feature updates", included: true },
+        { text: "Unlimited everything", included: true },
+        { text: "Priority support forever", included: true },
+        { text: "SMS available at $29/year", included: true },
+        { text: "No recurring charges", included: true },
+      ],
+      cta: isLifetime(userTier) ? "Current Plan" : "Claim Lifetime Access",
+      ctaVariant: "outline" as const,
+      disabled: isLifetime(userTier),
     },
   ]
 
+  // ─── Feature Comparison Data ───────────────────────────────────
+  const comparisonFeatures = [
+    { name: "Subscriptions tracked", free: "7", pro: "Unlimited", lifetime: "Unlimited" },
+    { name: "Email alerts", free: "3/month", pro: "Unlimited", lifetime: "Unlimited" },
+    { name: "SMS alerts", free: "❌", pro: "+$2.99/mo", lifetime: "$29/year" },
+    { name: "Advanced Analytics", free: "❌", pro: "✅", lifetime: "✅" },
+    { name: "Payment Calendar", free: "❌", pro: "✅", lifetime: "✅" },
+    { name: "Trust Center contributions", free: "❌", pro: "✅", lifetime: "✅" },
+    { name: "Export reports", free: "❌", pro: "✅", lifetime: "✅" },
+    { name: "Priority support", free: "❌", pro: "✅", lifetime: "✅" },
+    { name: "Future price increases", free: "N/A", pro: "May apply", lifetime: "Immune ✨" },
+    { name: "Lifetime badge", free: "❌", pro: "❌", lifetime: "👑" },
+  ]
+
   return (
-    <div className="min-h-screen bg-background py-12">
+    <div className="min-h-screen bg-background py-12 lg:py-16">
       <div className="mx-auto max-w-[1200px] px-4 sm:px-6 lg:px-8">
-        {/* Header */}
+
+        {/* ─── Header ──────────────────────────────────────────── */}
         <div className="mb-12 text-center">
-          <h1 className="mb-3 text-4xl font-bold tracking-tight text-balance">Simple, Transparent Pricing</h1>
-          <p className="text-lg text-muted-foreground text-balance">
-            Choose the plan that fits your needs. Upgrade or downgrade anytime.
+          <Badge className="mb-4 bg-primary/10 text-primary border-primary/20 px-4 py-1.5 text-sm">
+            Simple, Transparent Pricing
+          </Badge>
+          <h1 className="mb-3 text-4xl font-bold tracking-tight lg:text-5xl">
+            Choose Your Level of Protection
+          </h1>
+          <p className="mx-auto max-w-xl text-lg text-muted-foreground">
+            From basic tracking to lifetime coverage — pick the plan that matches your needs.
           </p>
         </div>
 
-        {/* Billing Toggle */}
+        {/* ─── Billing Toggle ──────────────────────────────────── */}
         <div className="mb-12 flex items-center justify-center gap-3">
-          <Label htmlFor="billing-toggle" className={!isAnnual ? "font-semibold" : "text-muted-foreground"}>
+          <Label
+            htmlFor="billing-toggle"
+            className={`cursor-pointer ${!isAnnual ? "font-semibold text-foreground" : "text-muted-foreground"}`}
+          >
             Monthly
           </Label>
           <Switch id="billing-toggle" checked={isAnnual} onCheckedChange={setIsAnnual} />
-          <Label htmlFor="billing-toggle" className={isAnnual ? "font-semibold" : "text-muted-foreground"}>
+          <Label
+            htmlFor="billing-toggle"
+            className={`cursor-pointer ${isAnnual ? "font-semibold text-foreground" : "text-muted-foreground"}`}
+          >
             Annual
           </Label>
-          {isAnnual && <Badge className="bg-primary/20 text-primary">Save 17%</Badge>}
+          {isAnnual && (
+            <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 animate-in fade-in slide-in-from-left-2">
+              Save {annualSavingsPercent}%
+            </Badge>
+          )}
         </div>
 
-        {/* Pricing Cards */}
-        <div className="mb-12 grid gap-8 lg:grid-cols-2">
-          {plans.map((plan, index) => (
+        {/* ─── Pricing Cards ───────────────────────────────────── */}
+        <div className="mb-16 grid gap-6 lg:grid-cols-3">
+          {plans.map((plan) => (
             <Card
-              key={index}
-              className={`relative overflow-hidden transition-all duration-300 ${plan.highlight
-                ? "border-primary shadow-lg shadow-primary/20 ring-1 ring-primary/20"
-                : "border-white/10 bg-zinc-900/40 hover:border-white/20"
-                }`}
+              key={plan.id}
+              className={`relative overflow-hidden transition-all duration-300 ${plan.borderClass} ${plan.bgClass} flex flex-col`}
             >
-              {/* Current Plan Badge */}
-              {((plan.name === "Pro Plan" && isPro(profile?.subscription_tier)) ||
-                (plan.name === "Essential" && isFree(profile?.subscription_tier))) && (
-                  <div className="absolute top-4 right-4 z-10">
-                    <Badge className="bg-primary text-primary-foreground shadow-lg font-bold">
-                      ✓ CURRENT PLAN
-                    </Badge>
-                  </div>
-                )}
+              {/* Popular Badge */}
               {plan.highlight && (
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20">
-                  <Badge className="bg-primary px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-primary-foreground shadow-xl border-2 border-background">
-                    Recommended
+                <div className="absolute top-0 right-0 z-10">
+                  <div className="bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-bl-xl">
+                    Most Popular
+                  </div>
+                </div>
+              )}
+
+              {/* Current Plan Badge */}
+              {plan.disabled && profile && (
+                <div className="absolute top-3 left-3 z-10">
+                  <Badge className="bg-primary/20 text-primary border-primary/30 text-xs font-bold">
+                    ✓ Current Plan
                   </Badge>
                 </div>
               )}
-              {plan.highlight && (
-                <div className="absolute inset-0 -z-10 bg-gradient-to-br from-primary/5 to-transparent" />
-              )}
-              <CardHeader>
-                <div className="flex items-start justify-between">
+
+              <CardHeader className="pt-8 pb-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 ${plan.iconColor}`}>
+                    <plan.icon className="h-5 w-5" />
+                  </div>
                   <div>
-                    <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                    <CardDescription className="mt-2">{plan.description}</CardDescription>
+                    <h3 className="text-xl font-bold">{plan.name}</h3>
+                    <p className="text-xs text-muted-foreground">{plan.tagline}</p>
                   </div>
-                  {plan.badge && <Badge className="bg-primary text-primary-foreground">{plan.badge}</Badge>}
                 </div>
-                <div className="mt-6">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-5xl font-bold">${plan.price}</span>
-                    {plan.originalPrice && (
-                      <span className="text-lg text-muted-foreground line-through">${plan.originalPrice}</span>
-                    )}
-                    <span className="text-muted-foreground">
-                      {plan.price === 0 ? "forever" : isAnnual ? "/mo (billed annually)" : "/mo"}
-                    </span>
-                  </div>
+
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-4xl font-extrabold tracking-tight">
+                    ${plan.price}
+                  </span>
+                  <span className="text-sm text-muted-foreground">{plan.priceSuffix}</span>
                 </div>
               </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  {plan.features.map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-start gap-3">
+
+              <CardContent className="flex-1 pb-4">
+                <ul className="space-y-2.5">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-start gap-2.5">
                       {feature.included ? (
-                        <Check
-                          className={`mt-0.5 h-5 w-5 flex-shrink-0 ${feature.highlight ? "text-primary" : "text-muted-foreground"
-                            }`}
-                        />
+                        <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />
                       ) : (
-                        <XCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-500/50" />
+                        <X className="mt-0.5 h-4 w-4 flex-shrink-0 text-zinc-600" />
                       )}
-                      <span
-                        className={`${feature.included
-                          ? feature.highlight
-                            ? "font-medium text-foreground"
-                            : "text-foreground"
-                          : "text-zinc-400 dark:text-zinc-600 font-medium"
-                          }`}
-                      >
+                      <span className={`text-sm ${feature.included ? "text-foreground" : "text-zinc-500"}`}>
                         {feature.text}
                       </span>
                     </li>
                   ))}
                 </ul>
+
+                {/* SMS Add-On (Pro only) */}
+                {plan.id === 'pro' && (
+                  <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={addSms}
+                        onChange={(e) => setAddSms(e.target.checked)}
+                        className="h-4 w-4 rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
+                      />
+                      <div className="flex-1">
+                        <span className="text-sm font-medium group-hover:text-blue-400 transition-colors">
+                          📱 Add SMS Alerts
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-1.5">+$2.99/mo</span>
+                      </div>
+                    </label>
+                    <button
+                      onClick={() => setShowSmsDetails(!showSmsDetails)}
+                      className="mt-2 flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      {showSmsDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                      {showSmsDetails ? "Hide details" : "Learn more"}
+                    </button>
+                    {showSmsDetails && (
+                      <div className="mt-3 space-y-1.5 text-xs text-muted-foreground animate-in fade-in slide-in-from-top-1">
+                        <p>• 3-day, 1-day, and same-day text reminders</p>
+                        <p>• Instant spending spike alerts (50%+ above average)</p>
+                        <p>• Weekly SMS summary every Sunday evening</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
-              <CardFooter>
+
+              <CardFooter className="pt-2 pb-6">
                 <Button
-                  className="w-full gap-2"
-                  variant={plan.highlight ? "default" : "outline"}
+                  className={`w-full gap-2 h-12 text-sm font-semibold transition-all ${plan.id === 'pro'
+                      ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25"
+                      : plan.id === 'lifetime'
+                        ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black font-bold shadow-lg shadow-amber-500/25"
+                        : ""
+                    }`}
+                  variant={plan.id === 'free' ? "outline" : "default"}
                   size="lg"
-                  id={`checkout-${plan.name.toLowerCase().replace(/\s+/g, '-')}`}
-                  disabled={isUpdating || (plan.name === "Pro Plan" && isPro(profile?.subscription_tier)) || (plan.name === "Essential" && isFree(profile?.subscription_tier))}
-                  onClick={async () => {
-                    if (plan.name === "Essential") {
-                      if (isPro(profile?.subscription_tier)) {
-                        toast.info("To downgrade, go to Settings → Billing")
-                        router.push("/settings?tab=billing")
-                        return
-                      }
+                  disabled={isUpdating || plan.disabled}
+                  onClick={() => {
+                    if (plan.id === 'free') {
                       router.push("/dashboard")
                       return
                     }
-
-                    if (plan.name === "Pro Plan") {
-                      if (isPro(profile?.subscription_tier)) {
-                        handleManageSubscription()
-                        return
-                      }
-
-                      // Handle Upgrade using Real Stripe Checkout
-                      handleStripeCheckout(isAnnual ? 'yearly' : 'monthly')
-                    }
+                    handleCheckout(plan.id)
                   }}
                 >
                   {isUpdating && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {plan.name === "Pro Plan" && isPro(profile?.subscription_tier)
-                    ? "Manage Billing"
-                    : plan.name === "Essential" && isFree(profile?.subscription_tier)
-                      ? "Current Plan"
-                      : plan.cta}
+                  {plan.cta}
                 </Button>
               </CardFooter>
             </Card>
           ))}
         </div>
 
-        {/* Premium FAQ Section */}
-        <div className="mx-auto max-w-5xl mb-16">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold tracking-tight text-white mb-2">Service & Trust FAQ</h2>
-            <p className="text-zinc-400">Everything you need to know about our commitment to your financial health.</p>
+        {/* ─── Social Proof Stats ──────────────────────────────── */}
+        <div className="mb-16 grid grid-cols-3 gap-4 rounded-2xl border border-white/5 bg-zinc-900/30 p-4 sm:p-8">
+          {[
+            { value: "12,450+", label: "Active Users" },
+            { value: "$1.2M+", label: "Saved Collectively" },
+            { value: "4.8/5", label: "User Rating" },
+          ].map((stat, i) => (
+            <div key={i} className="text-center">
+              <p className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">{stat.value}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* ─── Feature Comparison Table ────────────────────────── */}
+        <div className="mb-16">
+          <h2 className="text-2xl font-bold text-center mb-8">Feature Comparison</h2>
+          <div className="overflow-x-auto rounded-2xl border border-white/5">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-zinc-900/60 sticky top-0 z-10">
+                  <th className="text-left p-4 font-semibold text-muted-foreground">Feature</th>
+                  <th className="text-center p-4 font-semibold">
+                    <span className="text-zinc-400">Guardian</span>
+                    <span className="block text-xs text-muted-foreground font-normal">Free</span>
+                  </th>
+                  <th className="text-center p-4 font-semibold">
+                    <span className="text-blue-400">Shield</span>
+                    <span className="block text-xs text-muted-foreground font-normal">$4.99/mo</span>
+                  </th>
+                  <th className="text-center p-4 font-semibold">
+                    <span className="text-amber-400">Fortress</span>
+                    <span className="block text-xs text-muted-foreground font-normal">$99 once</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonFeatures.map((row, i) => (
+                  <tr key={i} className={`border-t border-white/5 ${i % 2 === 0 ? "bg-zinc-900/20" : ""}`}>
+                    <td className="p-4 font-medium text-foreground">{row.name}</td>
+                    <td className="p-4 text-center text-muted-foreground">{row.free}</td>
+                    <td className="p-4 text-center text-muted-foreground">{row.pro}</td>
+                    <td className="p-4 text-center text-muted-foreground">{row.lifetime}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div className="grid gap-6 md:grid-cols-2">
+        </div>
+
+        {/* ─── Testimonials ────────────────────────────────────── */}
+        <div className="mb-16">
+          <h2 className="text-2xl font-bold text-center mb-8">What Users Say</h2>
+          <div className="grid gap-6 md:grid-cols-3">
             {[
               {
-                q: "No-Questions-Asked Cancellation",
-                a: "Enjoy total freedom. Cancel your subscription anytime with a single click from your dashboard—no retention traps or hidden hurdles.",
-                icon: Shield
+                quote: "RemindMyBill saved me $240 by catching a forgotten gym membership. The Pro tier paid for itself in the first month!",
+                name: "Sarah K.",
+                role: "Shield User",
               },
               {
-                q: "AI-Powered Inbox Protection",
-                a: "Our Inbox Hunter securely scans your digital receipts using 256-bit encryption. We find the leaks, but never store or sell your private data.",
-                icon: Lock
+                quote: "The Payment Calendar is a game-changer. I can see exactly when every bill hits and plan my budget accordingly.",
+                name: "Marcus T.",
+                role: "Shield User",
               },
               {
-                q: "Unlimited Pro Scaling",
-                a: "Scale without limits. While the Essential plan handles the basics, Pro gives you unlimited tracking for every service, app, and membership in your life.",
-                icon: Zap
+                quote: "Best $99 I ever spent. Lifetime access means I never have to worry about subscription bills sneaking up on me again.",
+                name: "Elena R.",
+                role: "Fortress User",
               },
-              {
-                q: "30-Day Trust Guarantee",
-                a: "We stand by our insights. If Remind My Bill doesn't help you save more than the cost of the subscription in your first 30 days, we'll refund you instantly.",
-                icon: CreditCard
-              }
-            ].map((faq, i) => (
+            ].map((testimonial, i) => (
               <div
                 key={i}
-                className="bg-zinc-900/50 border border-white/5 p-6 rounded-2xl hover:border-emerald-500/20 transition-all duration-300 group backdrop-blur-sm"
+                className="rounded-2xl border border-white/5 bg-zinc-900/30 p-6 hover:border-white/10 transition-all"
               >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 rounded-lg bg-white/5 text-zinc-500 group-hover:text-emerald-400 transition-colors">
-                    <faq.icon className="h-4 w-4" />
-                  </div>
-                  <h3 className="font-semibold text-white">{faq.q}</h3>
+                <p className="text-sm text-muted-foreground mb-4 italic">"{testimonial.quote}"</p>
+                <div>
+                  <p className="text-sm font-semibold">{testimonial.name}</p>
+                  <p className="text-xs text-muted-foreground">{testimonial.role}</p>
                 </div>
-                <p className="text-zinc-400 text-sm leading-relaxed">
-                  {faq.a}
-                </p>
               </div>
             ))}
           </div>
         </div>
 
+        {/* ─── FAQ Section ─────────────────────────────────────── */}
+        <div className="mx-auto max-w-5xl mb-16">
+          <h2 className="text-2xl font-bold text-center mb-8">Frequently Asked Questions</h2>
+          <div className="grid gap-6 md:grid-cols-2">
+            {[
+              {
+                q: "No-Questions-Asked Cancellation",
+                a: "Cancel your subscription anytime with a single click — no retention traps or hidden hurdles.",
+                icon: Shield,
+              },
+              {
+                q: "What happens to my data if I downgrade?",
+                a: "Your data is always safe. On Free tier, subscriptions beyond the 7-limit become read-only until you upgrade again.",
+                icon: ShieldCheck,
+              },
+              {
+                q: "Is the Lifetime plan really forever?",
+                a: "Yes! One payment of $99 gives you full access to all current and future features (excluding AI add-ons explicitly marked as premium).",
+                icon: Crown,
+              },
+              {
+                q: "30-Day Trust Guarantee",
+                a: "If RemindMyBill doesn't help you save more than the cost of your subscription in 30 days, we'll refund you instantly.",
+                icon: Zap,
+              },
+            ].map((faq, i) => (
+              <div
+                key={i}
+                className="rounded-2xl border border-white/5 bg-zinc-900/30 p-6 hover:border-emerald-500/20 transition-all group"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2 rounded-lg bg-white/5 text-zinc-500 group-hover:text-emerald-400 transition-colors">
+                    <faq.icon className="h-4 w-4" />
+                  </div>
+                  <h3 className="font-semibold">{faq.q}</h3>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">{faq.a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
 
-        {/* Dev Tools - Reset Subscription */}
-        {process.env.NODE_ENV === 'development' || (typeof window !== 'undefined' && window.location.hostname === 'localhost') ? (
-          <div className="flex justify-center mt-4 opacity-50 hover:opacity-100 transition-opacity">
+        {/* ─── Dev Tools ───────────────────────────────────────── */}
+        {(process.env.NODE_ENV === 'development' || (typeof window !== 'undefined' && window.location.hostname === 'localhost')) && (
+          <div className="flex justify-center mt-4 opacity-30 hover:opacity-100 transition-opacity">
             <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={async () => {
               try {
                 setIsUpdating(true)
+                const { downgradeUserToFree } = await import("@/app/actions/mock-upgrade")
                 await downgradeUserToFree(profile!.id)
                 router.refresh()
               } catch (e) {
@@ -295,41 +463,7 @@ export default function PricingPage() {
               Dev: Reset to Free
             </Button>
           </div>
-        ) : null}
-
-        {/* Feature Highlights */}
-        <div className="mt-12">
-          <h2 className="mb-8 text-center text-2xl font-bold">What's included in Pro?</h2>
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="flex flex-col items-center gap-3 rounded-lg border bg-card p-6 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                <Mail className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="font-semibold">AI Inbox Hunter</h3>
-              <p className="text-sm text-muted-foreground">
-                Automatically detects subscriptions from your email receipts
-              </p>
-            </div>
-            {/* <div className="flex flex-col items-center gap-3 rounded-lg border bg-card p-6 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                <MessageSquare className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="font-semibold">SMS Alerts</h3>
-              <p className="text-sm text-muted-foreground">
-                Get instant text messages before renewals and price changes
-              </p>
-            </div> */}
-            <div className="flex flex-col items-center gap-3 rounded-lg border bg-card p-6 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                <TrendingUp className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="font-semibold">Advanced Analytics</h3>
-              <p className="text-sm text-muted-foreground">
-                Track spending trends and optimize your subscription portfolio
-              </p>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   )

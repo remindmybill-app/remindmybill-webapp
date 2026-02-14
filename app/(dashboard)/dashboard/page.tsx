@@ -8,9 +8,11 @@ import { QuickStats } from "@/components/quick-stats"
 import { SubscriptionsTable } from "@/components/subscriptions-table"
 import { SavingsAlerts } from "@/components/savings-alerts"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Inbox, Bell, Sparkles, Plus, Lock, TrendingUp, AlertTriangle } from "lucide-react"
+import { Inbox, Bell, Sparkles, Plus, Lock, TrendingUp, AlertTriangle, CheckCircle2, Crown, Shield, Smartphone } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { useProfile } from "@/lib/hooks/use-profile"
@@ -19,14 +21,14 @@ import { connectGmailAccount, getGmailToken } from "@/lib/utils/gmail-auth"
 import { scanGmailReceipts } from "@/app/actions/gmail"
 import { debugFetchLast5Emails } from "@/app/actions/debug-gmail"
 import { GmailImportModal } from "@/components/GmailImportModal"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { ManualSubscriptionModal } from "@/components/manual-subscription-modal"
-import { isPro } from "@/lib/subscription-utils"
-import { CheckCircle2 } from "lucide-react"
+import { isPro, isFree, isLifetime, getTierDisplayName, getTierLimit } from "@/lib/subscription-utils"
+import { TIER_BADGES, TIER_LIMITS } from "@/lib/tier-config"
 import { DashboardAIWidget } from "@/components/DashboardAIWidget"
 import { ScanSettingsDialog } from "@/components/dashboard/scan-settings-dialog"
 import { syncSubscriptionLockStatus } from "@/app/actions/subscription-lock"
 import { SubscriptionsProvider } from "@/lib/contexts/subscriptions-context"
+import type { UserTier } from "@/lib/types"
 
 function DashboardContent() {
     const { isAuthenticated, signIn, isLoading: authLoading } = useAuth()
@@ -39,10 +41,25 @@ function DashboardContent() {
     const searchParams = useSearchParams()
     const [isGmailConnected, setIsGmailConnected] = useState(false)
 
-    // New state for Review Modal
+    // Review/Import modal state
     const [foundSubscriptions, setFoundSubscriptions] = useState<any[]>([])
     const [isReviewOpen, setIsReviewOpen] = useState(false)
 
+    // Upgrade prompt modal state
+    const [showLimitModal, setShowLimitModal] = useState(false)
+
+    // Tier info
+    const userTier: UserTier = (profile?.user_tier as UserTier) || 'free'
+    const isProUser = isPro(profile?.subscription_tier, profile?.is_pro)
+    const tierBadge = TIER_BADGES[userTier]
+    const subLimit = getTierLimit(userTier)
+    const activeSubCount = subscriptions.filter(s => s.status !== 'cancelled' && s.status !== 'paused').length
+
+    // Free tier limits
+    const emailAlertsUsed = profile?.email_alerts_used ?? 0
+    const emailAlertsLimit = profile?.email_alerts_limit ?? TIER_LIMITS.free.emailAlerts
+    const alertsExhausted = userTier === 'free' && emailAlertsUsed >= emailAlertsLimit
+    const isLimitReached = userTier === 'free' && activeSubCount >= subLimit
 
     // Check Gmail connection status on mount and when profile changes
     useEffect(() => {
@@ -68,7 +85,7 @@ function DashboardContent() {
                     .then((res) => {
                         if (res?.updated) {
                             console.log("Locks synced, refreshing subs...");
-                            refreshSubscriptions(); // Refresh to get the new 'is_locked' values
+                            refreshSubscriptions();
                         }
                     })
                     .catch(err => console.error("Lock sync failed", err));
@@ -83,6 +100,8 @@ function DashboardContent() {
         const error = searchParams.get('error')
         const message = searchParams.get('message')
         const success = searchParams.get('success')
+        const checkout = searchParams.get('checkout')
+        const tier = searchParams.get('tier')
 
         if (error === 'TRUE' && message) {
             console.error('[Dashboard] Auth Error received:', message)
@@ -93,15 +112,14 @@ function DashboardContent() {
             router.replace('/dashboard')
         }
 
-        // Handle Stripe upgrade success - FORCE refresh profile to get is_pro
-        if (success === 'true') {
-            toast.success("Welcome to Pro! 🚀", {
-                description: "Your subscription is now active. Enjoy unlimited features!",
+        // Handle Stripe upgrade success
+        if (success === 'true' || checkout === 'success') {
+            const tierName = tier === 'lifetime' ? 'Fortress' : 'Shield'
+            toast.success(`Welcome to ${tierName}! 🚀`, {
+                description: "Your plan is now active. Enjoy all your new features!",
                 duration: 6000,
             })
-            // Force refresh profile to get the updated is_pro status
             refreshProfile()
-            // Clear the success param
             router.replace('/dashboard')
         }
 
@@ -111,14 +129,9 @@ function DashboardContent() {
                 duration: 5000,
             })
             setIsGmailConnected(true)
-
-            // Auto-trigger scan
-            // We use a small timeout to allow the toast to appear and state to settle
             setTimeout(() => {
                 handleScanInbox()
             }, 1000)
-
-            // Clear params
             router.replace('/dashboard')
         }
     }, [searchParams, router, refreshProfile])
@@ -134,36 +147,28 @@ function DashboardContent() {
         setIsScanning(true)
 
         try {
-            // 1. Get Token
             let token = await getGmailToken()
 
             if (!token) {
                 console.log("[v0] No Gmail token found, initiating OAuth...")
                 toast.info("Connecting to Gmail...", { description: "Please approve read-only access to scan for receipts." })
-                await connectGmailAccount() // This will redirect away
+                await connectGmailAccount()
                 return
             }
 
-            // Open modal immediately so user sees the "Scanning" state
-            // CRITICAL: Reset stale results BEFORE opening modal
             setFoundSubscriptions([])
             setIsReviewOpen(true)
             console.log("[v0] Token found, scanning inbox...")
 
-            // 2. Call Server Action with days and FORCE=true
             const result = await scanGmailReceipts(token, days, true)
 
             if (!result.success) {
-                // Graceful Backend Failure
                 console.error("[v0] Scan returned error:", result.error)
                 toast.error("Scan failed", { description: result.error || "Could not complete scan." })
-                // We keep the modal open? Or close it? 
-                // Let's close it if it failed so they can try again.
                 setIsReviewOpen(false)
                 return
             }
 
-            // 3. Handle Results
             setFoundSubscriptions(result.subs || [])
 
             if (result.found && result.found > 0) {
@@ -176,7 +181,6 @@ function DashboardContent() {
 
             setLastSynced(new Date())
         } catch (error: any) {
-            // Hard Network/Timeout Failure
             console.error("[v0] Critical scan execution error:", error)
             toast.error("Connection Interrupted", {
                 description: "The scan took too long or the connection was lost. Please try again."
@@ -216,14 +220,22 @@ function DashboardContent() {
     }
 
     const hasSubscriptions = subscriptions.length > 0
-    const isProUser = isPro(profile?.subscription_tier, profile?.is_pro);
-    // CRITICAL: Ensure Pro users NEVER hit the limit
-    const isLimitReached = !isProUser && subscriptions.length >= 3;
 
     if (!hasSubscriptions) {
         return (
             <div className="min-h-screen bg-background">
                 <div className="mx-auto max-w-[1600px] p-6 lg:p-8">
+                    {/* Tier Status Widget */}
+                    <TierStatusWidget
+                        userTier={userTier}
+                        tierBadge={tierBadge}
+                        activeSubCount={activeSubCount}
+                        subLimit={subLimit}
+                        emailAlertsUsed={emailAlertsUsed}
+                        emailAlertsLimit={emailAlertsLimit}
+                        smsEnabled={profile?.sms_addon_enabled ?? false}
+                    />
+
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-zinc-900 dark:text-zinc-50">Dashboard</h1>
                         <p className="mt-2 text-muted-foreground">
@@ -291,7 +303,40 @@ function DashboardContent() {
         <div className="overflow-x-hidden bg-zinc-50/50 dark:bg-black min-h-screen">
             <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
 
-                {/* Limit Reached Banner */}
+                {/* ─── Tier Status Widget ──────────────────────────── */}
+                <TierStatusWidget
+                    userTier={userTier}
+                    tierBadge={tierBadge}
+                    activeSubCount={activeSubCount}
+                    subLimit={subLimit}
+                    emailAlertsUsed={emailAlertsUsed}
+                    emailAlertsLimit={emailAlertsLimit}
+                    smsEnabled={profile?.sms_addon_enabled ?? false}
+                />
+
+                {/* ─── Alert Exhaustion Banner ─────────────────────── */}
+                {alertsExhausted && (
+                    <div className="mb-6 rounded-xl bg-orange-50 border border-orange-200 p-4 flex items-center justify-between dark:bg-orange-900/10 dark:border-orange-900/30">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/30">
+                                <Bell className="h-5 w-5 text-orange-600 dark:text-orange-500" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-orange-900 dark:text-orange-400">
+                                    ⚠️ You've used all {emailAlertsLimit} email alerts this month
+                                </h3>
+                                <p className="text-sm text-orange-700 dark:text-orange-500">
+                                    Upgrade to Shield for unlimited alerts and never miss a renewal.
+                                </p>
+                            </div>
+                        </div>
+                        <Button size="sm" className="bg-orange-600 hover:bg-orange-700 text-white border-none" asChild>
+                            <Link href="/pricing">Upgrade Now</Link>
+                        </Button>
+                    </div>
+                )}
+
+                {/* ─── Limit Reached Banner ─────────────────────────── */}
                 {isLimitReached && (
                     <div className="mb-6 rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-center justify-between dark:bg-amber-900/10 dark:border-amber-900/30">
                         <div className="flex items-center gap-3">
@@ -300,7 +345,7 @@ function DashboardContent() {
                             </div>
                             <div>
                                 <h3 className="font-bold text-amber-900 dark:text-amber-500">Free Tier Limit Reached</h3>
-                                <p className="text-sm text-amber-700 dark:text-amber-600">You have reached the 3-subscription limit. Upgrade to Pro to track unlimited subscriptions.</p>
+                                <p className="text-sm text-amber-700 dark:text-amber-600">You've reached the {subLimit}-subscription limit. Upgrade to Shield for unlimited tracking.</p>
                             </div>
                         </div>
                         <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white border-none" asChild>
@@ -313,12 +358,16 @@ function DashboardContent() {
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-4xl">Dashboard</h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Financial Overview &bull; {subscriptions.length} Active Subscriptions
+                            Financial Overview &bull; {activeSubCount} Active Subscriptions
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
                         {isLimitReached ? (
-                            <Button variant="outline" disabled className="gap-2 opacity-50 cursor-not-allowed">
+                            <Button
+                                variant="outline"
+                                className="gap-2 opacity-50 cursor-not-allowed"
+                                onClick={() => setShowLimitModal(true)}
+                            >
                                 <Lock className="h-4 w-4" />
                                 Add Subscription
                             </Button>
@@ -332,7 +381,7 @@ function DashboardContent() {
                             trigger={
                                 <Button
                                     disabled={isScanning || isLimitReached}
-                                    variant={isGmailConnected ? "outline" : "outline"}
+                                    variant="outline"
                                     className={`gap-2 ${isGmailConnected ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400" : "bg-white dark:bg-zinc-900"} ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     {isGmailConnected ? <CheckCircle2 className="h-4 w-4" /> : (isProUser ? <Inbox className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-500" />)}
@@ -344,8 +393,6 @@ function DashboardContent() {
                             }
                         />
                     </div>
-
-
                 </div>
 
                 {/* Review Modal for Found Subscriptions */}
@@ -362,6 +409,33 @@ function DashboardContent() {
                     range={scanRange}
                 />
 
+                {/* Subscription Limit Modal */}
+                <Dialog open={showLimitModal} onOpenChange={setShowLimitModal}>
+                    <DialogContent className="max-w-md">
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <Lock className="h-5 w-5 text-amber-500" />
+                                Subscription Limit Reached
+                            </DialogTitle>
+                            <DialogDescription>
+                                You're tracking {activeSubCount} subscriptions (Guardian tier limit).
+                                You're managing more subscriptions than 68% of users!
+                            </DialogDescription>
+                        </DialogHeader>
+                        <p className="text-sm text-muted-foreground">
+                            Upgrade to Shield to track unlimited subscriptions and unlock advanced analytics.
+                        </p>
+                        <div className="flex gap-3 justify-end mt-2">
+                            <Button variant="ghost" onClick={() => setShowLimitModal(false)}>
+                                Maybe Later
+                            </Button>
+                            <Button className="bg-blue-600 hover:bg-blue-700" asChild>
+                                <Link href="/pricing">Upgrade to Shield — $4.99/mo</Link>
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
                 <div className="grid w-full gap-6 xl:grid-cols-[1fr_380px]">
                     <div className="w-full space-y-6">
                         <div className="grid w-full gap-6 md:grid-cols-1 lg:grid-cols-[420px_1fr]">
@@ -373,21 +447,18 @@ function DashboardContent() {
                     </div>
 
                     <div className="w-full xl:sticky xl:top-8 xl:h-fit space-y-6">
-                        {/* <SavingsAlerts /> */}
-
-                        {/* Premium Feature Teaser */}
                         {/* Premium Feature Teaser - Only for Free Users */}
                         {!isProUser && (
-                            <div className="rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 p-6 text-white shadow-xl shadow-indigo-500/20">
+                            <div className="rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 p-6 text-white shadow-xl shadow-blue-500/20">
                                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
-                                    <Bell className="h-5 w-5 text-white" />
+                                    <Shield className="h-5 w-5 text-white" />
                                 </div>
-                                <h3 className="mb-2 text-lg font-bold">Remind My Bill Premium</h3>
-                                <p className="mb-4 text-sm text-indigo-100">
-                                    Get Legal Concierge to cancel hard-to-cancel subscriptions for you.
+                                <h3 className="mb-2 text-lg font-bold">Upgrade to Shield</h3>
+                                <p className="mb-4 text-sm text-blue-100">
+                                    Unlock unlimited tracking, advanced analytics, and SMS alerts for just $4.99/mo.
                                 </p>
-                                <Button variant="secondary" className="w-full bg-white text-indigo-600 hover:bg-indigo-50" asChild>
-                                    <Link href="/pricing">Upgrade Plan</Link>
+                                <Button variant="secondary" className="w-full bg-white text-blue-600 hover:bg-blue-50" asChild>
+                                    <Link href="/pricing">View Plans</Link>
                                 </Button>
                             </div>
                         )}
@@ -399,6 +470,64 @@ function DashboardContent() {
                     </div>
                 </div>
             </div>
+        </div>
+    )
+}
+
+// ─── Tier Status Widget Component ──────────────────────────────────────────
+function TierStatusWidget({
+    userTier,
+    tierBadge,
+    activeSubCount,
+    subLimit,
+    emailAlertsUsed,
+    emailAlertsLimit,
+    smsEnabled,
+}: {
+    userTier: UserTier
+    tierBadge: { emoji: string; label: string; className: string }
+    activeSubCount: number
+    subLimit: number
+    emailAlertsUsed: number
+    emailAlertsLimit: number
+    smsEnabled: boolean
+}) {
+    const isUnlimited = subLimit === Infinity
+
+    return (
+        <div className="mb-6 rounded-xl border border-white/5 bg-zinc-900/30 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+                <div className="text-2xl">{tierBadge.emoji}</div>
+                <div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold">{tierBadge.label}</span>
+                        <Badge className={`${tierBadge.className} text-[10px] font-bold uppercase tracking-wider border-0`}>
+                            {userTier === 'free' ? 'Free' : userTier === 'pro' ? 'Pro' : 'Lifetime'}
+                        </Badge>
+                        {smsEnabled && (
+                            <Badge className="bg-emerald-500/20 text-emerald-400 border-0 text-[10px]">
+                                <Smartphone className="h-2.5 w-2.5 mr-1" />
+                                SMS Active
+                            </Badge>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                        <span>
+                            Subscriptions: {activeSubCount}/{isUnlimited ? '∞' : subLimit}
+                        </span>
+                        {userTier === 'free' && (
+                            <span>
+                                Alerts: {emailAlertsUsed}/{emailAlertsLimit} this month
+                            </span>
+                        )}
+                    </div>
+                </div>
+            </div>
+            {userTier === 'free' && (
+                <Button size="sm" variant="outline" className="text-xs border-blue-500/30 text-blue-400 hover:bg-blue-500/10" asChild>
+                    <Link href="/pricing">Upgrade</Link>
+                </Button>
+            )}
         </div>
     )
 }

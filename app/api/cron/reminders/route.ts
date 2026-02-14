@@ -31,7 +31,7 @@ export async function GET() {
 
         console.log(`[Cron] Target date: ${formattedDate}`);
 
-        // 2. Query Subscriptions (Step 1: Fetch valid subscriptions)
+        // 2. Query Subscriptions
         console.log(`[Cron] Searching for renewal_date MATCHING: ${formattedDate}`);
 
         console.time('DB_Fetch_Subscriptions');
@@ -40,7 +40,7 @@ export async function GET() {
             .select('*, user_id')
             .eq('renewal_date', formattedDate)
             .eq('status', 'active')
-            .eq('is_locked', false); // Exclude locked subscriptions
+            .eq('is_locked', false);
         console.timeEnd('DB_Fetch_Subscriptions');
 
         if (subsError) {
@@ -62,7 +62,7 @@ export async function GET() {
         const subsToProcess = subs.slice(0, 50);
         console.log(`[Cron] Found ${totalFound} subscriptions. Processing first ${subsToProcess.length}.`);
 
-        // 3. Extract unique user IDs (Step 2: Prepare profile query)
+        // 3. Extract unique user IDs
         const userIds = [...new Set(subsToProcess.map(s => s.user_id))].filter(Boolean);
 
         if (userIds.length === 0) {
@@ -70,11 +70,11 @@ export async function GET() {
             return NextResponse.json({ success: true, count: 0 });
         }
 
-        // 4. Fetch Profiles (Step 3: Fetch profiles for those users)
+        // 4. Fetch Profiles WITH tier info for alert limit checking
         console.time('DB_Fetch_Profiles');
         const { data: profiles, error: profilesError } = await supabaseAdmin
             .from('profiles')
-            .select('id, email, full_name')
+            .select('id, email, full_name, user_tier, email_alerts_used, email_alerts_limit')
             .in('id', userIds);
         console.timeEnd('DB_Fetch_Profiles');
 
@@ -87,12 +87,11 @@ export async function GET() {
             }, { status: 200 });
         }
 
-        // 5. Map them together (Step 4: Memory Mapping)
+        // 5. Map profiles by ID
         const profileMap = new Map<string, any>((profiles || []).map((p: any) => [p.id, p]));
-
         console.log(`[Cron] Loaded ${profiles?.length} profiles.`);
 
-        // 6. Action: Parallel Email Sending with 5s Timeout (Step 5: FAIL FAST)
+        // 6. Send emails with tier-aware limits
         console.time('Email_Phase_FailFast');
 
         const sendWithTimeout = (data: any) => Promise.race([
@@ -110,8 +109,19 @@ export async function GET() {
                 return { id: sub.id, status: 'skipped', reason: 'no_email' };
             }
 
+            // ─── Tier-aware alert limit check ───
+            const userTier = userProfile.user_tier || 'free';
+            if (userTier === 'free') {
+                const alertsUsed = userProfile.email_alerts_used ?? 0;
+                const alertsLimit = userProfile.email_alerts_limit ?? 3;
+
+                if (alertsUsed >= alertsLimit) {
+                    console.log(`[Cron] Skipping ${sub.id} - Free user ${sub.user_id} alert limit reached (${alertsUsed}/${alertsLimit}).`);
+                    return { id: sub.id, status: 'skipped', reason: 'alert_limit_reached' };
+                }
+            }
+
             try {
-                // Actual email send with timeout race
                 const { error: emailError } = await sendWithTimeout({
                     email: userProfile.email,
                     userName: userProfile.full_name?.split(' ')[0] || 'User',
@@ -129,6 +139,14 @@ export async function GET() {
                     return { id: sub.id, status: 'failed', email: userProfile.email, error: emailError };
                 }
 
+                // Increment alert counter for free tier users
+                if (userTier === 'free') {
+                    await supabaseAdmin
+                        .from('profiles')
+                        .update({ email_alerts_used: (userProfile.email_alerts_used ?? 0) + 1 })
+                        .eq('id', sub.user_id);
+                }
+
                 return { id: sub.id, status: 'sent', email: userProfile.email };
             } catch (err: any) {
                 console.error(`[Cron] Error (Timeout or Exception) for ${userProfile.email}:`, err.message);
@@ -141,8 +159,9 @@ export async function GET() {
 
         const sentCount = results.filter(r => r.status === 'sent').length;
         const failedCount = results.filter(r => r.status === 'failed').length;
+        const skippedCount = results.filter(r => r.status === 'skipped').length;
 
-        console.log(`[Cron] FAIL FAST complete. Sent: ${sentCount}, Failed/TimedOut: ${failedCount}.`);
+        console.log(`[Cron] FAIL FAST complete. Sent: ${sentCount}, Failed: ${failedCount}, Skipped: ${skippedCount}.`);
 
         return NextResponse.json({
             success: true,
@@ -150,6 +169,7 @@ export async function GET() {
             processed_count: subsToProcess.length,
             sent_count: sentCount,
             failed_count: failedCount,
+            skipped_count: skippedCount,
             results: results
         });
 

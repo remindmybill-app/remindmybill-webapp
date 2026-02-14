@@ -9,9 +9,13 @@ export async function upgradeUserToPro(userId: string) {
     const { error } = await supabase
         .from('profiles')
         .update({
-            subscription_tier: 'premium',
-            subscription_limit: 100,
-            subscription_status: 'active'
+            user_tier: 'pro',
+            is_pro: true,
+            subscription_tier: 'pro',
+            subscription_limit: 99999,
+            subscription_status: 'active',
+            email_alerts_limit: 99999,
+            tier_updated_at: new Date().toISOString(),
         })
         .eq('id', userId)
 
@@ -32,10 +36,10 @@ export async function upgradeUserToPro(userId: string) {
             await sendPlanChangeEmail({
                 email: profile.email,
                 userName: profile.full_name?.split(' ')[0] || 'User',
-                planName: 'Pro Plan',
-                price: '$3.99',
-                limit: 100,
-                isUpgrade: true,
+                planName: 'Shield (Pro)',
+                price: '$4.99/mo',
+                limit: 99999,
+                type: 'upgrade',
                 date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
             })
         }
@@ -54,10 +58,15 @@ export async function downgradeUserToFree(userId: string) {
     const { error } = await supabase
         .from('profiles')
         .update({
+            user_tier: 'free',
             is_pro: false,
             subscription_tier: 'free',
-            subscription_limit: 3,
-            subscription_status: 'active'
+            subscription_limit: 7,
+            subscription_status: 'active',
+            subscription_interval: null,
+            sms_addon_enabled: false,
+            email_alerts_limit: 3,
+            tier_updated_at: new Date().toISOString(),
         })
         .eq('id', userId)
 
@@ -88,10 +97,10 @@ export async function downgradeUserToFree(userId: string) {
             await sendPlanChangeEmail({
                 email: profile.email,
                 userName: profile.full_name?.split(' ')[0] || 'User',
-                planName: 'Essential',
+                planName: 'Guardian (Free)',
                 price: '$0.00',
-                limit: 3,
-                isUpgrade: false,
+                limit: 7,
+                type: 'downgrade',
                 date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
             })
         }

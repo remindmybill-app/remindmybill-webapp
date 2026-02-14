@@ -1,48 +1,109 @@
 'use server';
 
 import { stripe } from '@/lib/stripe';
-import { redirect } from 'next/navigation';
+import type { UserTier } from '@/lib/types';
 
-export async function createCheckoutSession(userId: string, email: string, period: 'monthly' | 'yearly') {
-    // Resolve Price ID server-side to ensure access to secret env vars
-    const priceId = period === 'yearly'
-        ? process.env.STRIPE_PRO_PRICE_ID_YEARLY
-        : process.env.STRIPE_PRO_PRICE_ID_MONTHLY;
+interface CheckoutParams {
+    userId: string
+    email: string
+    tier: 'pro' | 'lifetime'
+    interval?: 'monthly' | 'yearly'
+    addSmsAddon?: boolean
+}
 
-    console.log(`[Stripe Action] Creating session for ${period}. ENV PRICE ID:`, priceId);
+/**
+ * Creates a Stripe Checkout session for Pro subscription or Lifetime one-time payment.
+ * Supports optional SMS add-on as a separate line item.
+ */
+export async function createCheckoutSession(params: CheckoutParams) {
+    const { userId, email, tier, interval = 'monthly', addSmsAddon = false } = params
 
-    // Strict validation as requested
-    if (!priceId || priceId.includes('REPLACE_ME')) {
-        const varName = period === 'yearly' ? 'STRIPE_PRO_PRICE_ID_YEARLY' : 'STRIPE_PRO_PRICE_ID_MONTHLY';
-        throw new Error(`Invalid Price ID configuration. Please set ${varName} in your environment variables.`);
+    // Resolve price IDs server-side
+    const priceIdMap: Record<string, string | undefined> = {
+        'pro-monthly': process.env.STRIPE_PRO_PRICE_ID_MONTHLY,
+        'pro-yearly': process.env.STRIPE_PRO_PRICE_ID_YEARLY,
+        'lifetime': process.env.STRIPE_LIFETIME_PRICE_ID,
     }
 
-    // Define origin for redirects
-    const origin = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const priceKey = tier === 'lifetime' ? 'lifetime' : `pro-${interval}`
+    const priceId = priceIdMap[priceKey]
+
+    console.log(`[Stripe Action] Creating ${tier} (${interval}) session. Price ID:`, priceId)
+
+    if (!priceId || priceId.includes('REPLACE_ME')) {
+        throw new Error(
+            `Invalid Price ID for ${priceKey}. Please set the corresponding environment variable.`
+        )
+    }
+
+    const origin = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001'
+
+    // Build line items
+    const lineItems: Array<{ price: string; quantity: number }> = [
+        { price: priceId, quantity: 1 },
+    ]
+
+    // Add SMS addon if selected (only for Pro subscriptions)
+    if (addSmsAddon && tier === 'pro') {
+        const smsPrice = process.env.STRIPE_SMS_ADDON_PRICE_ID
+        if (smsPrice && !smsPrice.includes('REPLACE_ME')) {
+            lineItems.push({ price: smsPrice, quantity: 1 })
+        }
+    }
 
     try {
+        const isLifetime = tier === 'lifetime'
+
         const session = await stripe.checkout.sessions.create({
             customer_email: email,
             client_reference_id: userId,
-            line_items: [
-                {
-                    price: priceId,
-                    quantity: 1,
-                },
-            ],
-            mode: 'subscription',
-            success_url: `${origin}/dashboard?success=true`,
+            line_items: lineItems,
+            mode: isLifetime ? 'payment' : 'subscription',
+            metadata: {
+                userId,
+                tier,
+                interval: isLifetime ? 'one-time' : interval,
+                addSmsAddon: addSmsAddon ? 'true' : 'false',
+            },
+            success_url: `${origin}/dashboard?checkout=success&tier=${tier}`,
             cancel_url: `${origin}/pricing`,
-        });
+            ...(isLifetime ? {} : {
+                subscription_data: {
+                    metadata: { userId, tier },
+                },
+            }),
+        })
 
         if (session.url) {
-            return { url: session.url };
+            return { url: session.url }
         } else {
-            throw new Error('No session URL returned');
+            throw new Error('No session URL returned from Stripe')
         }
+    } catch (error: any) {
+        console.error('[Stripe Action] Error creating checkout session:', error)
+        throw new Error('Failed to create checkout session: ' + error.message)
+    }
+}
 
-    } catch (error) {
-        console.error('Error creating checkout session:', error);
-        throw new Error('Failed to create checkout session');
+/**
+ * Creates a Stripe Customer Portal session for managing subscriptions.
+ */
+export async function createPortalSession(stripeCustomerId: string) {
+    if (!stripeCustomerId) {
+        throw new Error('No Stripe customer ID provided')
+    }
+
+    const origin = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001'
+
+    try {
+        const session = await stripe.billingPortal.sessions.create({
+            customer: stripeCustomerId,
+            return_url: `${origin}/settings?tab=billing`,
+        })
+
+        return { url: session.url }
+    } catch (error: any) {
+        console.error('[Stripe Action] Error creating portal session:', error)
+        throw new Error('Failed to create portal session: ' + error.message)
     }
 }

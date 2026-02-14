@@ -1,3 +1,6 @@
+// ─── Core Tier Type ─────────────────────────────────────────────────────────
+export type UserTier = 'free' | 'pro' | 'lifetime'
+
 export interface Database {
   public: {
     Tables: {
@@ -21,6 +24,11 @@ export interface Database {
         Insert: Omit<Notification, "id" | "created_at">
         Update: Partial<Omit<Notification, "id" | "created_at">>
       }
+      subscription_events: {
+        Row: SubscriptionEvent
+        Insert: Omit<SubscriptionEvent, "id" | "created_at">
+        Update: Partial<Omit<SubscriptionEvent, "id" | "created_at">>
+      }
     }
   }
 }
@@ -31,13 +39,47 @@ export interface Profile {
   full_name: string | null
   avatar_url: string | null
   default_currency?: string
+  // Legacy fields (kept for backward compat)
   subscription_tier?: 'free' | 'pro' | 'premium'
   subscription_status?: string
   subscription_limit: number
   current_usage: number
   is_pro: boolean
+  // New tier fields
+  user_tier: UserTier
+  subscription_interval?: 'monthly' | 'annual' | null
+  sms_addon_enabled: boolean
+  email_alerts_used: number
+  email_alerts_limit: number
+  subscriptions_tracked: number
+  stripe_subscription_id?: string | null
+  stripe_customer_id?: string | null
+  lifetime_purchase_date?: string | null
+  sms_subscription_expires?: string | null
+  tier_updated_at?: string
   created_at: string
   updated_at: string
+}
+
+// ─── Subscription Events (Audit Trail) ──────────────────────────────────────
+export type SubscriptionEventType =
+  | 'upgrade'
+  | 'downgrade'
+  | 'sms_added'
+  | 'sms_removed'
+  | 'renewal'
+  | 'cancellation'
+  | 'payment_failed'
+
+export interface SubscriptionEvent {
+  id: string
+  user_id: string
+  event_type: SubscriptionEventType
+  from_tier?: UserTier | null
+  to_tier?: UserTier | null
+  stripe_event_id?: string | null
+  metadata?: Record<string, unknown> | null
+  created_at: string
 }
 
 export interface Subscription {

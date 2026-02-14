@@ -13,7 +13,7 @@ import { Mail, Lock, Bell, CreditCard, Smartphone, DollarSign, AlertTriangle } f
 import { useProfile } from "@/lib/hooks/use-profile"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { DowngradeConfirmationDialog } from "@/components/downgrade-confirmation-dialog"
-import { isPro, getTierDisplayName, getTierLimit } from "@/lib/subscription-utils"
+import { isPro, isFree, getTierDisplayName, getTierLimit } from "@/lib/subscription-utils"
 import { downgradeUserToFree } from "@/app/actions/mock-upgrade"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase"
@@ -230,41 +230,92 @@ function SettingsContent() {
                 <div className="flex items-center justify-between rounded-lg border bg-card/50 p-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-lg font-semibold">{getTierDisplayName(profile?.subscription_tier)} Plan</p>
-                      <Badge className={isPro(profile?.subscription_tier)
+                      <p className="text-lg font-semibold">{getTierDisplayName(profile?.user_tier || profile?.subscription_tier)} Plan</p>
+                      <Badge className={isPro(profile?.user_tier || profile?.subscription_tier)
                         ? "bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0"
                         : "bg-primary/20 text-primary"}>
                         Active
                       </Badge>
+                      {profile?.sms_addon_enabled && (
+                        <Badge className="bg-emerald-500/20 text-emerald-400 border-0 text-xs">
+                          <Smartphone className="h-3 w-3 mr-1" />SMS
+                        </Badge>
+                      )}
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {isPro(profile?.subscription_tier)
-                        ? `${currency} 3.99/month, billed monthly`
-                        : "Free forever"}
+                      {profile?.user_tier === 'lifetime'
+                        ? "$99 one-time · Lifetime access"
+                        : isPro(profile?.user_tier || profile?.subscription_tier)
+                          ? profile?.subscription_interval === 'annual'
+                            ? `${currency} 39.00/year (${currency} 3.25/mo)`
+                            : `${currency} 4.99/month`
+                          : "Free forever"}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {profile?.current_usage || 0} / {isPro(profile?.subscription_tier) ? 'Unlimited' : '3'} active subscriptions
+                      {profile?.current_usage || 0} / {isPro(profile?.user_tier || profile?.subscription_tier) ? 'Unlimited' : getTierLimit(profile?.user_tier || profile?.subscription_tier)} active subscriptions
                     </p>
+                    {isFree(profile?.user_tier || profile?.subscription_tier) && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Email alerts: {profile?.email_alerts_used ?? 0}/{profile?.email_alerts_limit ?? 3} used this month
+                      </p>
+                    )}
                   </div>
-                  {isPro(profile?.subscription_tier) && (
+                  {isPro(profile?.user_tier || profile?.subscription_tier) && profile?.user_tier !== 'lifetime' && (
                     <div className="text-right">
-                      <p className="text-2xl font-bold text-primary">{currency} 3.99</p>
-                      <p className="text-xs text-muted-foreground">per month</p>
+                      <p className="text-2xl font-bold text-primary">
+                        {currency} {profile?.subscription_interval === 'annual' ? '39' : '4.99'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        per {profile?.subscription_interval === 'annual' ? 'year' : 'month'}
+                      </p>
+                    </div>
+                  )}
+                  {profile?.user_tier === 'lifetime' && (
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-amber-500">👑</p>
+                      <p className="text-xs text-muted-foreground">Lifetime</p>
                     </div>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Button variant="outline" className="w-full bg-transparent">
-                    Manage Subscription
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => setShowDowngradeDialog(true)}
-                    disabled={!isPro(profile?.subscription_tier) || isProcessing}
-                  >
-                    {isPro(profile?.subscription_tier) ? "Cancel Subscription" : "Already on Free Plan"}
-                  </Button>
+                  {isPro(profile?.user_tier || profile?.subscription_tier) && profile?.stripe_customer_id ? (
+                    <Button
+                      variant="outline"
+                      className="w-full bg-transparent"
+                      onClick={async () => {
+                        try {
+                          const res = await fetch('/api/stripe/portal', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ customerId: profile.stripe_customer_id }),
+                          })
+                          const data = await res.json()
+                          if (data.url) window.location.href = data.url
+                          else toast.error('Could not open billing portal')
+                        } catch (e) {
+                          toast.error('Failed to open billing portal')
+                        }
+                      }}
+                    >
+                      Manage Subscription
+                    </Button>
+                  ) : (
+                    <Button variant="outline" className="w-full bg-transparent" asChild>
+                      <a href="/pricing">
+                        {isFree(profile?.user_tier || profile?.subscription_tier) ? 'Upgrade Plan' : 'Change Plan'}
+                      </a>
+                    </Button>
+                  )}
+                  {isPro(profile?.user_tier || profile?.subscription_tier) && profile?.user_tier !== 'lifetime' && (
+                    <Button
+                      variant="ghost"
+                      className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => setShowDowngradeDialog(true)}
+                      disabled={isProcessing}
+                    >
+                      Cancel Subscription
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

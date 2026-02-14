@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart3, ArrowRight, Info, AlertTriangle, AlertCircle } from "lucide-react"
+import { BarChart3, ArrowRight, Info, AlertTriangle, AlertCircle, Lock } from "lucide-react"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useProfile } from "@/lib/hooks/use-profile"
@@ -14,6 +14,9 @@ import { SpendingVelocityWidget } from "@/components/analytics/SpendingVelocityW
 import { ForecastArcWidget } from "@/components/analytics/ForecastArcWidget"
 import { InflationWatchWidget } from "@/components/analytics/InflationWatchWidget"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { isPro } from "@/lib/subscription-utils"
+import Link from "next/link"
 
 // Helper to get last 6 months
 const getLast6Months = () => {
@@ -215,8 +218,27 @@ export default function AnalyticsPage() {
     )
   }
 
+  const isFreeUser = !isPro(profile?.user_tier || profile?.subscription_tier, profile?.is_pro)
+
   return (
-    <div className="min-h-screen bg-zinc-50/50 dark:bg-black py-6 sm:py-10">
+    <div className="min-h-screen bg-zinc-50/50 dark:bg-black py-6 sm:py-10 relative">
+      {/* Feature Lock Overlay for Free Tier */}
+      {isFreeUser && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="text-center p-8 max-w-md">
+            <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/20">
+              <Lock className="h-8 w-8 text-blue-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Advanced Analytics</h2>
+            <p className="text-zinc-400 mb-6">
+              Unlock spending velocity, forecasts, inflation alerts, and category breakdowns with Shield or Fortress.
+            </p>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white" size="lg" asChild>
+              <Link href="/pricing">Upgrade to Unlock — $4.99/mo</Link>
+            </Button>
+          </div>
+        </div>
+      )}
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 space-y-8">
         {/* Header Widgets */}
         <div className="grid gap-6 md:grid-cols-2">
