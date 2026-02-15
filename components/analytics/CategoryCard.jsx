@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { ArrowUp, ArrowDown, Minus } from "lucide-react"
 import { formatCurrency } from "@/lib/utils/currency"
 
-export function CategoryCard({ name, value, previousValue, color, currency }) {
+export function CategoryCard({ name, value, previousValue, color, currency, onClick }) {
     // Enforce 2 decimal places for math precision
     const currentVal = Number(value.toFixed(2))
     const prevVal = Number((previousValue || 0).toFixed(2))
@@ -26,9 +26,12 @@ export function CategoryCard({ name, value, previousValue, color, currency }) {
     }
 
     return (
-        <div className="flex items-center justify-between p-4 rounded-2xl bg-white border border-zinc-100 dark:bg-zinc-900/40 dark:border-zinc-800 hover:shadow-md transition-all">
+        <div
+            onClick={onClick}
+            className="flex items-center justify-between p-4 rounded-2xl bg-white border border-zinc-100 dark:bg-zinc-900/40 dark:border-zinc-800 hover:shadow-lg hover:border-indigo-100 dark:hover:border-indigo-900/30 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer group"
+        >
             <div className="flex items-center gap-3">
-                <div className="h-3 w-3 rounded-full" style={{ backgroundColor: color }} />
+                <div className="h-3 w-3 rounded-full group-hover:ring-4 ring-indigo-50 dark:ring-indigo-500/10 transition-all" style={{ backgroundColor: color }} />
                 <div>
                     <p className="font-bold text-sm tracking-tight">{name}</p>
                     <div className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider ${getDeltaColor()}`}>

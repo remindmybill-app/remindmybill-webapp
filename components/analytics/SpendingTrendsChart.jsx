@@ -11,7 +11,7 @@ const formatCurrency = (amount) => {
     }).format(amount);
 };
 
-export function SpendingTrendsChart({ data, onBarClick }) {
+export function SpendingTrendsChart({ data, selectedMonth, onBarClick }) {
     if (!data || data.length === 0) {
         return (
             <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 overflow-hidden h-[400px] flex items-center justify-center">
@@ -39,9 +39,16 @@ export function SpendingTrendsChart({ data, onBarClick }) {
     return (
         <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 overflow-hidden">
             <CardHeader className="p-8 pb-0">
-                <div className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-indigo-500" />
-                    <CardTitle className="text-xl font-bold">Spending Trends</CardTitle>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5 text-indigo-500" />
+                        <CardTitle className="text-xl font-bold">Spending Trends</CardTitle>
+                    </div>
+                    {selectedMonth && (
+                        <div className="bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider animate-in fade-in zoom-in duration-300">
+                            Viewing: {selectedMonth}
+                        </div>
+                    )}
                 </div>
                 <CardDescription>6-month spending history and monthly deltas</CardDescription>
             </CardHeader>
@@ -58,7 +65,21 @@ export function SpendingTrendsChart({ data, onBarClick }) {
                                 dataKey="month"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }}
+                                tick={({ x, y, payload }) => (
+                                    <g transform={`translate(${x},${y})`}>
+                                        <text
+                                            x={0}
+                                            y={0}
+                                            dy={16}
+                                            textAnchor="middle"
+                                            fill={payload.value === selectedMonth ? '#6366f1' : 'var(--muted-foreground)'}
+                                            fontWeight={payload.value === selectedMonth ? 'bold' : 'normal'}
+                                            fontSize={10}
+                                        >
+                                            {payload.value}
+                                        </text>
+                                    </g>
+                                )}
                                 dy={10}
                             />
                             <YAxis hide={true} />
@@ -77,11 +98,26 @@ export function SpendingTrendsChart({ data, onBarClick }) {
                                 dataKey="spending"
                                 radius={[4, 4, 0, 0]}
                                 barSize={40}
-                                className="cursor-pointer"
+                                className="cursor-pointer transition-all duration-300"
                             >
-                                {chartData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
+                                {chartData.map((entry, index) => {
+                                    const isSelected = selectedMonth === entry.month;
+                                    const isDimmed = selectedMonth && !isSelected;
+
+                                    return (
+                                        <Cell
+                                            key={`cell-${index}`}
+                                            fill={entry.color}
+                                            opacity={isDimmed ? 0.3 : 1}
+                                            stroke={isSelected ? "var(--background)" : "none"}
+                                            strokeWidth={isSelected ? 2 : 0}
+                                            style={{
+                                                filter: isSelected ? 'drop-shadow(0 0 8px rgba(99, 102, 241, 0.5))' : 'none',
+                                                transition: 'all 0.3s ease'
+                                            }}
+                                        />
+                                    )
+                                })}
                             </Bar>
                         </BarChart>
                     </ResponsiveContainer>

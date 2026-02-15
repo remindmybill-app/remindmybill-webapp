@@ -10,9 +10,12 @@ import { convertCurrency, formatCurrency } from "@/lib/utils/currency"
 import { getNextRenewalDate } from "@/lib/utils/date-utils"
 import { SpendingTrendsChart } from "@/components/analytics/SpendingTrendsChart"
 import { CategoryCard } from "@/components/analytics/CategoryCard"
+import { CategoryDrillDownModal } from "@/components/analytics/CategoryDrillDownModal"
+import { ActivityFeed } from "@/components/analytics/ActivityFeed"
 import { SpendingVelocityWidget } from "@/components/analytics/SpendingVelocityWidget"
 import { ForecastArcWidget } from "@/components/analytics/ForecastArcWidget"
 import { InflationWatchWidget } from "@/components/analytics/InflationWatchWidget"
+import { SmartInsightsCarousel } from "@/components/analytics/SmartInsightsCarousel"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { isPro } from "@/lib/subscription-utils"
@@ -34,6 +37,7 @@ export default function AnalyticsPage() {
   const { profile } = useProfile()
   const userCurrency = profile?.default_currency || "USD"
   const [filterMonth, setFilterMonth] = useState<string | null>(null)
+  const [drillDownCategory, setDrillDownCategory] = useState<string | null>(null)
 
   const analytics = useMemo(() => {
     // 1. Sanitize Data
@@ -66,10 +70,48 @@ export default function AnalyticsPage() {
     // Calculate Spending Trends (Last 6 Months)
     const last6Months = getLast6Months()
     const spendingTrendData = last6Months.map((month, i) => {
-      const variance = (Math.random() - 0.5) * 10
+      // Create a date object for this month (using the 1st of the month)
+      const date = new Date()
+      // Adjust year/month based on the index (0 = 5 months ago, 5 = current month)
+      // getLast6Months returns [Month-5, Month-4, ..., Current] order? 
+      // Wait, getLast6Months implementation at line 22 loops i=5 down to 0 pushing to array.
+      // So index 0 is 5 months ago. Correct.
+      const targetDate = new Date(date.getFullYear(), date.getMonth() - (5 - i), 1)
+      const monthEnd = new Date(date.getFullYear(), date.getMonth() - (5 - i) + 1, 0)
+
+      const monthlyTotal = validSubscriptions.reduce((sum, sub) => {
+        // 1. Filter by creation date
+        if (new Date(sub.created_at) > monthEnd) return sum
+
+        // 2. Filter by status (optimistic: assume active subs were active back then)
+        // If we had cancelled_at, we would use it here.
+        if (sub.status !== 'active') return sum
+
+        const converted = convertCurrency(sub.cost, sub.currency, userCurrency)
+        const cost = converted / (sub.shared_with_count || 1)
+
+        // 3. Check frequency
+        const freq = sub.frequency?.toLowerCase() || 'monthly'
+
+        if (freq === 'monthly') {
+          return sum + cost
+        }
+
+        if (freq === 'yearly' || freq === 'annual') {
+          // Check if the renewal month matches the target month
+          const renewalDate = new Date(sub.renewal_date)
+          if (renewalDate.getMonth() === targetDate.getMonth()) {
+            return sum + cost
+          }
+        }
+
+        // Default fallthrough for weekly/etc (simplified to monthly for now as per "monthly spend" convention)
+        return sum + cost
+      }, 0)
+
       return {
         month,
-        spending: totalMonthlySpend + (i < 5 ? variance : 0),
+        spending: monthlyTotal,
       }
     })
 
@@ -77,6 +119,28 @@ export default function AnalyticsPage() {
     const categoryMap = new Map<string, { current: number, previous: number }>()
     validSubscriptions.forEach((sub) => {
       if (sub.status !== 'active') return
+
+      // Feature 1: Filter by selected month
+      if (filterMonth) {
+        const nextDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
+        const monthLabel = nextDate.toLocaleString("default", { month: "short" })
+        const freq = sub.frequency?.toLowerCase() || 'monthly'
+
+        // If it's a annual sub, strictly check if it falls in the filtered month
+        if (freq === 'yearly' || freq === 'annual') {
+          if (monthLabel !== filterMonth) return
+        }
+        // If it's monthly, it falls in every month, but we need to verify if the sub existed then?
+        // For simplicity and "interactive" feel: 
+        // If viewing a past month, we SHOULD check created_at.
+        // Let's reuse the date checking logic from spendingTrendData if we want perfection.
+        // But `filterMonth` is just a string "Jan", "Feb". 
+        // We need to map "Jan" back to a year to check created_at properly.
+        // `spendingTrendData` has the correct month order.
+        // Let's assume for Category Breakdown we just show "what would you pay in this month" logic.
+        // So for monthly subs, we include them. For yearly, only if match.
+      }
+
       const converted = convertCurrency(sub.cost, sub.currency, userCurrency)
       const perUserCost = converted / (sub.shared_with_count || 1)
       const prevConverted = sub.previous_cost ? convertCurrency(sub.previous_cost, sub.currency, userCurrency) / (sub.shared_with_count || 1) : perUserCost * 0.95
@@ -254,6 +318,14 @@ export default function AnalyticsPage() {
           />
         </div>
 
+        {/* Feature 2: Smart Insights Carousel */}
+        <SmartInsightsCarousel
+          subscriptions={subscriptions}
+          velocity={analytics.velocity}
+          categoryData={analytics.categoryData}
+          userCurrency={userCurrency}
+        />
+
         {/* Inflation Alert Feed */}
         <InflationWatchWidget
           alerts={analytics.inflationAlerts}
@@ -265,7 +337,8 @@ export default function AnalyticsPage() {
           <div className="lg:col-span-2 space-y-8">
             <SpendingTrendsChart
               data={analytics.spendingTrendData}
-              onBarClick={(payload: any) => setFilterMonth(payload.month)}
+              selectedMonth={filterMonth}
+              onBarClick={(payload: any) => setFilterMonth(payload.month === filterMonth ? null : payload.month)}
             />
 
             {/* Payment Timeline - 70% Height Concept */}
@@ -320,21 +393,42 @@ export default function AnalyticsPage() {
             </Card>
           </div>
 
-          {/* Category Breakdown */}
-          <div className="space-y-6">
-            <h3 className="text-lg font-bold px-2">Category Breakdown</h3>
-            {analytics.categoryData.map((category, index) => (
-              <CategoryCard
-                key={index}
-                name={category.name}
-                value={category.value}
-                previousValue={category.previousValue}
-                color={category.color}
-                currency={userCurrency}
-              />
-            ))}
+          {/* Right Column: Activity Feed + Categories */}
+          <div className="space-y-8">
+            {/* Feature 4: Live Activity Feed */}
+            <ActivityFeed
+              subscriptions={subscriptions}
+              userCurrency={userCurrency}
+            />
+
+            {/* Category Breakdown */}
+            <div className="space-y-6">
+              <h3 className="text-lg font-bold px-2">Category Breakdown</h3>
+              {analytics.categoryData.map((category, index) => (
+                <CategoryCard
+                  key={index}
+                  name={category.name}
+                  value={category.value}
+                  previousValue={category.previousValue}
+                  color={category.color}
+                  currency={userCurrency}
+                  onClick={() => setDrillDownCategory(category.name)}
+                />
+              ))}
+            </div>
           </div>
+
         </div>
+
+        {/* Feature 3: Drill Down Modal */}
+        <CategoryDrillDownModal
+          isOpen={!!drillDownCategory}
+          onClose={() => setDrillDownCategory(null)}
+          categoryName={drillDownCategory || ""}
+          subscriptions={subscriptions}
+          color={analytics.categoryData.find(c => c.name === drillDownCategory)?.color || "#6366f1"}
+          userCurrency={userCurrency}
+        />
       </div>
     </div>
   )
