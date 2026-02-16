@@ -28,7 +28,7 @@ const nextConfig = {
   turbopack: undefined, // Disable Turbopack
   outputFileTracingRoot: process.cwd(),
 
-  // Your existing config
+  // Your existing config //
   images: {
     remotePatterns: [
       {
