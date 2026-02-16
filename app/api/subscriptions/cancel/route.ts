@@ -3,15 +3,17 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { Resend } from "resend";
 import crypto from "crypto";
+
+export const dynamic = "force-dynamic";
 // import CancellationWarning from "@/lib/emails/CancellationWarning"; // Will be implemented in Phase 5
 // import { render } from "@react-email/render";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: "2025-01-27.acacia" as any, // Using latest or casting to avoid mismatch
-});
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 export async function POST(req: Request) {
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+        apiVersion: "2025-01-27.acacia" as any,
+    });
+    const resend = new Resend(process.env.RESEND_API_KEY);
+
     try {
         const { survey, tier, email } = await req.json();
         const supabase = await getSupabaseServerClient();

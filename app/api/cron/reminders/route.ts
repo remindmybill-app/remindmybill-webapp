@@ -1,7 +1,8 @@
+import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendBillReminderEmail } from '@/lib/email';
-import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 // This route should be called by Vercel Cron

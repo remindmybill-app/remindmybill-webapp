@@ -23,7 +23,7 @@ const serviceAnalysis = {
   name: "Netflix",
   category: "Streaming",
   trust_score: 92,
-  cancellation_difficulty: "medium" as const,
+  cancellation_difficulty: "medium" as "easy" | "medium" | "hard",
   current_price: 15.99,
   price_increases: 3,
   dark_patterns: [
@@ -173,13 +173,12 @@ export default function ServiceDetailPage({ params }: { params: Promise<{ servic
           <Card className="border-2">
             <CardContent className="flex flex-col items-center justify-center p-6">
               <Badge
-                className={`mb-3 text-base ${
-                  serviceAnalysis.cancellation_difficulty === "easy"
+                className={`mb-3 text-base ${serviceAnalysis.cancellation_difficulty === "easy"
                     ? "bg-primary/20 text-primary"
                     : serviceAnalysis.cancellation_difficulty === "medium"
                       ? "bg-yellow-500/20 text-yellow-500"
                       : "bg-destructive/20 text-destructive"
-                }`}
+                  }`}
               >
                 {serviceAnalysis.cancellation_difficulty.toUpperCase()}
               </Badge>

@@ -1,4 +1,5 @@
 {
+    "buildCommand": "pnpm run build",
     "crons": [
         {
             "path": "/api/cron/reminders",
@@ -10,7 +11,7 @@
         },
         {
             "path": "/api/cron/process-cancellations",
-            "schedule": "0 1 * * *"
+            "schedule": "*/30 * * * *"
         }
     ]
 }

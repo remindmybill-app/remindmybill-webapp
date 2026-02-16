@@ -2,12 +2,12 @@
 
 import { sendEmail } from '@/lib/email';
 import { RenewalReminderEmail } from '@/emails/RenewalReminderEmail';
-import { getSupabaseServerClient } from '@/lib/supabase-server';
+import { createClient } from '@/lib/supabase-server';
 import React from 'react';
 
 export async function sendReminderEmail(subscriptionId: string) {
     try {
-        const supabase = await getSupabaseServerClient();
+        const supabase = await createClient();
 
         // 1. Fetch Subscription Data
         const { data: sub, error: subError } = await supabase

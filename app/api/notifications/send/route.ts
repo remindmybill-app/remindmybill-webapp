@@ -2,13 +2,15 @@ import webpush from "web-push";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
-webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT!,
-    process.env.VAPID_PUBLIC_KEY!,
-    process.env.VAPID_PRIVATE_KEY!
-);
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
+    webpush.setVapidDetails(
+        process.env.VAPID_SUBJECT!,
+        process.env.VAPID_PUBLIC_KEY!,
+        process.env.VAPID_PRIVATE_KEY!
+    );
+
     try {
         const { userId, title, body, icon, data } = await req.json();
 

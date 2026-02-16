@@ -26,6 +26,7 @@ const pwaConfig = withPWA({
 const nextConfig = {
   // Explicitly force webpack (required for next-pwa)
   turbopack: undefined, // Disable Turbopack
+  outputFileTracingRoot: process.cwd(),
 
   // Your existing config
   images: {
