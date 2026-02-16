@@ -16,6 +16,7 @@ import { SpendingVelocityWidget } from "@/components/analytics/SpendingVelocityW
 import { ForecastArcWidget } from "@/components/analytics/ForecastArcWidget"
 import { InflationWatchWidget } from "@/components/analytics/InflationWatchWidget"
 import { SmartInsightsCarousel } from "@/components/analytics/SmartInsightsCarousel"
+import { PaymentTimeline } from "@/components/analytics/PaymentTimeline"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { isPro } from "@/lib/subscription-utils"
@@ -54,7 +55,6 @@ export default function AnalyticsPage() {
         activeCount: 0,
         categoryData: [],
         spendingTrendData: [],
-        timelineGroups: [],
         velocity: { current: 0, last: 0 },
         forecast: { paid: 0, total: 0 },
         inflationAlerts: []
@@ -214,46 +214,16 @@ export default function AnalyticsPage() {
         increase: `${Math.round(((sub.cost - sub.previous_cost!) / sub.previous_cost!) * 100)}%`
       }))
 
-    // Calculate Timeline Data
-    const timelineMap = new Map<string, { date: Date, subs: any[] }>()
-    validSubscriptions.forEach(sub => {
-      if (sub.status === 'cancelled') return
-      const nextDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
-      const dateKey = nextDate.toISOString().split('T')[0]
-      const convertedCost = convertCurrency(sub.cost, sub.currency, userCurrency) / (sub.shared_with_count || 1)
-
-      const monthLabel = nextDate.toLocaleString("default", { month: "short" })
-      if (filterMonth && monthLabel !== filterMonth) return
-
-      const existing = timelineMap.get(dateKey) || { date: nextDate, subs: [] }
-      existing.subs.push({
-        ...sub,
-        costInUserCurrency: convertedCost
-      })
-      timelineMap.set(dateKey, existing)
-    })
-
-    const timelineGroups = Array.from(timelineMap.entries())
-      .map(([key, value]) => ({
-        dateKey: key,
-        date: value.date,
-        subs: value.subs,
-        totalDayCost: value.subs.reduce((s, sub) => s + sub.costInUserCurrency, 0)
-      }))
-      .sort((a, b) => a.date.getTime() - b.date.getTime())
-      .slice(0, 30)
-
     return {
       totalMonthlySpend,
       activeCount: subscriptions.length,
       categoryData,
       spendingTrendData,
-      timelineGroups,
       velocity,
       forecast,
       inflationAlerts
     }
-  }, [subscriptions, userCurrency])
+  }, [subscriptions, userCurrency, filterMonth])
 
   if (isLoading) {
     return (
@@ -341,56 +311,13 @@ export default function AnalyticsPage() {
               onBarClick={(payload: any) => setFilterMonth(payload.month === filterMonth ? null : payload.month)}
             />
 
-            {/* Payment Timeline - 70% Height Concept */}
-            <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 overflow-hidden">
-              <CardHeader className="p-8 pb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Info className="h-5 w-5 text-indigo-500" />
-                    <CardTitle className="text-xl font-bold">Payment Timeline</CardTitle>
-                  </div>
-                  {filterMonth && (
-                    <div className="flex items-center gap-3">
-                      <Badge variant="secondary" className="px-3 py-1">
-                        Showing: {filterMonth}
-                      </Badge>
-                      <button
-                        onClick={() => setFilterMonth(null)}
-                        className="text-xs text-indigo-600 hover:text-indigo-800 font-bold uppercase tracking-wider underline underline-offset-4"
-                      >
-                        Reset View
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="p-8 pt-0 max-h-[600px] overflow-y-auto">
-                <div className="space-y-6">
-                  {analytics.timelineGroups.map((group) => {
-                    const isHighSpend = group.totalDayCost > 50;
-                    return (
-                      <div key={group.dateKey} className="relative pl-6 border-l-2 border-zinc-100 dark:border-zinc-800">
-                        <div className={`absolute left-[-5px] top-2 h-2 w-2 rounded-full ${isHighSpend ? 'bg-orange-500' : 'bg-indigo-500'}`} />
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="text-sm font-bold text-zinc-500">
-                            {group.date.toLocaleDateString("en-US", { weekday: 'short', month: 'short', day: 'numeric' })}
-                          </h4>
-                          <span className="text-xs font-bold text-muted-foreground">{formatCurrency(Number(group.totalDayCost.toFixed(2)), userCurrency)}</span>
-                        </div>
-                        <div className="grid gap-3">
-                          {group.subs.map((sub: any) => (
-                            <div key={sub.id} className="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 border border-zinc-100 dark:bg-zinc-900/20 dark:border-zinc-800">
-                              <span className="text-sm font-medium">{sub.name}</span>
-                              <span className="text-sm font-bold">{formatCurrency(Number(sub.costInUserCurrency.toFixed(2)), userCurrency)}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+            {/* Payment Timeline */}
+            <PaymentTimeline
+              subscriptions={subscriptions}
+              selectedMonth={filterMonth}
+              userCurrency={userCurrency}
+              onReset={() => setFilterMonth(null)}
+            />
           </div>
 
           {/* Right Column: Activity Feed + Categories */}
