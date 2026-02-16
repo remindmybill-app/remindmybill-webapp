@@ -52,7 +52,7 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                <a href="/contact" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                   Contact
                 </a>
               </li>

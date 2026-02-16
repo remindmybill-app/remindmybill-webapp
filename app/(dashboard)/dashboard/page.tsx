@@ -22,6 +22,7 @@ import { scanGmailReceipts } from "@/app/actions/gmail"
 import { debugFetchLast5Emails } from "@/app/actions/debug-gmail"
 import { GmailImportModal } from "@/components/GmailImportModal"
 import { ManualSubscriptionModal } from "@/components/manual-subscription-modal"
+import InstallPWAPrompt from "@/components/InstallPWAPrompt"
 import { isPro, isFree, isLifetime, getTierDisplayName, getTierLimit } from "@/lib/subscription-utils"
 import { TIER_BADGES, TIER_LIMITS } from "@/lib/tier-config"
 import { DashboardAIWidget } from "@/components/DashboardAIWidget"
@@ -302,6 +303,7 @@ function DashboardContent() {
     return (
         <div className="overflow-x-hidden bg-zinc-50/50 dark:bg-black min-h-screen">
             <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
+                {profile?.id && <InstallPWAPrompt userId={profile.id} />}
 
                 {/* ─── Tier Status Widget ──────────────────────────── */}
                 <TierStatusWidget

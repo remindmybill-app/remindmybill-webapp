@@ -13,6 +13,7 @@ import { Mail, Lock, Bell, CreditCard, Smartphone, DollarSign, AlertTriangle } f
 import { useProfile } from "@/lib/hooks/use-profile"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { DowngradeConfirmationDialog } from "@/components/downgrade-confirmation-dialog"
+import CancellationSurveyModal from "@/components/CancellationSurveyModal"
 import { isPro, isFree, getTierDisplayName, getTierLimit } from "@/lib/subscription-utils"
 import { downgradeUserToFree } from "@/app/actions/mock-upgrade"
 import { toast } from "sonner"
@@ -29,6 +30,7 @@ function SettingsContent() {
 
   // Downgrade State
   const [showDowngradeDialog, setShowDowngradeDialog] = useState(false)
+  const [showCancelModal, setShowCancelModal] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -310,7 +312,7 @@ function SettingsContent() {
                     <Button
                       variant="ghost"
                       className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => setShowDowngradeDialog(true)}
+                      onClick={() => setShowCancelModal(true)}
                       disabled={isProcessing}
                     >
                       Cancel Subscription
@@ -400,6 +402,13 @@ function SettingsContent() {
         onCancel={() => setShowDowngradeDialog(false)}
         subscriptionCount={subscriptions.filter(s => s.status === 'active').length}
         isProcessing={isProcessing}
+      />
+
+      <CancellationSurveyModal
+        isOpen={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        userTier={profile?.user_tier || 'free'}
+        userEmail={profile?.email || ''}
       />
     </div>
 
