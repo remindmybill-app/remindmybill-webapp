@@ -23,7 +23,8 @@ export default function CancellationWarning({
         (cancellationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
     ));
 
-    const reactivationUrl = `${process.env.NEXT_PUBLIC_URL}/reactivate?token=${reactivationToken}`;
+    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://remindmybill-webapp.vercel.app';
+    const reactivationUrl = `${baseUrl}/reactivate?token=${reactivationToken}`;
 
     return (
         <Html>
@@ -33,7 +34,7 @@ export default function CancellationWarning({
                     {/* Logo Header */}
                     <Section style={styles.header}>
                         <Img
-                            src={`${process.env.NEXT_PUBLIC_URL}/rmmb-logo.png`}
+                            src={`${baseUrl}/rmmb-logo.png`}
                             alt="RemindMyBill"
                             width="150"
                             height="40"
@@ -99,15 +100,15 @@ export default function CancellationWarning({
                         </Text>
 
                         <Text style={styles.footerLinks}>
-                            <Link href={`${process.env.NEXT_PUBLIC_URL}/privacy`} style={styles.footerLink}>
+                            <Link href={`${baseUrl}/privacy`} style={styles.footerLink}>
                                 Privacy Policy
                             </Link>
                             {' -  '}
-                            <Link href={`${process.env.NEXT_PUBLIC_URL}/terms`} style={styles.footerLink}>
+                            <Link href={`${baseUrl}/terms`} style={styles.footerLink}>
                                 Terms & Conditions
                             </Link>
                             {' -  '}
-                            <Link href={`${process.env.NEXT_PUBLIC_URL}/contact`} style={styles.footerLink}>
+                            <Link href={`${baseUrl}/contact`} style={styles.footerLink}>
                                 Contact Us
                             </Link>
                         </Text>
