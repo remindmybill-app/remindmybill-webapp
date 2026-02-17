@@ -57,6 +57,13 @@ export interface Profile {
   lifetime_purchase_date?: string | null
   sms_subscription_expires?: string | null
   tier_updated_at?: string
+  // Cancellation fields
+  cancellation_scheduled: boolean
+  cancellation_date: string | null
+  cancellation_reason: string | null
+  cancellation_feedback: any | null
+  cancel_reactivation_token: string | null
+  previous_tier?: UserTier | null
   created_at: string
   updated_at: string
 }

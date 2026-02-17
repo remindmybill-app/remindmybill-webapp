@@ -140,30 +140,49 @@ export async function POST(req: Request) {
             // Proceed anyway, not blocking
         }
 
-        const { error: updateError } = await supabase
-            .from("profiles")
-            .update({
-                cancellation_scheduled: true,
-                cancellation_date: cancellationDate.toISOString(),
-                cancellation_reason: survey.reason,
-                cancellation_feedback: survey,
-                previous_tier: tier,
-                cancel_reactivation_token: reactivationToken,
-            })
-            .eq("id", user.id);
+        console.log('About to update database:', {
+            userId: user.id,
+            cancellationDate: cancellationDate.toISOString(),
+            tier
+        });
 
-        if (updateError) {
-            console.error('[Cancellation] Profile update error:', updateError);
-            throw new Error("Failed to update profile cancellation status");
+        // Wrap database update in try-catch
+        try {
+            const { error: updateError } = await supabase
+                .from("profiles")
+                .update({
+                    cancellation_scheduled: true,
+                    cancellation_date: cancellationDate.toISOString(),
+                    cancellation_reason: survey.reason,
+                    cancellation_feedback: survey,
+                    previous_tier: tier,
+                    cancel_reactivation_token: reactivationToken,
+                })
+                .eq("id", user.id);
+
+            if (updateError) {
+                console.error('Database update error:', updateError);
+                throw updateError;
+            }
+
+            console.log('Database updated successfully');
+        } catch (dbError: any) {
+            console.error('Failed to update cancellation in database:', dbError);
+            return NextResponse.json(
+                {
+                    error: 'Failed to save cancellation',
+                    details: dbError.message
+                },
+                { status: 500 }
+            );
         }
 
         // 7. Send Email (Non-blocking)
-        const hoursUntilCancellation =
-            (cancellationDate.getTime() - Date.now()) / (1000 * 60 * 60);
-        let sendWarningEmail = hoursUntilCancellation > 24;
+        try {
+            const hoursUntilCancellation =
+                (cancellationDate.getTime() - Date.now()) / (1000 * 60 * 60);
 
-        if (sendWarningEmail) {
-            try {
+            if (hoursUntilCancellation > 24) {
                 const { default: CancellationWarning } = await import("@/lib/emails/CancellationWarning");
                 const { render } = await import("@react-email/render");
 
@@ -180,16 +199,19 @@ export async function POST(req: Request) {
                     subject: "Your subscription will end soon",
                     html: emailHtml,
                 });
-            } catch (emailError: any) {
-                console.error('[Cancellation] Email error:', emailError);
-                // Don't fail the whole request if email fails
+                console.log('Email sent successfully to:', email);
+            } else {
+                console.log('Skipping warning email (less than 24h until cancellation)');
             }
+        } catch (emailError: any) {
+            console.error('Email sending failed (non-blocking):', emailError);
+            // Don't fail the request - cancellation is still saved
         }
 
         return NextResponse.json({
             success: true,
             cancellationDate: cancellationDate.toISOString(),
-            sendWarningEmail,
+            sendWarningEmail: (cancellationDate.getTime() - Date.now()) / (1000 * 60 * 60) > 24,
         });
 
     } catch (error: any) {

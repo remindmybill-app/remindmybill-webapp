@@ -304,7 +304,32 @@ function SettingsContent() {
                       </a>
                     </Button>
                   )}
-                  {isPro(profile?.user_tier || profile?.subscription_tier) && profile?.user_tier !== 'lifetime' && (
+                  {profile?.cancellation_scheduled && (
+                    <div className="bg-yellow-500/10 border border-yellow-500 rounded-lg p-4 mb-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                        <h4 className="font-semibold text-white">Cancellation Scheduled</h4>
+                      </div>
+                      <p className="text-gray-300 text-sm mb-3">
+                        Your subscription will end on{' '}
+                        <strong>
+                          {profile?.cancellation_date ? new Date(profile.cancellation_date).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          }) : 'soon'}
+                        </strong>
+                      </p>
+                      <Button
+                        onClick={() => window.location.href = '/reactivate?token=' + profile?.cancel_reactivation_token}
+                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Cancel Cancellation
+                      </Button>
+                    </div>
+                  )}
+
+                  {!profile?.cancellation_scheduled && isPro(profile?.user_tier || profile?.subscription_tier) && profile?.user_tier !== 'lifetime' && (
                     <Button
                       variant="ghost"
                       className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"

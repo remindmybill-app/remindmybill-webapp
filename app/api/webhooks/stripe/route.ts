@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { createClient } from '@supabase/supabase-js';
 import type { UserTier } from '@/lib/types';
+import Stripe from 'stripe';
+import crypto from 'crypto';
 
 // Initialize Supabase Admin Client (bypasses RLS)
 const supabaseAdmin = createClient(
@@ -178,7 +180,7 @@ export async function POST(req: Request) {
 
             // ─── Subscription Updated (plan change) ───
             case 'customer.subscription.updated': {
-                const subscription = event.data.object as any;
+                const subscription = event.data.object as Stripe.Subscription;
                 const customerId = subscription.customer as string;
                 const user = await findUserByCustomer(customerId);
 
@@ -187,8 +189,79 @@ export async function POST(req: Request) {
                     break;
                 }
 
-                // Just log the update for now
-                console.log(`[Webhook] Subscription updated for user ${user.id}`);
+                console.log(`[Webhook] Subscription updated for user ${user.id}`, {
+                    id: subscription.id,
+                    cancel_at_period_end: subscription.cancel_at_period_end,
+                    cancel_at: subscription.cancel_at
+                });
+
+                // Check if subscription was cancelled (via Portal or API)
+                if (subscription.cancel_at_period_end && !user.cancellation_scheduled) {
+                    // User cancelled via Stripe Portal - sync to our database
+                    const cancellationDate = (subscription as any).cancel_at
+                        ? new Date((subscription as any).cancel_at * 1000)
+                        : new Date((subscription as any).current_period_end * 1000);
+
+                    const reactivationToken = crypto.randomBytes(32).toString('hex');
+
+                    // Update database
+                    await supabaseAdmin
+                        .from('profiles')
+                        .update({
+                            cancellation_scheduled: true,
+                            cancellation_date: cancellationDate.toISOString(),
+                            cancellation_reason: 'stripe_portal',
+                            previous_tier: user.user_tier,
+                            cancel_reactivation_token: reactivationToken
+                        })
+                        .eq('id', user.id);
+
+                    // Send cancellation warning email
+                    const hoursUntil = (cancellationDate.getTime() - Date.now()) / (1000 * 60 * 60);
+
+                    if (hoursUntil > 24) {
+                        try {
+                            const { render } = await import('@react-email/render');
+                            const { default: CancellationWarning } = await import('@/lib/emails/CancellationWarning');
+                            const { Resend } = await import('resend');
+                            const resend = new Resend(process.env.RESEND_API_KEY);
+
+                            const emailHtml = await render(CancellationWarning({
+                                name: user.full_name || 'there',
+                                tier: user.user_tier,
+                                cancellationDate,
+                                reactivationToken
+                            }));
+
+                            await resend.emails.send({
+                                from: 'RemindMyBill <no-reply@remindmybill.com>',
+                                to: user.email,
+                                subject: 'Your subscription will end soon',
+                                html: emailHtml
+                            });
+
+                            console.log('[Webhook] Cancellation email sent to:', user.email);
+                        } catch (emailErr) {
+                            console.error('[Webhook] Failed to send cancellation email:', emailErr);
+                        }
+                    }
+                }
+
+                // Check if cancellation was undone (reactivated via Stripe Portal)
+                if (!subscription.cancel_at_period_end && user.cancellation_scheduled) {
+                    await supabaseAdmin
+                        .from('profiles')
+                        .update({
+                            cancellation_scheduled: false,
+                            cancellation_date: null,
+                            cancellation_reason: null,
+                            cancel_reactivation_token: null
+                        })
+                        .eq('id', user.id);
+
+                    console.log('[Webhook] Cancellation cleared via Stripe Portal for:', user.email);
+                }
+
                 break;
             }
 

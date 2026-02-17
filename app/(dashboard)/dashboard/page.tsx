@@ -305,6 +305,46 @@ function DashboardContent() {
             <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
                 {profile?.id && <InstallPWAPrompt userId={profile.id} />}
 
+                {/* ─── Cancellation Countdown Banner ───────────────────── */}
+                {profile?.cancellation_scheduled && profile?.cancellation_date && (
+                    <div className="bg-yellow-500/10 border-2 border-yellow-500 rounded-xl p-6 mb-6">
+                        <div className="flex items-start gap-4">
+                            <div className="p-3 bg-yellow-500/20 rounded-lg">
+                                <svg className="w-6 h-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="text-lg font-semibold text-white mb-2">
+                                    ⏰ Subscription Ending Soon
+                                </h3>
+                                <p className="text-gray-300 mb-3">
+                                    Your <strong className="text-yellow-400">{profile.user_tier}</strong> subscription will end on{' '}
+                                    <strong className="text-white">
+                                        {new Intl.DateTimeFormat('en-US', {
+                                            dateStyle: 'full',
+                                            timeStyle: 'short'
+                                        }).format(new Date(profile.cancellation_date))}
+                                    </strong>
+                                </p>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-yellow-400 font-medium">
+                                        {Math.ceil(
+                                            (new Date(profile.cancellation_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                                        )} days remaining
+                                    </span>
+                                    <button
+                                        onClick={() => window.location.href = '/reactivate?token=' + profile.cancel_reactivation_token}
+                                        className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                                    >
+                                        Keep My Subscription
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* ─── Tier Status Widget ──────────────────────────── */}
                 <TierStatusWidget
                     userTier={userTier}
