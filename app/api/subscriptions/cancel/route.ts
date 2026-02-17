@@ -111,22 +111,15 @@ export async function POST(req: Request) {
 
         if (hoursUntilCancellation > 24) {
             // Send "will be downgraded" email
-            // In Phase 5 we will use the React Email template
-            /*
-            const emailHtml = await render(CancellationWarning({
-              name: profile.full_name || 'there',
-              tier,
-              cancellationDate,
-              reactivationToken
-            }));
-            */
+            const { default: CancellationWarning } = await import("@/lib/emails/CancellationWarning");
+            const { render } = await import("@react-email/render");
 
-            const emailHtml = `
-        <h1>Subscription Cancellation Scheduled</h1>
-        <p>Your access will end on ${cancellationDate.toDateString()}.</p>
-        <p>To reactivate, use this token: ${reactivationToken}</p>
-        <p>(Better email coming soon)</p>
-      `;
+            const emailHtml = await render(CancellationWarning({
+                name: profile.full_name || 'there',
+                tier,
+                cancellationDate,
+                reactivationToken
+            }));
 
             await resend.emails.send({
                 from: "RemindMyBill <no-reply@remindmybill.com>",

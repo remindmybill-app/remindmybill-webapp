@@ -92,7 +92,65 @@ export async function createPortalSession(stripeCustomerId: string) {
 
         return { url: session.url }
     } catch (error: any) {
-        console.error('[Stripe Action] Error creating portal session:', error)
         throw new Error('Failed to create portal session: ' + error.message)
     }
+}
+
+/**
+ * Reactivates a subscription that was scheduled for cancellation.
+ */
+export async function reactivateSubscription(token: string) {
+    if (!token) {
+        throw new Error("Invalid reactivation token")
+    }
+
+    const { createClient } = await import('@/lib/supabase-server') // Dynamic import to avoid circular dep issues if any
+    const supabase = await createClient()
+
+    // 1. Verify token & get user
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('cancel_reactivation_token', token)
+        .single()
+
+    if (!profile) {
+        throw new Error("Invalid or expired reactivation token")
+    }
+
+    if (!profile.cancellation_scheduled) {
+        return { success: true, message: "Subscription already active" }
+    }
+
+    // 2. Remove cancellation from Stripe
+    if (profile.stripe_subscription_id) {
+        try {
+            await stripe.subscriptions.update(profile.stripe_subscription_id, {
+                cancel_at_period_end: false,
+            })
+        } catch (err: any) {
+            console.error("[Stripe Action] Reactivation failed:", err)
+            throw new Error("Failed to reactivate with Stripe")
+        }
+    }
+
+    // 3. Update Profile
+    const { error } = await supabase
+        .from('profiles')
+        .update({
+            cancellation_scheduled: false,
+            cancellation_date: null,
+            cancellation_reason: null,
+            cancellation_feedback: null,
+            cancel_reactivation_token: null, // Consume token
+        })
+        .eq('id', profile.id)
+
+    if (error) {
+        throw new Error("Failed to update profile status")
+    }
+
+    // 4. Send Confirmation Email (Optional logic, can reuse ReactivationEmail here if desired)
+    // For now, return success
+    return { success: true }
 }

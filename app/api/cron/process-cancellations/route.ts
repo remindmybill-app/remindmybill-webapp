@@ -66,19 +66,13 @@ export async function GET(req: Request) {
             }).eq("id", profile.id);
 
             // 3. Send Downgrade Confirmation Email
-            /*
-            // Phase 5 template
+            const { default: DowngradeConfirmation } = await import("@/lib/emails/DowngradeConfirmation");
+            const { render } = await import("@react-email/render");
+
             const emailHtml = await render(DowngradeConfirmation({
                 name: profile.full_name || 'there',
                 previousTier: profile.previous_tier || 'Pro'
             }));
-            */
-
-            const emailHtml = `
-        <h1>Your plan has been switched to Free</h1>
-        <p>Your ${profile.previous_tier} subscription has ended.</p>
-        <p><a href="${process.env.NEXT_PUBLIC_URL}/pricing">Upgrade again</a></p>
-      `;
 
             await resend.emails.send({
                 from: "RemindMyBill <no-reply@remindmybill.com>",

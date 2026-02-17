@@ -510,13 +510,11 @@ function TierStatusWidget({
                     </div>
                     <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
                         <span>
-                            Subscriptions: {activeSubCount}/{isUnlimited ? '∞' : subLimit}
+                            Subscriptions: {userTier === 'free' ? `${activeSubCount}/${subLimit}` : 'Unlimited'}
                         </span>
-                        {userTier === 'free' && (
-                            <span>
-                                Alerts: {emailAlertsUsed}/{emailAlertsLimit} this month
-                            </span>
-                        )}
+                        <span>
+                            Alerts: {userTier === 'free' ? `${emailAlertsUsed}/${emailAlertsLimit} this month` : 'Unlimited'}
+                        </span>
                     </div>
                 </div>
             </div>
