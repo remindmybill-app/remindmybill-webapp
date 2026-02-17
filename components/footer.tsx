@@ -52,7 +52,7 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="/contact" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                <a href="/contact-us" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                   Contact
                 </a>
               </li>
@@ -64,12 +64,12 @@ export function Footer() {
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                <a href="/privacy" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                   Privacy Policy
                 </a>
               </li>
               <li>
-                <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                <a href="/terms" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                   Terms of Service
                 </a>
               </li>

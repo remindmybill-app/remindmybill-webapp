@@ -22,9 +22,13 @@ export default function DowngradeConfirmation({
                         <Img
                             src={`${baseUrl}/rmmb-logo.png`}
                             alt="RemindMyBill"
-                            width="150"
-                            height="40"
-                            style={styles.logo}
+                            width="180"
+                            height="48"
+                            style={{
+                                margin: '0 auto',
+                                display: 'block',
+                                objectFit: 'contain'
+                            }}
                         />
                     </Section>
 
@@ -113,10 +117,14 @@ const styles = {
     },
     header: {
         textAlign: 'center' as const,
-        marginBottom: '32px'
+        marginBottom: '32px',
+        padding: '20px 0'
     },
     logo: {
-        margin: '0 auto'
+        margin: '0 auto',
+        display: 'block',
+        maxWidth: '100%',
+        height: 'auto'
     },
     content: {
         backgroundColor: '#1a1a1a',
