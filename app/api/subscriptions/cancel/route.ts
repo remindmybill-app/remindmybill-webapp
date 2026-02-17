@@ -3,10 +3,9 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { Resend } from "resend";
 import crypto from "crypto";
+import { createClient } from "@/lib/supabase-server"; // Ensure consistent import if needed, but getSupabaseServerClient is fine too. Using getSupabaseServerClient as per original.
 
 export const dynamic = "force-dynamic";
-// import CancellationWarning from "@/lib/emails/CancellationWarning"; // Will be implemented in Phase 5
-// import { render } from "@react-email/render";
 
 export async function POST(req: Request) {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -14,30 +13,56 @@ export async function POST(req: Request) {
     });
     const resend = new Resend(process.env.RESEND_API_KEY);
 
-    try {
-        const { survey, tier, email } = await req.json();
-        const supabase = await getSupabaseServerClient();
+    let user: any = null;
+    let profile: any = null;
 
-        // Get authenticated user
-        const {
-            data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    try {
+        const body = await req.json().catch(() => ({}));
+        const { survey, tier, email } = body;
+
+        // 1. Validate inputs
+        if (!survey || !tier || !email) {
+            console.error("[Cancellation] Missing required fields:", { survey: !!survey, tier, email });
+            return NextResponse.json(
+                { error: 'Missing required fields' },
+                { status: 400 }
+            );
         }
 
-        // Get user profile
-        const { data: profile } = await supabase
+        const supabase = await getSupabaseServerClient();
+
+        // 2. Auth Check
+        const {
+            data: { user: authUser },
+            error: authError
+        } = await supabase.auth.getUser();
+
+        if (authError || !authUser) {
+            console.error('[Cancellation] Auth error:', authError);
+            return NextResponse.json(
+                { error: 'Unauthorized', details: authError?.message },
+                { status: 401 }
+            );
+        }
+        user = authUser;
+
+        // 3. Get Profile
+        const { data: userProfile, error: profileError } = await supabase
             .from("profiles")
             .select("*")
             .eq("id", user.id)
             .single();
 
-        if (!profile) {
-            return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+        if (profileError || !userProfile) {
+            console.error('[Cancellation] Profile error:', profileError);
+            return NextResponse.json(
+                { error: 'Profile not found' },
+                { status: 404 }
+            );
         }
+        profile = userProfile;
 
-        // Prevent double cancellation in same period
+        // 4. Check if already cancelled
         if (profile.cancellation_scheduled) {
             return NextResponse.json(
                 { error: "Cancellation already scheduled" },
@@ -45,36 +70,54 @@ export async function POST(req: Request) {
             );
         }
 
-        // Calculate cancellation date (end of current billing period)
         let cancellationDate: Date;
 
-        if (profile.stripe_subscription_id) {
-            // Get Stripe subscription to find period_end
-            const subscription = await stripe.subscriptions.retrieve(
-                profile.stripe_subscription_id
-            ) as any;
-
-            cancellationDate = new Date(subscription.current_period_end * 1000);
-
-            // Cancel at period end (user keeps access)
-            await stripe.subscriptions.update(profile.stripe_subscription_id, {
-                cancel_at_period_end: true,
-                cancellation_details: {
-                    comment: `Reason: ${survey.reason}`,
-                    feedback: survey.reason,
-                },
-            });
-        } else {
-            // Lifetime user - immediate downgrade (or just set date to now)
-            // For lifetime, maybe we shouldn't really 'cancel' in the same way, but let's assume immediate.
+        // 5. Handle Stripe Cancellation (skip for Lifetime)
+        if (profile.user_tier === 'lifetime') {
             cancellationDate = new Date();
+            // Lifetime users don't have a subscription to cancel in Stripe usually, 
+            // or it's a one-time payment. We just downgrade locally effectively.
+        } else if (profile.stripe_subscription_id) {
+            try {
+                const subscription = await stripe.subscriptions.retrieve(
+                    profile.stripe_subscription_id
+                ) as any;
+
+                cancellationDate = new Date(subscription.current_period_end * 1000);
+
+                await stripe.subscriptions.update(profile.stripe_subscription_id, {
+                    cancel_at_period_end: true,
+                    cancellation_details: {
+                        comment: `Reason: ${survey.reason}`,
+                        feedback: survey.reason,
+                    },
+                });
+            } catch (stripeError: any) {
+                console.error('[Cancellation] Stripe error:', stripeError);
+                return NextResponse.json(
+                    { error: 'Stripe API error', details: stripeError.message },
+                    { status: 500 }
+                );
+            }
+        } else {
+            // Edge case: User is 'pro' but no stripe ID?
+            // Fallback to immediate cancellation or handle as error?
+            // User requested robust handling.
+            if (profile.user_tier !== 'free') {
+                console.warn('[Cancellation] User is not free/lifetime but missing Stripe ID. Defaulting to immediate cancellation.');
+                cancellationDate = new Date();
+            } else {
+                return NextResponse.json(
+                    { error: 'Invalid subscription state: Not a paid user and no Stripe ID' },
+                    { status: 400 }
+                );
+            }
         }
 
-        // Generate reactivation token
+        // 6. Generate Token & Save Data
         const reactivationToken = crypto.randomBytes(32).toString("hex");
 
-        // Save cancellation survey
-        await supabase.from("cancellation_surveys").insert({
+        const { error: dbError } = await supabase.from("cancellation_surveys").insert({
             user_id: user.id,
             reason: survey.reason,
             reason_other: survey.reason_other || null,
@@ -92,8 +135,12 @@ export async function POST(req: Request) {
                         : 4.99,
         });
 
-        // Update profile with cancellation details
-        await supabase
+        if (dbError) {
+            console.error('[Cancellation] Survey save error:', dbError);
+            // Proceed anyway, not blocking
+        }
+
+        const { error: updateError } = await supabase
             .from("profiles")
             .update({
                 cancellation_scheduled: true,
@@ -105,40 +152,62 @@ export async function POST(req: Request) {
             })
             .eq("id", user.id);
 
-        // Determine if we should send immediate email or scheduled email
+        if (updateError) {
+            console.error('[Cancellation] Profile update error:', updateError);
+            throw new Error("Failed to update profile cancellation status");
+        }
+
+        // 7. Send Email (Non-blocking)
         const hoursUntilCancellation =
             (cancellationDate.getTime() - Date.now()) / (1000 * 60 * 60);
+        let sendWarningEmail = hoursUntilCancellation > 24;
 
-        if (hoursUntilCancellation > 24) {
-            // Send "will be downgraded" email
-            const { default: CancellationWarning } = await import("@/lib/emails/CancellationWarning");
-            const { render } = await import("@react-email/render");
+        if (sendWarningEmail) {
+            try {
+                const { default: CancellationWarning } = await import("@/lib/emails/CancellationWarning");
+                const { render } = await import("@react-email/render");
 
-            const emailHtml = await render(CancellationWarning({
-                name: profile.full_name || 'there',
-                tier,
-                cancellationDate,
-                reactivationToken
-            }));
+                const emailHtml = await render(CancellationWarning({
+                    name: profile.full_name || 'there',
+                    tier,
+                    cancellationDate,
+                    reactivationToken
+                }));
 
-            await resend.emails.send({
-                from: "RemindMyBill <no-reply@remindmybill.com>",
-                to: email,
-                subject: "Your subscription will end soon",
-                html: emailHtml,
-            });
+                await resend.emails.send({
+                    from: "RemindMyBill <no-reply@remindmybill.com>",
+                    to: email,
+                    subject: "Your subscription will end soon",
+                    html: emailHtml,
+                });
+            } catch (emailError: any) {
+                console.error('[Cancellation] Email error:', emailError);
+                // Don't fail the whole request if email fails
+            }
         }
-        // If <24 hours, skip warning email (will send confirmation on downgrade)
 
         return NextResponse.json({
             success: true,
             cancellationDate: cancellationDate.toISOString(),
-            sendWarningEmail: hoursUntilCancellation > 24,
+            sendWarningEmail,
         });
-    } catch (error) {
-        console.error("Cancellation error:", error);
+
+    } catch (error: any) {
+        console.error('Cancellation error details:', {
+            error: error.message,
+            stack: error.stack,
+            userId: user?.id,
+            tier: profile?.user_tier,
+            hasStripeSubscription: !!profile?.stripe_subscription_id
+        });
+
+        // Return specific error to frontend
         return NextResponse.json(
-            { error: "Failed to process cancellation" },
+            {
+                error: 'Failed to process cancellation',
+                details: error.message,
+                code: error.code || 'UNKNOWN'
+            },
             { status: 500 }
         );
     }
