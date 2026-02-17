@@ -8,15 +8,13 @@ interface CheckoutParams {
     email: string
     tier: 'pro' | 'lifetime'
     interval?: 'monthly' | 'yearly'
-    addSmsAddon?: boolean
 }
 
 /**
  * Creates a Stripe Checkout session for Pro subscription or Lifetime one-time payment.
- * Supports optional SMS add-on as a separate line item.
  */
 export async function createCheckoutSession(params: CheckoutParams) {
-    const { userId, email, tier, interval = 'monthly', addSmsAddon = false } = params
+    const { userId, email, tier, interval = 'monthly' } = params
 
     // Resolve price IDs server-side
     const priceIdMap: Record<string, string | undefined> = {
@@ -43,14 +41,6 @@ export async function createCheckoutSession(params: CheckoutParams) {
         { price: priceId, quantity: 1 },
     ]
 
-    // Add SMS addon if selected (only for Pro subscriptions)
-    if (addSmsAddon && tier === 'pro') {
-        const smsPrice = process.env.STRIPE_SMS_ADDON_PRICE_ID
-        if (smsPrice && !smsPrice.includes('REPLACE_ME')) {
-            lineItems.push({ price: smsPrice, quantity: 1 })
-        }
-    }
-
     try {
         const isLifetime = tier === 'lifetime'
 
@@ -63,7 +53,6 @@ export async function createCheckoutSession(params: CheckoutParams) {
                 userId,
                 tier,
                 interval: isLifetime ? 'one-time' : interval,
-                addSmsAddon: addSmsAddon ? 'true' : 'false',
             },
             success_url: `${origin}/dashboard?checkout=success&tier=${tier}`,
             cancel_url: `${origin}/pricing`,

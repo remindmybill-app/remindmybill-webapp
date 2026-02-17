@@ -64,7 +64,7 @@ export async function downgradeUserToFree(userId: string) {
             subscription_limit: 7,
             subscription_status: 'active',
             subscription_interval: null,
-            sms_addon_enabled: false,
+
             email_alerts_limit: 3,
             tier_updated_at: new Date().toISOString(),
         })

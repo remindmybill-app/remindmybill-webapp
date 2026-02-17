@@ -22,7 +22,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 
 function SettingsContent() {
   const [emailNotifications, setEmailNotifications] = useState(true)
-  const [smsAlerts, setSmsAlerts] = useState(false)
+
   const [pushAlerts, setPushAlerts] = useState(true)
   const { profile, updateProfile, mutate } = useProfile()
   const { subscriptions, refreshSubscriptions } = useSubscriptions()
@@ -138,6 +138,7 @@ function SettingsContent() {
                   </p>
                 </div>
               </CardContent>
+
             </Card>
 
             <Card>
@@ -238,11 +239,6 @@ function SettingsContent() {
                         : "bg-primary/20 text-primary"}>
                         Active
                       </Badge>
-                      {profile?.sms_addon_enabled && (
-                        <Badge className="bg-emerald-500/20 text-emerald-400 border-0 text-xs">
-                          <Smartphone className="h-3 w-3 mr-1" />SMS
-                        </Badge>
-                      )}
                     </div>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {profile?.user_tier === 'lifetime'
@@ -350,21 +346,6 @@ function SettingsContent() {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor="sms-alerts" className="text-base">
-                        SMS Alerts
-                      </Label>
-                      <Badge variant="secondary" className="text-xs">
-                        Pro
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">Get text messages for urgent renewals</p>
-                  </div>
-                  <Switch id="sms-alerts" checked={smsAlerts} onCheckedChange={setSmsAlerts} />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
                     <Label htmlFor="push-alerts" className="text-base">
                       Push Notifications
                     </Label>
@@ -375,22 +356,7 @@ function SettingsContent() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Smartphone className="h-5 w-5 text-primary" />
-                  SMS Phone Number
-                </CardTitle>
-                <CardDescription>Add your phone number to receive SMS alerts</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" type="tel" placeholder="+1 (555) 000-0000" />
-                </div>
-                <Button>Save Phone Number</Button>
-              </CardContent>
-            </Card>
+
           </TabsContent>
         </Tabs>
       </div>

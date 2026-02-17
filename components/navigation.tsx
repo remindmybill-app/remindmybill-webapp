@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -48,8 +49,13 @@ export function Navigation() {
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2">
-              <Bell className="h-7 w-7 text-primary" />
-              <span className="text-xl font-bold">Remind My Bill</span>
+              <Image
+                src="/rmmb-logo.png"
+                alt="RemindMyBill"
+                width={150}
+                height={40}
+                priority
+              />
             </Link>
 
             {/* Desktop Navigation */}
@@ -194,8 +200,13 @@ export function Navigation() {
                   <SheetContent side="right" className="w-80">
                     <div className="flex flex-col gap-4">
                       <div className="flex items-center gap-2 border-b pb-4">
-                        <Bell className="h-6 w-6 text-primary" />
-                        <span className="text-lg font-bold">Remind My Bill</span>
+                        <Image
+                          src="/rmmb-logo.png"
+                          alt="RemindMyBill"
+                          width={150}
+                          height={40}
+                          priority
+                        />
                       </div>
                       <nav className="flex flex-col gap-2">
                         <Button variant="ghost" className="justify-start" asChild>
@@ -229,8 +240,13 @@ export function Navigation() {
       {/* Mobile-Only Header (Just Logo) */}
       <div className="md:hidden flex h-14 items-center justify-between px-6 border-b bg-background/95 backdrop-blur sticky top-0 z-40">
         <Link href="/" className="flex items-center gap-2">
-          <Bell className="h-6 w-6 text-primary" />
-          <span className="text-lg font-bold">Remind My Bill</span>
+          <Image
+            src="/rmmb-logo.png"
+            alt="RemindMyBill"
+            width={120}
+            height={32}
+            priority
+          />
         </Link>
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" className="relative p-0 h-8 w-8">

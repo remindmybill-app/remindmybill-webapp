@@ -5,8 +5,6 @@ export const STRIPE_PRICE_IDS = {
     PRO_MONTHLY: process.env.STRIPE_PRO_PRICE_ID_MONTHLY || 'price_REPLACE_ME_MONTHLY',
     PRO_ANNUAL: process.env.STRIPE_PRO_PRICE_ID_YEARLY || 'price_REPLACE_ME_YEARLY',
     LIFETIME: process.env.STRIPE_LIFETIME_PRICE_ID || 'price_REPLACE_ME_LIFETIME',
-    SMS_ADDON: process.env.STRIPE_SMS_ADDON_PRICE_ID || 'price_REPLACE_ME_SMS',
-    LIFETIME_SMS: process.env.STRIPE_LIFETIME_SMS_PRICE_ID || 'price_REPLACE_ME_LIFETIME_SMS',
 } as const
 
 // ─── Tier Display Names ─────────────────────────────────────────────────────
@@ -34,7 +32,6 @@ export type Feature =
     | 'unlimited_alerts'
     | 'export_reports'
     | 'payment_calendar'
-    | 'sms_alerts'
 
 export const TIER_PERMISSIONS: Record<UserTier, Feature[]> = {
     free: ['basic_dashboard', 'health_score', 'trust_center_read'],
@@ -55,8 +52,6 @@ export const TIER_PRICING = {
     free: { monthly: 0, annual: 0 },
     pro: { monthly: 4.99, annual: 39 },
     lifetime: { oneTime: 99 },
-    smsAddon: { monthly: 2.99 },
-    lifetimeSms: { annual: 29 },
 } as const
 
 // ─── Tier Badge Styles ──────────────────────────────────────────────────────

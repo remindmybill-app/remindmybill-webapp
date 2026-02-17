@@ -234,7 +234,7 @@ function DashboardContent() {
                         subLimit={subLimit}
                         emailAlertsUsed={emailAlertsUsed}
                         emailAlertsLimit={emailAlertsLimit}
-                        smsEnabled={profile?.sms_addon_enabled ?? false}
+
                     />
 
                     <div className="mb-8">
@@ -313,7 +313,7 @@ function DashboardContent() {
                     subLimit={subLimit}
                     emailAlertsUsed={emailAlertsUsed}
                     emailAlertsLimit={emailAlertsLimit}
-                    smsEnabled={profile?.sms_addon_enabled ?? false}
+
                 />
 
                 {/* ─── Alert Exhaustion Banner ─────────────────────── */}
@@ -457,7 +457,7 @@ function DashboardContent() {
                                 </div>
                                 <h3 className="mb-2 text-lg font-bold">Upgrade to Shield</h3>
                                 <p className="mb-4 text-sm text-blue-100">
-                                    Unlock unlimited tracking, advanced analytics, and SMS alerts for just $4.99/mo.
+                                    Unlock unlimited tracking, advanced analytics, and push notifications for just $4.99/mo.
                                 </p>
                                 <Button variant="secondary" className="w-full bg-white text-blue-600 hover:bg-blue-50" asChild>
                                     <Link href="/pricing">View Plans</Link>
@@ -472,7 +472,7 @@ function DashboardContent() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     )
 }
 
@@ -484,7 +484,7 @@ function TierStatusWidget({
     subLimit,
     emailAlertsUsed,
     emailAlertsLimit,
-    smsEnabled,
+
 }: {
     userTier: UserTier
     tierBadge: { emoji: string; label: string; className: string }
@@ -492,7 +492,7 @@ function TierStatusWidget({
     subLimit: number
     emailAlertsUsed: number
     emailAlertsLimit: number
-    smsEnabled: boolean
+
 }) {
     const isUnlimited = subLimit === Infinity
 
@@ -506,12 +506,7 @@ function TierStatusWidget({
                         <Badge className={`${tierBadge.className} text-[10px] font-bold uppercase tracking-wider border-0`}>
                             {userTier === 'free' ? 'Free' : userTier === 'pro' ? 'Pro' : 'Lifetime'}
                         </Badge>
-                        {smsEnabled && (
-                            <Badge className="bg-emerald-500/20 text-emerald-400 border-0 text-[10px]">
-                                <Smartphone className="h-2.5 w-2.5 mr-1" />
-                                SMS Active
-                            </Badge>
-                        )}
+
                     </div>
                     <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
                         <span>

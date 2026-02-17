@@ -7,20 +7,16 @@ import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import {
-  Check, X, Mail, MessageSquare, TrendingUp, FileText,
-  ShieldCheck, Loader2, Shield, Crown, Sparkles, Zap,
-  ChevronDown, ChevronUp,
+  Check, X, Shield, Crown, Sparkles, Zap, ShieldCheck, Loader2
 } from "lucide-react"
 import { useProfile } from "@/lib/hooks/use-profile"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
-import { TIER_PRICING, TIER_BADGES } from "@/lib/tier-config"
-import { isPro, isFree, isLifetime } from "@/lib/subscription-utils"
+import { TIER_PRICING } from "@/lib/tier-config"
+import { isPro, isLifetime } from "@/lib/subscription-utils"
 
 export default function PricingPage() {
   const [isAnnual, setIsAnnual] = useState(false)
-  const [addSms, setAddSms] = useState(false)
-  const [showSmsDetails, setShowSmsDetails] = useState(false)
   const { profile } = useProfile()
   const [isUpdating, setIsUpdating] = useState(false)
   const router = useRouter()
@@ -44,7 +40,6 @@ export default function PricingPage() {
         email: profile.email,
         tier,
         interval: isAnnual ? 'yearly' : 'monthly',
-        addSmsAddon: tier === 'pro' ? addSms : false,
       })
 
       if (result?.url) {
@@ -84,6 +79,7 @@ export default function PricingPage() {
         { text: "3 email alerts per month", included: true },
         { text: "Trust Center read-only access", included: true },
         { text: "Mobile-responsive web app", included: true },
+        { text: "Push notifications (PWA installed)", included: true },
         { text: "Advanced Analytics", included: false },
         { text: "Export reports (CSV/PDF)", included: false },
         { text: "Payment Calendar", included: false },
@@ -111,6 +107,7 @@ export default function PricingPage() {
         { text: "Export reports (CSV/PDF)", included: true },
         { text: "Trust Center contributions", included: true },
         { text: "Priority email support (24hr)", included: true },
+        { text: "Push notifications (Unlimited)", included: true },
         { text: "Early access to new features", included: true },
       ],
       cta: isPro(userTier) && !isLifetime(userTier) ? "Current Plan" : "Upgrade Now",
@@ -135,7 +132,7 @@ export default function PricingPage() {
         { text: "All future feature updates", included: true },
         { text: "Unlimited everything", included: true },
         { text: "Priority support forever", included: true },
-        { text: "SMS available at $29/year", included: true },
+        { text: "Push notifications (Unlimited)", included: true },
         { text: "No recurring charges", included: true },
       ],
       cta: isLifetime(userTier) ? "Current Plan" : "Claim Lifetime Access",
@@ -148,7 +145,7 @@ export default function PricingPage() {
   const comparisonFeatures = [
     { name: "Subscriptions tracked", free: "7", pro: "Unlimited", lifetime: "Unlimited" },
     { name: "Email alerts", free: "3/month", pro: "Unlimited", lifetime: "Unlimited" },
-    { name: "SMS alerts", free: "❌", pro: "+$2.99/mo", lifetime: "$29/year" },
+    { name: "Push notifications", free: "Limited", pro: "Unlimited", lifetime: "Unlimited" },
     { name: "Advanced Analytics", free: "❌", pro: "✅", lifetime: "✅" },
     { name: "Payment Calendar", free: "❌", pro: "✅", lifetime: "✅" },
     { name: "Trust Center contributions", free: "❌", pro: "✅", lifetime: "✅" },
@@ -256,49 +253,15 @@ export default function PricingPage() {
                     </li>
                   ))}
                 </ul>
-
-                {/* SMS Add-On (Pro only) */}
-                {plan.id === 'pro' && (
-                  <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.02] p-4">
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        checked={addSms}
-                        onChange={(e) => setAddSms(e.target.checked)}
-                        className="h-4 w-4 rounded border-zinc-600 bg-zinc-800 text-blue-500 focus:ring-blue-500 focus:ring-offset-0"
-                      />
-                      <div className="flex-1">
-                        <span className="text-sm font-medium group-hover:text-blue-400 transition-colors">
-                          📱 Add SMS Alerts
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-1.5">+$2.99/mo</span>
-                      </div>
-                    </label>
-                    <button
-                      onClick={() => setShowSmsDetails(!showSmsDetails)}
-                      className="mt-2 flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                    >
-                      {showSmsDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                      {showSmsDetails ? "Hide details" : "Learn more"}
-                    </button>
-                    {showSmsDetails && (
-                      <div className="mt-3 space-y-1.5 text-xs text-muted-foreground animate-in fade-in slide-in-from-top-1">
-                        <p>• 3-day, 1-day, and same-day text reminders</p>
-                        <p>• Instant spending spike alerts (50%+ above average)</p>
-                        <p>• Weekly SMS summary every Sunday evening</p>
-                      </div>
-                    )}
-                  </div>
-                )}
               </CardContent>
 
               <CardFooter className="pt-2 pb-6">
                 <Button
                   className={`w-full gap-2 h-12 text-sm font-semibold transition-all ${plan.id === 'pro'
-                      ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25"
-                      : plan.id === 'lifetime'
-                        ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black font-bold shadow-lg shadow-amber-500/25"
-                        : ""
+                    ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25"
+                    : plan.id === 'lifetime'
+                      ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black font-bold shadow-lg shadow-amber-500/25"
+                      : ""
                     }`}
                   variant={plan.id === 'free' ? "outline" : "default"}
                   size="lg"

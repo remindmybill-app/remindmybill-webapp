@@ -99,7 +99,6 @@ export async function POST(req: Request) {
                 }
 
                 const isLifetime = session.mode === 'payment' || tier === 'lifetime';
-                const hasSmsAddon = metadata.addSmsAddon === 'true';
 
                 const updates: Record<string, any> = {
                     stripe_customer_id: customerId,
@@ -127,7 +126,6 @@ export async function POST(req: Request) {
                     updates.email_alerts_limit = 99999;
                     updates.subscription_interval = metadata.interval === 'yearly' ? 'annual' : 'monthly';
                     updates.stripe_subscription_id = session.subscription as string;
-                    updates.sms_addon_enabled = hasSmsAddon;
 
                     console.log(`[Webhook] Upgrading user ${userId} to PRO (${metadata.interval})`);
                 }
@@ -148,7 +146,7 @@ export async function POST(req: Request) {
                     'free',
                     isLifetime ? 'lifetime' : 'pro',
                     event.id,
-                    { interval: metadata.interval, smsAddon: hasSmsAddon }
+                    { interval: metadata.interval }
                 );
 
                 // Send welcome email (non-blocking)
@@ -178,7 +176,7 @@ export async function POST(req: Request) {
                 break;
             }
 
-            // ─── Subscription Updated (plan change, SMS addon toggle) ───
+            // ─── Subscription Updated (plan change) ───
             case 'customer.subscription.updated': {
                 const subscription = event.data.object as any;
                 const customerId = subscription.customer as string;
@@ -189,31 +187,8 @@ export async function POST(req: Request) {
                     break;
                 }
 
-                // Check if SMS addon was added/removed by comparing items
-                const items = subscription.items?.data || [];
-                const smsPrice = process.env.STRIPE_SMS_ADDON_PRICE_ID;
-                const hasSms = smsPrice
-                    ? items.some((item: any) => item.price?.id === smsPrice)
-                    : false;
-
-                if (user.sms_addon_enabled !== hasSms) {
-                    await supabaseAdmin
-                        .from('profiles')
-                        .update({
-                            sms_addon_enabled: hasSms,
-                            tier_updated_at: new Date().toISOString(),
-                        })
-                        .eq('id', user.id);
-
-                    await logSubscriptionEvent(
-                        user.id,
-                        hasSms ? 'sms_added' : 'sms_removed',
-                        user.user_tier,
-                        user.user_tier,
-                        event.id
-                    );
-                    console.log(`[Webhook] SMS addon ${hasSms ? 'enabled' : 'disabled'} for user ${user.id}`);
-                }
+                // Just log the update for now
+                console.log(`[Webhook] Subscription updated for user ${user.id}`);
                 break;
             }
 
