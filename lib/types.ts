@@ -99,7 +99,7 @@ export interface Subscription {
   frequency: string
   trust_score: number
   renewal_date: string
-  status: "active" | "cancelled" | "paused"
+  status: "active" | "cancelled" | "paused" | "locked"
   last_used_date: string | null
   auto_renewal: boolean
   cancellation_difficulty: "easy" | "medium" | "hard"

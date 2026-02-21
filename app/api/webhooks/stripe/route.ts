@@ -332,20 +332,123 @@ export async function POST(req: Request) {
 
             // ─── Invoice Payment Failed ──────────────────────────────────
             case 'invoice.payment_failed': {
-                const invoice = event.data.object as any;
+                const invoice = event.data.object as Stripe.Invoice;
                 const customerId = invoice.customer as string;
                 const user = await findUserByCustomer(customerId);
 
-                if (user) {
-                    console.warn(`[Webhook] Payment failed for user ${user.id}`);
-                    await logSubscriptionEvent(
-                        user.id,
-                        'payment_failed',
-                        user.user_tier,
-                        user.user_tier,
-                        event.id,
-                        { invoiceId: invoice.id, amount: invoice.amount_due }
-                    );
+                if (!user) {
+                    console.warn(`[Webhook] No user found for customer ${customerId}`);
+                    break;
+                }
+
+                // Extract fields
+                const amount = (invoice.amount_due || 0) / 100;
+                const attemptCount = invoice.attempt_count || 1;
+                const email = invoice.customer_email || user.email;
+                const hostedInvoiceUrl = invoice.hosted_invoice_url || '';
+
+                // Retrieve payment method for card info
+                let cardBrand = 'Card';
+                let cardLast4 = '****';
+
+                try {
+                    const paymentMethodId = (invoice as any).default_payment_method as string || (invoice as any).payment_intent && (await stripe.paymentIntents.retrieve((invoice as any).payment_intent as string)).payment_method as string;
+
+                    if (paymentMethodId) {
+                        const pm = await stripe.paymentMethods.retrieve(paymentMethodId);
+                        if (pm?.card) {
+                            cardBrand = pm.card.brand.charAt(0).toUpperCase() + pm.card.brand.slice(1);
+                            cardLast4 = pm.card.last4;
+                        }
+                    }
+                } catch (err) {
+                    console.error('[Webhook] Failed to retrieve card details:', err);
+                }
+
+                console.warn(`[Webhook] Payment failed (Attempt ${attemptCount}) for user ${user.id}`);
+
+                // Send Email (Send first per requirement: "Final Notice BEFORE downgrading")
+                try {
+                    const { sendPaymentFailedEmail } = await import('@/lib/email');
+                    await sendPaymentFailedEmail({
+                        email,
+                        userName: user.full_name || 'Valued Customer',
+                        attemptCount,
+                        cardBrand,
+                        cardLast4,
+                        amount,
+                        hostedInvoiceUrl,
+                    });
+                } catch (emailErr) {
+                    console.error('[Webhook] Failed to send payment failed email:', emailErr);
+                }
+
+                // Log the event
+                await logSubscriptionEvent(
+                    user.id,
+                    'payment_failed',
+                    user.user_tier,
+                    user.user_tier,
+                    event.id,
+                    {
+                        invoiceId: invoice.id,
+                        amount: invoice.amount_due,
+                        attempt_count: attemptCount,
+                        card_brand: cardBrand,
+                        card_last4: cardLast4
+                    }
+                );
+
+                // Downgrade Logic (On 3rd failure or more)
+                if (attemptCount >= 3) {
+                    console.log(`[Webhook] Third failure detected. Downgrading user ${user.id} to FREE`);
+
+                    const { error: profileError } = await supabaseAdmin
+                        .from('profiles')
+                        .update({
+                            user_tier: 'free',
+                            is_pro: false,
+                            subscription_tier: 'free',
+                            subscription_limit: 7,
+                            email_alerts_limit: 3,
+                            tier_updated_at: new Date().toISOString(),
+                        })
+                        .eq('id', user.id);
+
+                    if (profileError) {
+                        console.error('[Webhook] Failed to downgrade profile:', profileError);
+                    } else {
+                        // Lock subscriptions beyond the 7th
+                        const { data: subs, error: subsError } = await supabaseAdmin
+                            .from('subscriptions')
+                            .select('id')
+                            .eq('user_id', user.id)
+                            .order('created_at', { ascending: true }); // Keep the 7 oldest, lock the rest? Or keep newest?
+                        // Usually better to keep the first 7 created.
+
+                        if (!subsError && subs && subs.length > 7) {
+                            const subsToLock = subs.slice(7).map(s => s.id);
+                            const { error: lockError } = await supabaseAdmin
+                                .from('subscriptions')
+                                .update({ status: 'locked' })
+                                .in('id', subsToLock);
+
+                            if (lockError) {
+                                console.error('[Webhook] Failed to lock subscriptions:', lockError);
+                            } else {
+                                console.log(`[Webhook] Locked ${subsToLock.length} subscriptions for user ${user.id}`);
+                            }
+                        }
+
+                        await logSubscriptionEvent(
+                            user.id,
+                            'downgrade',
+                            user.user_tier,
+                            'free',
+                            event.id,
+                            { reason: 'payment_failed_final' }
+                        );
+                    }
                 }
                 break;
             }

@@ -2,6 +2,7 @@ import { render } from '@react-email/render';
 import React from 'react';
 import { PlanChangeEmail } from '@/emails/PlanChangeEmail';
 import { BillReminderEmail } from '@/emails/BillReminderEmail';
+import { PaymentFailed } from './emails/PaymentFailed';
 
 interface SendEmailOptions {
     to: string | string[];
@@ -122,6 +123,44 @@ export async function sendBillReminderEmail({
             category,
             isTrial,
             cancellationLink,
+        }),
+    });
+}
+
+export async function sendPaymentFailedEmail({
+    email,
+    userName,
+    attemptCount,
+    cardBrand,
+    cardLast4,
+    amount,
+    hostedInvoiceUrl,
+}: {
+    email: string;
+    userName: string;
+    attemptCount: number;
+    cardBrand: string;
+    cardLast4: string;
+    amount: number;
+    hostedInvoiceUrl: string;
+}) {
+    let subject = "Payment unsuccessful – Action required";
+    if (attemptCount === 2) {
+        subject = "2nd attempt failed – Please update your card";
+    } else if (attemptCount >= 3) {
+        subject = "Final notice – Your Pro access will be paused";
+    }
+
+    return sendEmail({
+        to: email,
+        subject,
+        react: React.createElement(PaymentFailed, {
+            userName,
+            attemptCount,
+            cardBrand,
+            cardLast4,
+            amount,
+            hostedInvoiceUrl: hostedInvoiceUrl || '',
         }),
     });
 }
