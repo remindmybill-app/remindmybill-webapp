@@ -1,5 +1,6 @@
 
 import { createServerClient } from "@supabase/ssr"
+import { createClient } from "@supabase/supabase-js"
 import { NextResponse, type NextRequest } from "next/server"
 
 export async function middleware(request: NextRequest) {
@@ -16,7 +17,7 @@ export async function middleware(request: NextRequest) {
                     return request.cookies.getAll()
                 },
                 setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+                    cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
                     supabaseResponse = NextResponse.next({
                         request,
                     })
@@ -37,16 +38,46 @@ export async function middleware(request: NextRequest) {
         // Handle Supabase errors (database waking up, network issues, etc.)
         if (authError) {
             console.error("[Middleware] Supabase auth error:", authError.message)
-            // Treat as unauthenticated if Supabase fails
-            // Protected routes redirect to login, public routes continue
-            const protectedPaths = ["/dashboard", "/profile", "/settings", "/analytics"]
+            const protectedPaths = ["/dashboard", "/profile", "/settings", "/analytics", "/admin"]
             if (protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))) {
                 return NextResponse.redirect(new URL("/auth/login", request.url))
             }
             return supabaseResponse
         }
 
-        // Protected Routes Logic
+        // ─── Admin Route Protection ─────────────────────────────────
+        if (request.nextUrl.pathname.startsWith("/admin")) {
+            if (!user) {
+                return NextResponse.redirect(new URL("/dashboard", request.url))
+            }
+
+            // Use service role client to bypass RLS for admin check
+            const adminSupabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.SUPABASE_SERVICE_ROLE_KEY!,
+                {
+                    auth: {
+                        persistSession: false,
+                        autoRefreshToken: false,
+                        detectSessionInUrl: false,
+                    },
+                }
+            )
+
+            const { data: profile } = await adminSupabase
+                .from("profiles")
+                .select("is_admin")
+                .eq("id", user.id)
+                .single()
+
+            if (!profile?.is_admin) {
+                return NextResponse.redirect(new URL("/dashboard", request.url))
+            }
+
+            return supabaseResponse
+        }
+
+        // ─── Protected Routes Logic ─────────────────────────────────
         const protectedPaths = ["/dashboard", "/profile", "/settings", "/analytics"]
         if (protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))) {
             if (!user) {
@@ -56,36 +87,24 @@ export async function middleware(request: NextRequest) {
 
         if (request.nextUrl.pathname.startsWith("/auth") || request.nextUrl.pathname === "/") {
             // Optional: Redirect logged-in users away from login pages?
-            // For now, we only enforcing dashboard protection.
-            // The landing page handles its own "Go to Dashboard" button logic.
         }
 
         return supabaseResponse
     } catch (error) {
-        // Network error or Supabase completely unreachable
         console.error("[Middleware] Network error connecting to Supabase:", error instanceof Error ? error.message : error)
 
-        // Graceful degradation: allow public pages, redirect protected pages to login
-        const protectedPaths = ["/dashboard", "/profile", "/settings", "/analytics"]
+        const protectedPaths = ["/dashboard", "/profile", "/settings", "/analytics", "/admin"]
         if (protectedPaths.some(path => request.nextUrl.pathname.startsWith(path))) {
             console.log("[Middleware] Redirecting protected route to login due to database unavailability")
             return NextResponse.redirect(new URL("/auth/login", request.url))
         }
 
-        // Allow access to public pages even if Supabase is down
         return supabaseResponse
     }
 }
 
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except for the ones starting with:
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * Feel free to modify this pattern to include more paths.
-         */
         "/((?!_next/static|_next/image|favicon.ico|api/cron|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
     ],
 }
