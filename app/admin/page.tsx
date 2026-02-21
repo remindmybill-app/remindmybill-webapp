@@ -21,7 +21,7 @@ export default async function AdminOverviewPage() {
         { data: cronLogs },
         { data: failedPayments },
     ] = await Promise.all([
-        supabase.from('profiles').select('tier, created_at, payment_failed'),
+        supabase.from('profiles').select('user_tier, created_at, payment_failed'),
         supabase.from('profiles').select('id').gte('created_at', sevenDaysAgo),
         supabase.from('profiles').select('id').gte('created_at', thirtyDaysAgo),
         supabase.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'active'),
@@ -35,9 +35,9 @@ export default async function AdminOverviewPage() {
     ]);
 
     const allProfiles = profiles || [];
-    const freeCount = allProfiles.filter((p) => p.tier === 'free' || !p.tier).length;
-    const proCount = allProfiles.filter((p) => p.tier === 'pro').length;
-    const lifetimeCount = allProfiles.filter((p) => p.tier === 'lifetime').length;
+    const freeCount = allProfiles.filter((p) => p.user_tier === 'free' || !p.user_tier).length;
+    const proCount = allProfiles.filter((p) => p.user_tier === 'pro').length;
+    const lifetimeCount = allProfiles.filter((p) => p.user_tier === 'lifetime').length;
     const totalUsers = allProfiles.length;
     const failedCount = failedPayments?.length || 0;
     const mrr = (proCount * 9.99).toFixed(2);

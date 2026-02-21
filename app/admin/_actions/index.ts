@@ -12,7 +12,7 @@ export async function overrideTier(userId: string, tier: string) {
 
     const { error } = await supabase
         .from('profiles')
-        .update({ tier })
+        .update({ user_tier: tier })
         .eq('id', userId);
 
     if (error) throw new Error(error.message);

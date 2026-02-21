@@ -9,13 +9,13 @@ import {
 
 interface UserActionsProps {
     userId: string;
-    currentTier: string;
+    user_tier: string;
     isSuspended: boolean;
 }
 
 export default function UserActions({
     userId,
-    currentTier,
+    user_tier,
     isSuspended,
 }: UserActionsProps) {
     const [isPending, startTransition] = useTransition();
@@ -61,13 +61,13 @@ export default function UserActions({
                         <button
                             key={tier}
                             onClick={() => handleTierChange(tier)}
-                            disabled={currentTier === tier || isPending}
-                            className={`text-sm px-4 py-1.5 rounded-lg border transition-colors ${currentTier === tier
-                                    ? 'text-blue-400 border-blue-600 bg-blue-950/30 cursor-default'
-                                    : 'text-gray-400 border-gray-700 hover:text-white hover:border-gray-500'
+                            disabled={user_tier === tier || isPending}
+                            className={`text-sm px-4 py-1.5 rounded-lg border transition-colors ${user_tier === tier
+                                ? 'text-blue-400 border-blue-600 bg-blue-950/30 cursor-default'
+                                : 'text-gray-400 border-gray-700 hover:text-white hover:border-gray-500'
                                 } disabled:opacity-50`}
                         >
-                            {currentTier === tier ? `✓ ${tier}` : tier}
+                            {user_tier === tier ? `✓ ${tier}` : tier}
                         </button>
                     ))}
                 </div>
@@ -81,8 +81,8 @@ export default function UserActions({
                         onClick={handleToggleSuspend}
                         disabled={isPending}
                         className={`text-sm px-4 py-1.5 rounded-lg border transition-colors ${isSuspended
-                                ? 'text-green-400 border-green-700 hover:bg-green-900/20'
-                                : 'text-red-400 border-red-700 hover:bg-red-900/20'
+                            ? 'text-green-400 border-green-700 hover:bg-green-900/20'
+                            : 'text-red-400 border-red-700 hover:bg-red-900/20'
                             } disabled:opacity-50`}
                     >
                         {isSuspended ? 'Unsuspend' : 'Suspend'}

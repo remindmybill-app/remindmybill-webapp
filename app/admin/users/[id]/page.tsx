@@ -128,7 +128,7 @@ export default async function AdminUserDetailPage({
 
             {/* ACCOUNT INFO GRID */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <InfoCard label="Tier" value={profile.tier || 'free'} />
+                <InfoCard label="Tier" value={profile.user_tier || 'free'} />
                 <InfoCard
                     label="Signed Up"
                     value={
@@ -154,7 +154,7 @@ export default async function AdminUserDetailPage({
             {/* ADMIN ACTIONS */}
             <UserActions
                 userId={id}
-                currentTier={profile.tier || 'free'}
+                user_tier={profile.user_tier || 'free'}
                 isSuspended={!!profile.is_suspended}
             />
 

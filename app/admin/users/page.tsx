@@ -16,7 +16,7 @@ export default async function AdminUsersPage({
 
     let query = supabase
         .from('profiles')
-        .select('id, full_name, email, tier, created_at, last_login')
+        .select('id, full_name, email, user_tier, created_at, last_login')
         .order('created_at', { ascending: false })
         .limit(200);
 
@@ -27,7 +27,7 @@ export default async function AdminUsersPage({
     }
 
     if (sp.tier && sp.tier !== 'all') {
-        query = query.eq('tier', sp.tier);
+        query = query.eq('user_tier', sp.tier);
     }
 
     const { data: users } = await query;
@@ -86,10 +86,10 @@ export default async function AdminUsersPage({
                                     <td className="px-5 py-3">
                                         <span
                                             className={`text-xs px-2 py-0.5 rounded-full ${tierBadge(
-                                                user.tier || 'free'
+                                                user.user_tier || 'free'
                                             )}`}
                                         >
-                                            {user.tier || 'free'}
+                                            {user.user_tier || 'free'}
                                         </span>
                                     </td>
                                     <td className="px-5 py-3 text-gray-400 text-xs">
