@@ -14,14 +14,14 @@ export const metadata: Metadata = {
     robots: 'noindex, nofollow',
 };
 
-const navItems = [
-    { href: '/admin', label: 'Overview', icon: LayoutDashboard },
-    { href: '/admin/users', label: 'Users', icon: Users },
-    { href: '/admin/billing', label: 'Billing', icon: CreditCard },
-    { href: '/admin/trust-center', label: 'Trust Center', icon: ShieldCheck },
-    { href: '/admin/support', label: 'Support', icon: MessageSquare },
-    { href: '/admin/cancellations', label: 'Cancellations', icon: TrendingDown },
-    { href: '/admin/cron', label: 'Cron Jobs', icon: Timer },
+const navItems: { href: string; label: string; icon: React.ReactNode }[] = [
+    { href: '/admin', label: 'Overview', icon: <LayoutDashboard size={18} /> },
+    { href: '/admin/users', label: 'Users', icon: <Users size={18} /> },
+    { href: '/admin/billing', label: 'Billing', icon: <CreditCard size={18} /> },
+    { href: '/admin/trust-center', label: 'Trust Center', icon: <ShieldCheck size={18} /> },
+    { href: '/admin/support', label: 'Support', icon: <MessageSquare size={18} /> },
+    { href: '/admin/cancellations', label: 'Cancellations', icon: <TrendingDown size={18} /> },
+    { href: '/admin/cron', label: 'Cron Jobs', icon: <Timer size={18} /> },
 ];
 
 export default function AdminLayout({
