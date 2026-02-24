@@ -373,8 +373,8 @@ export default function PricingPage() {
           <div className="grid gap-6 md:grid-cols-2">
             {[
               {
-                q: "No-Questions-Asked Cancellation",
-                a: "Cancel your subscription anytime with a single click — no retention traps or hidden hurdles.",
+                q: "Refund Policy",
+                a: "RemindMyBill does not offer refunds. You can cancel your subscription at any time to prevent future charges, but we do not provide prorated refunds for the remaining billing period.",
                 icon: Shield,
               },
               {
@@ -388,8 +388,8 @@ export default function PricingPage() {
                 icon: Crown,
               },
               {
-                q: "30-Day Trust Guarantee",
-                a: "If RemindMyBill doesn't help you save more than the cost of your subscription in 30 days, we'll refund you instantly.",
+                q: "What happens if I cancel?",
+                a: "You will retain access to your Pro features until the end of your current billing cycle. After that, your account will revert to the Guardian (Free) tier.",
                 icon: Zap,
               },
             ].map((faq, i) => (

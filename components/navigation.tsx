@@ -60,16 +60,36 @@ export function Navigation() {
 
             {/* Desktop Navigation */}
             <div className="hidden items-center gap-6 md:flex">
-              <Button variant="ghost" size="sm" asChild>
+              <Button
+                variant={isActive("/dashboard") ? "secondary" : "ghost"}
+                size="sm"
+                asChild
+                className={isActive("/dashboard") ? "bg-primary/10 text-primary hover:bg-primary/20" : ""}
+              >
                 <Link href="/dashboard">Dashboard</Link>
               </Button>
-              <Button variant="ghost" size="sm" asChild>
+              <Button
+                variant={isActive("/trust-center") ? "secondary" : "ghost"}
+                size="sm"
+                asChild
+                className={isActive("/trust-center") ? "bg-primary/10 text-primary hover:bg-primary/20" : ""}
+              >
                 <Link href="/trust-center">Trust Center</Link>
               </Button>
-              <Button variant="ghost" size="sm" asChild>
+              <Button
+                variant={isActive("/analytics") ? "secondary" : "ghost"}
+                size="sm"
+                asChild
+                className={isActive("/analytics") ? "bg-primary/10 text-primary hover:bg-primary/20" : ""}
+              >
                 <Link href="/analytics">Analytics</Link>
               </Button>
-              <Button variant="ghost" size="sm" asChild>
+              <Button
+                variant={isActive("/pricing") ? "secondary" : "ghost"}
+                size="sm"
+                asChild
+                className={isActive("/pricing") ? "bg-primary/10 text-primary hover:bg-primary/20" : ""}
+              >
                 <Link href="/pricing">Pricing</Link>
               </Button>
             </div>
@@ -209,22 +229,46 @@ export function Navigation() {
                         />
                       </div>
                       <nav className="flex flex-col gap-2">
-                        <Button variant="ghost" className="justify-start" asChild>
+                        <Button
+                          variant={isActive("/dashboard") ? "secondary" : "ghost"}
+                          className={`justify-start ${isActive("/dashboard") ? "bg-primary/10 text-primary" : ""}`}
+                          asChild
+                        >
                           <Link href="/dashboard">Dashboard</Link>
                         </Button>
-                        <Button variant="ghost" className="justify-start" asChild>
+                        <Button
+                          variant={isActive("/trust-center") ? "secondary" : "ghost"}
+                          className={`justify-start ${isActive("/trust-center") ? "bg-primary/10 text-primary" : ""}`}
+                          asChild
+                        >
                           <Link href="/trust-center">Trust Center</Link>
                         </Button>
-                        <Button variant="ghost" className="justify-start" asChild>
+                        <Button
+                          variant={isActive("/analytics") ? "secondary" : "ghost"}
+                          className={`justify-start ${isActive("/analytics") ? "bg-primary/10 text-primary" : ""}`}
+                          asChild
+                        >
                           <Link href="/analytics">Analytics</Link>
                         </Button>
-                        <Button variant="ghost" className="justify-start" asChild>
+                        <Button
+                          variant={isActive("/pricing") ? "secondary" : "ghost"}
+                          className={`justify-start ${isActive("/pricing") ? "bg-primary/10 text-primary" : ""}`}
+                          asChild
+                        >
                           <Link href="/pricing">Pricing</Link>
                         </Button>
-                        <Button variant="ghost" className="justify-start" asChild>
+                        <Button
+                          variant={isActive("/settings") ? "secondary" : "ghost"}
+                          className={`justify-start ${isActive("/settings") ? "bg-primary/10 text-primary" : ""}`}
+                          asChild
+                        >
                           <Link href="/settings">Settings</Link>
                         </Button>
-                        <Button variant="ghost" className="justify-start" asChild>
+                        <Button
+                          variant={isActive("/profile") ? "secondary" : "ghost"}
+                          className={`justify-start ${isActive("/profile") ? "bg-primary/10 text-primary" : ""}`}
+                          asChild
+                        >
                           <Link href="/profile">Profile</Link>
                         </Button>
                       </nav>

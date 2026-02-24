@@ -119,7 +119,17 @@ export function Footer() {
               © {new Date().getFullYear()} Remind My Bill. All rights reserved.
             </span>
           </div>
-          <div className="text-sm text-muted-foreground">Built with security and privacy in mind</div>
+          <div className="text-sm text-muted-foreground">
+            Built with security and privacy in mind • developed by{" "}
+            <a
+              href="https://foryoudigitalsolutions.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-primary hover:underline"
+            >
+              For You Digital Solutions
+            </a>
+          </div>
         </div>
       </div>
     </footer>
