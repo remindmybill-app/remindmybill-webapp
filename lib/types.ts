@@ -64,6 +64,7 @@ export interface Profile {
   cancellation_feedback: any | null
   cancel_reactivation_token: string | null
   previous_tier?: UserTier | null
+  payment_error?: string | null
   created_at: string
   updated_at: string
 }

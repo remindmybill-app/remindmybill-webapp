@@ -142,6 +142,12 @@ export async function POST(req: Request) {
                     return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
                 }
 
+                // Clear any existing payment errors on successful checkout
+                await supabaseAdmin
+                    .from('profiles')
+                    .update({ payment_error: null })
+                    .eq('id', userId);
+
                 await logSubscriptionEvent(
                     userId,
                     'upgrade',
@@ -399,6 +405,25 @@ export async function POST(req: Request) {
                     }
                 );
 
+                // Handle Initial Signup Failure specifically
+                if (invoice.billing_reason === 'subscription_create') {
+                    console.log(`[Webhook] Initial signup failed for user ${user.id}. Updating payment_error.`);
+                    await supabaseAdmin
+                        .from('profiles')
+                        .update({ payment_error: 'initial_signup_failed' })
+                        .eq('id', user.id);
+
+                    await logSubscriptionEvent(
+                        user.id,
+                        'payment_failed',
+                        user.user_tier,
+                        user.user_tier,
+                        event.id,
+                        { reason: 'initial_signup_failed', invoiceId: invoice.id }
+                    );
+                    break; // Exit early, do not send dunning emails or trigger downgrade logic
+                }
+
                 // Downgrade Logic (On 3rd failure or more)
                 if (attemptCount >= 3) {
                     console.log(`[Webhook] Third failure detected. Downgrading user ${user.id} to FREE`);
@@ -469,6 +494,14 @@ export async function POST(req: Request) {
                         { invoiceId: invoice.id, amount: invoice.amount_paid }
                     );
                     console.log(`[Webhook] Renewal recorded for user ${user.id}`);
+                }
+
+                // Clear payment error on successful payment
+                if (user) {
+                    await supabaseAdmin
+                        .from('profiles')
+                        .update({ payment_error: null })
+                        .eq('id', user.id);
                 }
                 break;
             }

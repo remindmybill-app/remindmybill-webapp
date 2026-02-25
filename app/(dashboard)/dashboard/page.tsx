@@ -16,7 +16,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Inbox, Bell, Sparkles, Plus, Lock, TrendingUp, AlertTriangle, CheckCircle2, Crown, Shield, Smartphone } from "lucide-react"
+import { Inbox, Bell, Sparkles, Plus, Lock, TrendingUp, AlertTriangle, CheckCircle2, Crown, Shield, Smartphone, DollarSign, Layers, Clock } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { useProfile } from "@/lib/hooks/use-profile"
@@ -231,15 +231,6 @@ function DashboardContent() {
             <div className="min-h-screen bg-background">
                 <div className="mx-auto max-w-[1600px] p-6 lg:p-8">
                     {/* Tier Status Widget */}
-                    <TierStatusWidget
-                        userTier={userTier}
-                        tierBadge={tierBadge}
-                        activeSubCount={activeSubCount}
-                        subLimit={subLimit}
-                        emailAlertsUsed={emailAlertsUsed}
-                        emailAlertsLimit={emailAlertsLimit}
-
-                    />
 
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-zinc-900 dark:text-zinc-50">Dashboard</h1>
@@ -330,6 +321,24 @@ function DashboardContent() {
                     </div>
                 )}
 
+
+                {/* ─── Payment Failure Banner ─────────────────────── */}
+                {profile?.payment_error === 'initial_signup_failed' && (
+                    <div className="mb-6 rounded-xl bg-red-50 border border-red-200 p-4 flex items-center justify-between dark:bg-red-900/10 dark:border-red-900/30">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/30">
+                                <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-500" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-red-900 dark:text-red-500">Upgrade Payment Failed</h3>
+                                <p className="text-sm text-red-700 dark:text-red-600">Your initial payment was declined. Please update your card to unlock Pro features.</p>
+                            </div>
+                        </div>
+                        <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white border-none" asChild>
+                            <Link href="/pricing">Retry Upgrade</Link>
+                        </Button>
+                    </div>
+                )}
 
                 {/* ─── Alert Exhaustion Banner ─────────────────────── */}
                 {alertsExhausted && (
