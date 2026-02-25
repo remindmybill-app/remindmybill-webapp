@@ -1,12 +1,52 @@
 "use client"
 
 import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { DollarSign, Layers, Clock } from "lucide-react"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { formatCurrency, convertCurrency } from "@/lib/utils/currency"
 import { useProfile } from "@/lib/hooks/use-profile"
 
 import { getNextRenewalDate, getRenewalDisplay } from "@/lib/utils/date-utils"
+
+export function StatCard({
+  label,
+  value,
+  icon: Icon,
+  trend,
+  colorClass,
+  isLoading
+}: {
+  label: string;
+  value: string;
+  icon: any;
+  trend?: string | null;
+  colorClass?: string;
+  isLoading?: boolean;
+}) {
+  return (
+    <Card className="border-2 shadow-sm h-full">
+      <CardContent className="p-5 flex flex-col h-full justify-between">
+        <div className="flex items-start justify-between">
+          <div className="rounded-xl bg-primary/10 p-2.5">
+            <Icon className="h-5 w-5 text-primary" />
+          </div>
+          {trend && (
+            <Badge variant="secondary" className="text-[10px] font-bold px-1.5 py-0 h-5">
+              {trend}
+            </Badge>
+          )}
+        </div>
+        <div className="mt-3">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{label}</p>
+          <p className={`text-2xl font-bold tracking-tight ${colorClass || ""}`}>
+            {isLoading ? "..." : value}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 export function QuickStats() {
   const { subscriptions, isLoading } = useSubscriptions()
@@ -39,49 +79,29 @@ export function QuickStats() {
     renewalColor = statusColor
   }
 
-  const stats = [
-    {
-      label: "Total Monthly Spend",
-      value: isLoading ? "..." : formatCurrency(totalMonthlySpend, profile?.default_currency),
-      icon: DollarSign,
-      trend: "+2.5%",
-    },
-    {
-      label: "Active Subscriptions",
-      value: isLoading ? "..." : activeCount.toString(),
-      icon: Layers,
-      trend: "+1",
-    },
-    {
-      label: "Next Renewal",
-      value: isLoading ? "..." : renewalValue,
-      colorClass: renewalColor,
-      icon: Clock,
-      trend: null,
-    },
-  ]
-
   return (
     <div className="grid gap-4 sm:grid-cols-3">
-      {stats.map((stat, index) => {
-        const Icon = stat.icon
-        return (
-          <Card key={index} className="border-2">
-            <CardContent className="p-4 sm:p-6">
-              <div className="flex items-start justify-between">
-                <div className="rounded-lg bg-primary/10 p-2.5">
-                  <Icon className="h-5 w-5 text-primary" />
-                </div>
-                {stat.trend && <div className="text-xs font-medium text-muted-foreground">{stat.trend}</div>}
-              </div>
-              <div className="mt-4 space-y-1">
-                <div className="text-xs font-medium text-muted-foreground sm:text-sm">{stat.label}</div>
-                <div className={`text-xl font-bold sm:text-2xl ${"colorClass" in stat ? stat.colorClass : ""}`}>{stat.value}</div>
-              </div>
-            </CardContent>
-          </Card>
-        )
-      })}
+      <StatCard
+        label="Total Monthly Spend"
+        value={formatCurrency(totalMonthlySpend, profile?.default_currency)}
+        icon={DollarSign}
+        trend="+2.5%"
+        isLoading={isLoading}
+      />
+      <StatCard
+        label="Active Subscriptions"
+        value={activeCount.toString()}
+        icon={Layers}
+        trend="+1"
+        isLoading={isLoading}
+      />
+      <StatCard
+        label="Next Renewal"
+        value={renewalValue}
+        colorClass={renewalColor}
+        icon={Clock}
+        isLoading={isLoading}
+      />
     </div>
   )
 }

@@ -3,10 +3,14 @@
 import { useState, useEffect } from "react"
 import { format } from "date-fns"
 import { toast } from "sonner"
-import { FinancialHealthCard } from "@/components/financial-health-card"
-import { QuickStats } from "@/components/quick-stats"
+import { HealthScoreGauge, OptimizationPanel } from "@/components/financial-health-card"
+import { StatCard } from "@/components/quick-stats"
 import { SubscriptionsTable } from "@/components/subscriptions-table"
 import { SavingsAlerts } from "@/components/savings-alerts"
+import { calculateHealthScore } from "@/lib/analytics"
+import { formatCurrency, convertCurrency } from "@/lib/utils/currency"
+import { getNextRenewalDate, getRenewalDisplay } from "@/lib/utils/date-utils"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -302,59 +306,30 @@ function DashboardContent() {
 
     return (
         <div className="overflow-x-hidden bg-zinc-50/50 dark:bg-black min-h-screen">
-            <div className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
+            <div className="mx-auto max-w-[1280px] p-4 sm:p-6 lg:p-6">
                 {profile?.id && <InstallPWAPrompt userId={profile.id} />}
 
-                {/* ─── Cancellation Countdown Banner ───────────────────── */}
+                {/* ─── Slim Cancellation Banner ───────────────────── */}
                 {profile?.cancellation_scheduled && profile?.cancellation_date && (
-                    <div className="bg-yellow-500/10 border-2 border-yellow-500 rounded-xl p-6 mb-6">
-                        <div className="flex items-start gap-4">
-                            <div className="p-3 bg-yellow-500/20 rounded-lg">
-                                <svg className="w-6 h-6 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="text-lg font-semibold text-white mb-2">
-                                    ⏰ Subscription Ending Soon
-                                </h3>
-                                <p className="text-gray-300 mb-3">
-                                    Your <strong className="text-yellow-400">{profile.user_tier}</strong> subscription will end on{' '}
-                                    <strong className="text-white">
-                                        {new Intl.DateTimeFormat('en-US', {
-                                            dateStyle: 'full',
-                                            timeStyle: 'short'
-                                        }).format(new Date(profile.cancellation_date))}
-                                    </strong>
-                                </p>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-yellow-400 font-medium">
-                                        {Math.ceil(
-                                            (new Date(profile.cancellation_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-                                        )} days remaining
-                                    </span>
-                                    <button
-                                        onClick={() => window.location.href = '/reactivate?token=' + profile.cancel_reactivation_token}
-                                        className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-lg font-medium transition-colors text-sm"
-                                    >
-                                        Keep My Subscription
-                                    </button>
-                                </div>
-                            </div>
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg px-4 py-2 mb-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <AlertTriangle className="h-4 w-4 text-amber-500" />
+                            <p className="text-sm font-medium text-amber-900 dark:text-amber-400">
+                                Subscription ending soon: {new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(new Date(profile.cancellation_date))}
+                                <span className="ml-2 text-amber-600 dark:text-amber-500 font-normal">
+                                    ({Math.ceil((new Date(profile.cancellation_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} days left)
+                                </span>
+                            </p>
                         </div>
+                        <button
+                            onClick={() => window.location.href = '/reactivate?token=' + profile.cancel_reactivation_token}
+                            className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1 rounded-md font-medium transition-colors text-xs"
+                        >
+                            Keep Subscription
+                        </button>
                     </div>
                 )}
 
-                {/* ─── Tier Status Widget ──────────────────────────── */}
-                <TierStatusWidget
-                    userTier={userTier}
-                    tierBadge={tierBadge}
-                    activeSubCount={activeSubCount}
-                    subLimit={subLimit}
-                    emailAlertsUsed={emailAlertsUsed}
-                    emailAlertsLimit={emailAlertsLimit}
-
-                />
 
                 {/* ─── Alert Exhaustion Banner ─────────────────────── */}
                 {alertsExhausted && (
@@ -396,9 +371,14 @@ function DashboardContent() {
                     </div>
                 )}
 
-                <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-4xl">Dashboard</h1>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Dashboard</h1>
+                            <Badge className={`${tierBadge.className} text-[10px] font-bold uppercase tracking-wider border-0 px-2 py-0.5`}>
+                                {userTier}
+                            </Badge>
+                        </div>
                         <p className="mt-1 text-sm text-muted-foreground">
                             Financial Overview &bull; {activeSubCount} Active Subscriptions
                         </p>
@@ -407,11 +387,11 @@ function DashboardContent() {
                         {isLimitReached ? (
                             <Button
                                 variant="outline"
-                                className="gap-2 opacity-50 cursor-not-allowed"
+                                className="gap-2 h-10 px-4"
                                 onClick={() => setShowLimitModal(true)}
                             >
                                 <Lock className="h-4 w-4" />
-                                Add Subscription
+                                Add Manually
                             </Button>
                         ) : (
                             <ManualSubscriptionModal onSubscriptionAdded={refreshSubscriptions} />
@@ -424,12 +404,12 @@ function DashboardContent() {
                                 <Button
                                     disabled={isScanning || isLimitReached}
                                     variant="outline"
-                                    className={`gap-2 ${isGmailConnected ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400" : "bg-white dark:bg-zinc-900"} ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`gap-2 h-10 px-4 ${isGmailConnected ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400" : "bg-white dark:bg-zinc-900 shadow-sm"} ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     {isGmailConnected ? <CheckCircle2 className="h-4 w-4" /> : (isProUser ? <Inbox className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-500" />)}
                                     {isScanning ? "Scanning..." :
                                         isLimitReached ? "Gmail Locked" :
-                                            isGmailConnected ? "Re-scan Inbox" :
+                                            isGmailConnected ? "Re-scan Gmail" :
                                                 isProUser ? "Sync Gmail" : "Sync Gmail (Pro)"}
                                 </Button>
                             }
@@ -478,37 +458,48 @@ function DashboardContent() {
                     </DialogContent>
                 </Dialog>
 
-                <div className="grid w-full gap-6 xl:grid-cols-[1fr_380px]">
-                    <div className="w-full space-y-6">
-                        <div className="grid w-full gap-6 md:grid-cols-1 lg:grid-cols-[420px_1fr]">
-                            <FinancialHealthCard />
-                            <QuickStats />
-                        </div>
+                {/* ─── Stats Row ──────────────────────────────────── */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                    <Card className="border-2 shadow-sm h-full">
+                        <CardContent className="p-4 flex flex-col items-center justify-center">
+                            <HealthScoreGauge
+                                score={subscriptions.length > 0 ? calculateHealthScore(subscriptions) : 0}
+                                isLoading={false}
+                                size="sm"
+                            />
+                        </CardContent>
+                    </Card>
 
+                    <DashboardStatsCards
+                        subscriptions={subscriptions}
+                        profile={profile}
+                        isLimitReached={isLimitReached}
+                        subLimit={subLimit}
+                    />
+                </div>
+
+                {/* ─── Main Content Row ────────────────────────────── */}
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4 items-start">
+                    <div className="space-y-4">
                         <SubscriptionsTable />
                     </div>
 
-                    <div className="w-full xl:sticky xl:top-8 xl:h-fit space-y-6">
+                    <div className="space-y-4">
+                        <OptimizationPanel />
+
                         {/* Premium Feature Teaser - Only for Free Users */}
                         {!isProUser && (
-                            <div className="rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 p-6 text-white shadow-xl shadow-blue-500/20">
-                                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
-                                    <Shield className="h-5 w-5 text-white" />
-                                </div>
-                                <h3 className="mb-2 text-lg font-bold">Upgrade to Shield</h3>
-                                <p className="mb-4 text-sm text-blue-100">
-                                    Unlock unlimited tracking, advanced analytics, and push notifications for just $4.99/mo.
-                                </p>
-                                <Button variant="secondary" className="w-full bg-white text-blue-600 hover:bg-blue-50" asChild>
+                            <div className="rounded-xl bg-indigo-600 p-6 text-white shadow-lg">
+                                <Shield className="h-8 w-8 mb-4 opacity-50" />
+                                <h3 className="font-bold text-lg leading-tight mb-2">Upgrade to Shield</h3>
+                                <p className="text-indigo-100 text-sm mb-4">Unlock unlimited tracking, advanced insights, and instant alerts.</p>
+                                <Button className="w-full bg-white text-indigo-600 hover:bg-white/90" asChild>
                                     <Link href="/pricing">View Plans</Link>
                                 </Button>
                             </div>
                         )}
 
-                        {/* AI Portfolio Insights Widget */}
-                        {isProUser && (
-                            <DashboardAIWidget subscriptions={subscriptions} />
-                        )}
+                        {isProUser && <DashboardAIWidget subscriptions={subscriptions} />}
                     </div>
                 </div>
             </div>
@@ -516,54 +507,68 @@ function DashboardContent() {
     )
 }
 
-// ─── Tier Status Widget Component ──────────────────────────────────────────
-function TierStatusWidget({
-    userTier,
-    tierBadge,
-    activeSubCount,
-    subLimit,
-    emailAlertsUsed,
-    emailAlertsLimit,
-
+// ─── Stat Helper Components ──────────────────────────────────────────
+function DashboardStatsCards({
+    subscriptions,
+    profile,
+    isLimitReached,
+    subLimit
 }: {
-    userTier: UserTier
-    tierBadge: { emoji: string; label: string; className: string }
-    activeSubCount: number
-    subLimit: number
-    emailAlertsUsed: number
-    emailAlertsLimit: number
-
+    subscriptions: any[];
+    profile: any;
+    isLimitReached: boolean;
+    subLimit: number;
 }) {
-    const isUnlimited = subLimit === Infinity
+    const userCurrency = profile?.default_currency || "USD"
+    const totalMonthlySpend = subscriptions.reduce((sum, sub) => {
+        const converted = convertCurrency(sub.cost, sub.currency, userCurrency)
+        return sum + converted
+    }, 0)
+    const activeCount = subscriptions.filter(s => s.status !== 'cancelled' && s.status !== 'paused').length
+
+    // Find next renewal
+    const nextRenewal = subscriptions.length > 0
+        ? subscriptions.reduce((earliest, sub) => {
+            const earliestDate = getNextRenewalDate(earliest.renewal_date, earliest.frequency)
+            const subDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
+            return subDate < earliestDate ? sub : earliest
+        })
+        : null
+
+    let renewalValue = "None"
+    let renewalColor = "text-muted-foreground"
+    let countdown = ""
+
+    if (nextRenewal) {
+        const nextDate = getNextRenewalDate(nextRenewal.renewal_date, nextRenewal.frequency)
+        const { label, statusColor } = getRenewalDisplay(nextDate)
+        renewalValue = nextRenewal.name
+        renewalColor = statusColor
+        countdown = label
+    }
 
     return (
-        <div className="mb-6 rounded-xl border border-white/5 bg-zinc-900/30 p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-                <div className="text-2xl">{tierBadge.emoji}</div>
-                <div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold">{tierBadge.label}</span>
-                        <Badge className={`${tierBadge.className} text-[10px] font-bold uppercase tracking-wider border-0`}>
-                            {userTier === 'free' ? 'Free' : userTier === 'pro' ? 'Pro' : 'Lifetime'}
-                        </Badge>
-
-                    </div>
-                    <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                        <span>
-                            Subscriptions: {userTier === 'free' ? `${activeSubCount}/${subLimit}` : 'Unlimited'}
-                        </span>
-                        <span>
-                            Alerts: {userTier === 'free' ? `${emailAlertsUsed}/${emailAlertsLimit} this month` : 'Unlimited'}
-                        </span>
-                    </div>
-                </div>
-            </div>
-            {userTier === 'free' && (
-                <Button size="sm" variant="outline" className="text-xs border-blue-500/30 text-blue-400 hover:bg-blue-500/10" asChild>
-                    <Link href="/pricing">Upgrade</Link>
-                </Button>
-            )}
-        </div>
+        <>
+            <StatCard
+                label="Monthly Spend"
+                value={formatCurrency(totalMonthlySpend, profile?.default_currency)}
+                icon={DollarSign}
+                trend="+2.5%"
+            />
+            <StatCard
+                label="Subscriptions"
+                value={`${activeCount} / ${subLimit === Infinity ? 'Unlimited' : subLimit}`}
+                icon={Layers}
+                trend={isLimitReached ? "LIMIT" : null}
+            />
+            <StatCard
+                label="Next Renewal"
+                value={renewalValue}
+                colorClass={renewalColor === 'text-orange-500' ? 'text-orange-600 font-semibold' : renewalColor}
+                icon={Clock}
+                trend={countdown}
+            />
+        </>
     )
 }
 
