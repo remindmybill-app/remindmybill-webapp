@@ -4,42 +4,48 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(0.985 0 0);
-  --foreground: oklch(0.15 0.01 270);
-  --card: oklch(0.995 0 0);
-  --card-foreground: oklch(0.15 0.01 270);
+  --radius: 0.75rem;
+}
+
+[data-theme="light"] {
+  --background: oklch(0.97 0.01 250);
+  /* #F5F5F7 off-white */
+  --foreground: oklch(0.2 0.02 250);
+  /* Dark text */
+  --card: oklch(0.99 0.005 250);
+  --card-foreground: oklch(0.2 0.02 250);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0.01 270);
+  --popover-foreground: oklch(0.2 0.02 250);
   --primary: oklch(0.65 0.17 160);
   --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.93 0.01 270);
-  --secondary-foreground: oklch(0.15 0.01 270);
-  --muted: oklch(0.96 0.005 270);
-  --muted-foreground: oklch(0.52 0.01 270);
-  --accent: oklch(0.96 0.01 160);
-  --accent-foreground: oklch(0.15 0.01 270);
+  --secondary: oklch(0.93 0.01 250);
+  --secondary-foreground: oklch(0.2 0.02 250);
+  --muted: oklch(0.95 0.01 250);
+  --muted-foreground: oklch(0.5 0.01 250);
+  --accent: oklch(0.85 0.08 160);
+  /* Muted green accent */
+  --accent-foreground: oklch(0.2 0.02 250);
   --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.92 0.01 270);
-  --input: oklch(0.92 0.01 270);
+  --border: oklch(0.92 0.01 250);
+  --input: oklch(0.92 0.01 250);
   --ring: oklch(0.65 0.17 160);
   --chart-1: oklch(0.65 0.17 160);
   --chart-2: oklch(0.65 0.2 210);
   --chart-3: oklch(0.72 0.15 85);
   --chart-4: oklch(0.68 0.18 290);
   --chart-5: oklch(0.62 0.19 35);
-  --radius: 0.75rem;
-  --sidebar: oklch(0.995 0 0);
-  --sidebar-foreground: oklch(0.15 0.01 270);
+  --sidebar: oklch(0.98 0.005 250);
+  --sidebar-foreground: oklch(0.2 0.02 250);
   --sidebar-primary: oklch(0.65 0.17 160);
   --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.96 0.01 270);
-  --sidebar-accent-foreground: oklch(0.15 0.01 270);
-  --sidebar-border: oklch(0.92 0.01 270);
+  --sidebar-accent: oklch(0.95 0.01 250);
+  --sidebar-accent-foreground: oklch(0.2 0.02 250);
+  --sidebar-border: oklch(0.92 0.01 250);
   --sidebar-ring: oklch(0.65 0.17 160);
 }
 
-.dark {
+[data-theme="dark"] {
   /* Remind My Bill dark theme: zinc-950 background, slate-400 text, emerald-500 accents */
   --background: oklch(0.09 0.005 270);
   --foreground: oklch(0.68 0.005 270);
@@ -127,7 +133,7 @@
 @layer utilities {
   .custom-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: #4B5563 transparent;
+    scrollbar-color: var(--muted-foreground) transparent;
   }
 
   .custom-scrollbar::-webkit-scrollbar {
@@ -140,12 +146,12 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #4B5563;
+    background: var(--muted-foreground);
     border-radius: 3px;
     transition: background 0.2s ease;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #6B7280;
+    background: var(--foreground);
   }
 }

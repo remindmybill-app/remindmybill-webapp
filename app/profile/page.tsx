@@ -51,7 +51,7 @@ export default function ProfilePage() {
 
         {/* Stats Overview */}
         <div className="mb-8 grid gap-6 md:grid-cols-3">
-          <Card className="border-2">
+          <Card className="border-border/50 border-2">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -65,7 +65,7 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          <Card className="border-2">
+          <Card className="border-border/50 border-2">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
@@ -79,7 +79,7 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
-          <Card className="border-2">
+          <Card className="border-border/50 border-2">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">

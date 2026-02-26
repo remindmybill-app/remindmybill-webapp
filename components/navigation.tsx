@@ -173,7 +173,7 @@ export function Navigation() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary relative">
                       <User className="h-5 w-5" />
                       {isPro(profile?.subscription_tier) && (
-                        <span className="absolute -top-1 -right-1 flex h-4 w-8 items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-[9px] font-bold text-white shadow-sm ring-1 ring-white dark:ring-black">
+                        <span className="absolute -top-1 -right-1 flex h-4 w-8 items-center justify-center rounded-full bg-gradient-to-r from-amber-400 to-orange-500 text-[9px] font-bold text-white shadow-sm ring-1 ring-background">
                           PRO
                         </span>
                       )}

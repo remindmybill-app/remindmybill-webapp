@@ -55,15 +55,15 @@ export default async function AdminUsersPage({
 
     return (
         <div className="p-6 space-y-6">
-            <h1 className="text-xl font-bold text-white">User Management</h1>
+            <h1 className="text-xl font-bold text-foreground">User Management</h1>
 
             <UserFilters currentSearch={sp.search} currentTier={sp.tier} />
 
-            <div className="bg-gray-900 rounded-xl border border-gray-800">
+            <div className="bg-card rounded-xl border border-border">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm min-w-[800px]">
                         <thead>
-                            <tr className="text-xs text-gray-500 border-b border-gray-800">
+                            <tr className="text-xs text-muted-foreground border-b border-border">
                                 <th className="text-left px-5 py-3">Name</th>
                                 <th className="text-left px-5 py-3">Email</th>
                                 <th className="text-left px-5 py-3">Tier</th>
@@ -77,12 +77,12 @@ export default async function AdminUsersPage({
                             {(users || []).map((user) => (
                                 <tr
                                     key={user.id}
-                                    className="border-b border-gray-800/50 hover:bg-gray-800/30"
+                                    className="border-b border-border/50 hover:bg-muted/30"
                                 >
-                                    <td className="px-5 py-3 text-white">
+                                    <td className="px-5 py-3 text-foreground">
                                         {user.full_name || '—'}
                                     </td>
-                                    <td className="px-5 py-3 text-gray-300">{user.email}</td>
+                                    <td className="px-5 py-3 text-muted-foreground">{user.email}</td>
                                     <td className="px-5 py-3">
                                         <span
                                             className={`text-xs px-2 py-0.5 rounded-full ${tierBadge(
@@ -92,15 +92,15 @@ export default async function AdminUsersPage({
                                             {user.user_tier || 'free'}
                                         </span>
                                     </td>
-                                    <td className="px-5 py-3 text-gray-400 text-xs">
+                                    <td className="px-5 py-3 text-muted-foreground text-xs">
                                         {user.created_at
                                             ? format(new Date(user.created_at), 'MMM d, yyyy')
                                             : '—'}
                                     </td>
-                                    <td className="px-5 py-3 text-gray-400">
+                                    <td className="px-5 py-3 text-muted-foreground">
                                         {subCountMap[user.id] || 0}
                                     </td>
-                                    <td className="px-5 py-3 text-gray-400 text-xs">
+                                    <td className="px-5 py-3 text-muted-foreground text-xs">
                                         {user.last_login
                                             ? format(new Date(user.last_login), 'MMM d, HH:mm')
                                             : 'Never'}
@@ -129,6 +129,6 @@ export default async function AdminUsersPage({
                     </table>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

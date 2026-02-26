@@ -64,7 +64,7 @@ export default async function AdminOverviewPage() {
 
     return (
         <div className="p-6 space-y-6">
-            <h1 className="text-xl font-bold text-white">Overview Dashboard</h1>
+            <h1 className="text-xl font-bold text-foreground">Overview Dashboard</h1>
 
             {/* ROW 1: Core Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -87,9 +87,9 @@ export default async function AdminOverviewPage() {
             </div>
 
             {/* TOP CATEGORIES */}
-            <div className="bg-gray-900 rounded-xl border border-gray-800">
-                <div className="px-5 py-3 border-b border-gray-800">
-                    <h2 className="text-sm font-semibold text-white">Top Categories</h2>
+            <div className="bg-card rounded-xl border border-border">
+                <div className="px-5 py-3 border-b border-border">
+                    <h2 className="text-sm font-semibold text-foreground">Top Categories</h2>
                 </div>
                 <div className="px-5 py-4 space-y-2">
                     {topCategories.length === 0 && (
@@ -97,8 +97,8 @@ export default async function AdminOverviewPage() {
                     )}
                     {topCategories.map(([cat, count]) => (
                         <div key={cat} className="flex items-center justify-between">
-                            <span className="text-gray-300 text-sm capitalize">{cat}</span>
-                            <span className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">
+                            <span className="text-muted-foreground text-sm capitalize">{cat}</span>
+                            <span className="text-xs bg-muted text-foreground px-2 py-0.5 rounded-full">
                                 {count}
                             </span>
                         </div>
@@ -107,14 +107,14 @@ export default async function AdminOverviewPage() {
             </div>
 
             {/* CRON JOB STATUS */}
-            <div className="bg-gray-900 rounded-xl border border-gray-800">
-                <div className="px-5 py-3 border-b border-gray-800">
-                    <h2 className="text-sm font-semibold text-white">Cron Job Status</h2>
+            <div className="bg-card rounded-xl border border-border">
+                <div className="px-5 py-3 border-b border-border">
+                    <h2 className="text-sm font-semibold text-foreground">Cron Job Status</h2>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm min-w-[500px]">
                         <thead>
-                            <tr className="text-xs text-gray-500">
+                            <tr className="text-xs text-muted-foreground">
                                 <th className="text-left px-5 py-2">Job Name</th>
                                 <th className="text-left px-5 py-2">Last Run</th>
                                 <th className="text-left px-5 py-2">Status</th>
@@ -123,11 +123,11 @@ export default async function AdminOverviewPage() {
                         </thead>
                         <tbody>
                             {uniqueCronLogs.map((log) => (
-                                <tr key={log.id} className="border-b border-gray-800/50">
-                                    <td className="px-5 py-3 text-white font-mono text-xs">
+                                <tr key={log.id} className="border-b border-border/50">
+                                    <td className="px-5 py-3 text-foreground font-mono text-xs">
                                         {log.job_name}
                                     </td>
-                                    <td className="px-5 py-3 text-gray-400">
+                                    <td className="px-5 py-3 text-muted-foreground">
                                         {log.last_run
                                             ? format(new Date(log.last_run), 'MMM d, HH:mm')
                                             : 'Never'}
@@ -176,13 +176,13 @@ function StatCard({
     return (
         <div
             className={`rounded-xl p-5 border ${danger
-                ? 'bg-red-950/40 border-red-800'
-                : 'bg-gray-900 border-gray-800'
+                ? 'bg-destructive/10 border-destructive'
+                : 'bg-card border-border'
                 }`}
         >
-            <p className="text-xs text-gray-500">{label}</p>
+            <p className="text-xs text-muted-foreground">{label}</p>
             <p
-                className={`text-2xl font-bold mt-1 ${danger ? 'text-red-400' : 'text-white'
+                className={`text-2xl font-bold mt-1 ${danger ? 'text-destructive' : 'text-foreground'
                     }`}
             >
                 {value}

@@ -41,22 +41,22 @@ export default async function AdminCancellationsPage() {
 
     return (
         <div className="p-6 space-y-6">
-            <h1 className="text-xl font-bold text-white">Cancellation Insights</h1>
+            <h1 className="text-xl font-bold text-foreground">Cancellation Insights</h1>
 
             {/* CHART */}
             <CancellationChart data={chartData} />
 
             {/* RECENT CANCELLATIONS */}
-            <div className="bg-gray-900 rounded-xl border border-gray-800">
-                <div className="px-5 py-3 border-b border-gray-800">
-                    <h2 className="text-sm font-semibold text-white">
+            <div className="bg-card rounded-xl border border-border">
+                <div className="px-5 py-3 border-b border-border">
+                    <h2 className="text-sm font-semibold text-foreground">
                         Recent Cancellations
                     </h2>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm min-w-[600px]">
                         <thead>
-                            <tr className="text-xs text-gray-500 border-b border-gray-800">
+                            <tr className="text-xs text-muted-foreground border-b border-border">
                                 <th className="text-left px-5 py-2">User Email</th>
                                 <th className="text-left px-5 py-2">Reason</th>
                                 <th className="text-left px-5 py-2">Feedback</th>
@@ -68,7 +68,7 @@ export default async function AdminCancellationsPage() {
                                 const profile = getProfile(s);
                                 return (
                                     <tr key={s.id} className="border-b border-gray-800/50">
-                                        <td className="px-5 py-3 text-gray-300 text-xs">
+                                        <td className="px-5 py-3 text-muted-foreground text-xs">
                                             {profile.email}
                                         </td>
                                         <td className="px-5 py-3 text-gray-400">{s.reason}</td>
@@ -99,9 +99,9 @@ export default async function AdminCancellationsPage() {
             </div>
 
             {/* WIN-BACK CANDIDATES */}
-            <div className="bg-gray-900 rounded-xl border border-gray-800">
-                <div className="px-5 py-3 border-b border-gray-800">
-                    <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+            <div className="bg-card rounded-xl border border-border">
+                <div className="px-5 py-3 border-b border-border">
+                    <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                         <span className="text-yellow-400">★</span> Win-Back Candidates (
                         {winBackCandidates.length})
                     </h2>
@@ -109,7 +109,7 @@ export default async function AdminCancellationsPage() {
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm min-w-[600px]">
                         <thead>
-                            <tr className="text-xs text-gray-500 border-b border-gray-800">
+                            <tr className="text-xs text-muted-foreground border-b border-border">
                                 <th className="text-left px-5 py-2">User Email</th>
                                 <th className="text-left px-5 py-2">Reason</th>
                                 <th className="text-left px-5 py-2">Feedback</th>
@@ -122,9 +122,9 @@ export default async function AdminCancellationsPage() {
                                 return (
                                     <tr
                                         key={s.id}
-                                        className="border-b border-gray-800/50 bg-yellow-900/5"
+                                        className="border-b border-border/50 bg-primary/5"
                                     >
-                                        <td className="px-5 py-3 text-yellow-300 text-xs">
+                                        <td className="px-5 py-3 text-primary text-xs">
                                             {profile.email}
                                         </td>
                                         <td className="px-5 py-3 text-gray-400">{s.reason}</td>

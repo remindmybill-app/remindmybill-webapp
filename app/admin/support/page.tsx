@@ -25,7 +25,7 @@ export default async function AdminSupportPage({
 
     return (
         <div className="p-6 space-y-6">
-            <h1 className="text-xl font-bold text-white">Support Inbox</h1>
+            <h1 className="text-xl font-bold text-foreground">Support Inbox</h1>
 
             {/* Status Filter Tabs */}
             <div className="flex gap-2">
@@ -34,8 +34,8 @@ export default async function AdminSupportPage({
                         key={tab}
                         href={`/admin/support?status=${tab}`}
                         className={`text-sm px-4 py-1.5 rounded-lg border transition-colors capitalize ${status === tab
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'text-gray-400 border-gray-700 hover:text-white hover:border-gray-500'
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'text-muted-foreground border-border hover:text-foreground hover:border-accent'
                             }`}
                     >
                         {tab}

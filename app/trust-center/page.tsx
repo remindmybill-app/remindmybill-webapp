@@ -208,26 +208,26 @@ export default function TrustCenterPage() {
   }
 
   return (
-    <div className="bg-zinc-50/50 dark:bg-black py-12 sm:py-20 min-h-screen">
+    <div className="bg-background py-12 sm:py-20 min-h-screen">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
 
         {/* HERO SECTION */}
         <div className="mb-16">
           <div className="mb-12 text-center">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-900 shadow-xl shadow-zinc-500/20 dark:bg-zinc-800">
-              <Shield className="h-8 w-8 text-white" />
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-xl shadow-primary/20">
+              <Shield className="h-8 w-8 text-primary-foreground" />
             </div>
-            <h1 className="mb-4 text-4xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 sm:text-5xl">Trust Center</h1>
-            <p className="mx-auto max-w-2xl text-lg text-zinc-400 dark:text-zinc-400">
+            <h1 className="mb-4 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Trust Center</h1>
+            <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
               Exposing hidden dark patterns and cancellation traps using our verified database.
             </p>
           </div>
 
           {/* Search Section */}
           <div className="mx-auto max-w-2xl relative z-20">
-            <div className="group relative rounded-3xl bg-white p-2 shadow-2xl shadow-zinc-200 dark:bg-zinc-900 dark:shadow-none ring-1 ring-zinc-200 dark:ring-zinc-800 focus-within:ring-2 focus-within:ring-indigo-500/50 transition-all">
+            <div className="group relative rounded-3xl bg-card p-2 shadow-2xl border border-border focus-within:ring-2 focus-within:ring-primary/50 transition-all">
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
+                <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Check any service (e.g. Netflix, Adobe)"
                   className="h-14 border-none bg-transparent pl-12 text-lg focus-visible:ring-0 shadow-none outline-none w-full"
@@ -239,7 +239,7 @@ export default function TrustCenterPage() {
                 {searchQuery && (
                   <button
                     onClick={handleClearSearch}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-muted-foreground transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1.5 rounded-full hover:bg-accent text-muted-foreground transition-colors"
                     aria-label="Clear search"
                   >
                     <X className="h-4 w-4" />
@@ -257,14 +257,14 @@ export default function TrustCenterPage() {
                         <button
                           key={result.id}
                           onClick={() => handleSelectService(result)}
-                          className="flex w-full items-center justify-between rounded-xl p-3 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left"
+                          className="flex w-full items-center justify-between rounded-xl p-3 hover:bg-accent transition-colors text-left"
                         >
                           <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 font-bold text-xs uppercase">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs uppercase">
                               {result.name.substring(0, 2)}
                             </div>
                             <div>
-                              <span className="font-medium text-zinc-900 dark:text-zinc-50 block">{result.name}</span>
+                              <span className="font-medium text-foreground block">{result.name}</span>
                               <span className="text-xs text-muted-foreground">{result.category}</span>
                             </div>
                           </div>
@@ -326,7 +326,7 @@ export default function TrustCenterPage() {
                 className="mt-12 overflow-hidden"
               >
                 <div className="grid gap-8 lg:grid-cols-12">
-                  <Card className="lg:col-span-4 rounded-3xl border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
+                  <Card className="lg:col-span-4 rounded-3xl border-border bg-card shadow-xl">
                     <CardHeader className="text-center p-8">
                       <CardTitle className="text-xl font-bold">Analysis Verdict</CardTitle>
                       <CardDescription>Ethical Audit for {analysis.service_name}</CardDescription>
@@ -339,7 +339,7 @@ export default function TrustCenterPage() {
                         </svg>
                         <div className="absolute flex flex-col items-center">
                           <span className={`text-6xl font-black tracking-tighter ${getScoreColor(analysis.trust_score)}`}>{analysis.trust_score}</span>
-                          <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Score</span>
+                          <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Score</span>
                         </div>
                       </div>
                       <div className="text-center">
@@ -357,12 +357,12 @@ export default function TrustCenterPage() {
                     <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60">
                       <CardHeader className="p-8 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm dark:bg-zinc-800">
-                            <Zap className="h-5 w-5 text-indigo-500" />
+                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted shadow-sm">
+                            <Zap className="h-5 w-5 text-primary" />
                           </div>
                           <div>
-                            <CardTitle className="text-xl font-bold leading-none text-zinc-900 dark:text-zinc-50">Pattern Breakdown</CardTitle>
-                            <CardDescription className="mt-1 text-zinc-500">Technical analysis of service behavior</CardDescription>
+                            <CardTitle className="text-xl font-bold leading-none text-foreground">Pattern Breakdown</CardTitle>
+                            <CardDescription className="mt-1 text-muted-foreground">Technical analysis of service behavior</CardDescription>
                           </div>
                         </div>
                       </CardHeader>
@@ -407,7 +407,7 @@ export default function TrustCenterPage() {
         <div className="mt-16">
           <div className="grid gap-8 lg:grid-cols-2 mb-16 items-start">
             {/* Top Trusted */}
-            <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40 p-6">
+            <div className="rounded-3xl border border-border bg-card shadow-sm p-6">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                   <span className="text-2xl">🏆</span> Trusted Services
@@ -425,14 +425,14 @@ export default function TrustCenterPage() {
                   trustedServices
                     .filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
                     .map((service) => (
-                      <div key={service.id} className="group flex items-center justify-between rounded-xl border border-zinc-100 bg-zinc-50/50 p-4 transition-all hover:bg-white hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/20 dark:hover:bg-zinc-800" onClick={() => handleSelectService(service)}>
+                      <div key={service.id} className="group flex items-center justify-between rounded-xl border border-border bg-muted/20 p-4 transition-all hover:bg-card hover:shadow-md" onClick={() => handleSelectService(service)}>
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
                             {service.name.substring(0, 1)}
                           </div>
                           <div>
-                            <p className="font-bold text-zinc-900 dark:text-zinc-50">{service.name}</p>
-                            <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-1">{service.category || 'Subscription'}</p>
+                            <p className="font-bold text-foreground">{service.name}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-1">{service.category || 'Subscription'}</p>
                           </div>
                         </div>
                         <div className="text-right flex flex-col items-end gap-1">
@@ -450,7 +450,7 @@ export default function TrustCenterPage() {
             </div>
 
             {/* Hall of Shame */}
-            <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40 p-6">
+            <div className="rounded-3xl border border-border bg-card shadow-sm p-6">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-xl font-bold flex items-center gap-2">
                   <span className="text-2xl">⚠️</span> High Risk Services

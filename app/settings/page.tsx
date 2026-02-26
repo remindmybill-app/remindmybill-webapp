@@ -9,7 +9,7 @@ import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Mail, Lock, Bell, CreditCard, Smartphone, DollarSign, AlertTriangle } from "lucide-react"
+import { Mail, Lock, Bell, CreditCard, Smartphone, DollarSign, AlertTriangle, Sun, Moon } from "lucide-react"
 import { useProfile } from "@/lib/hooks/use-profile"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { DowngradeConfirmationDialog } from "@/components/downgrade-confirmation-dialog"
@@ -19,6 +19,7 @@ import { downgradeUserToFree } from "@/app/actions/mock-upgrade"
 import { toast } from "sonner"
 import { createClient } from "@/lib/supabase"
 import { useRouter, useSearchParams } from "next/navigation"
+import { useTheme } from "next-themes"
 
 function SettingsContent() {
   const [emailNotifications, setEmailNotifications] = useState(true)
@@ -27,6 +28,7 @@ function SettingsContent() {
   const { profile, updateProfile, mutate } = useProfile()
   const { subscriptions, refreshSubscriptions } = useSubscriptions()
   const [currency, setCurrency] = useState(profile?.default_currency || "USD")
+  const { theme, setTheme } = useTheme()
 
   // Downgrade State
   const [showDowngradeDialog, setShowDowngradeDialog] = useState(false)
@@ -109,6 +111,44 @@ function SettingsContent() {
 
           {/* Account Tab */}
           <TabsContent value="account" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Sun className="h-5 w-5 text-primary" />
+                  Appearance
+                </CardTitle>
+                <CardDescription>Customize how Remind My Bill looks on your device</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label className="text-base">Theme</Label>
+                    <p className="text-sm text-muted-foreground">Select your preferred interface style</p>
+                  </div>
+                  <div className="flex items-center gap-2 p-1 bg-muted rounded-lg border">
+                    <Button
+                      variant={theme === 'light' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className={`gap-2 ${theme === 'light' ? 'bg-background shadow-sm' : ''}`}
+                      onClick={() => setTheme('light')}
+                    >
+                      <Sun className="h-4 w-4" />
+                      Light
+                    </Button>
+                    <Button
+                      variant={theme === 'dark' ? 'secondary' : 'ghost'}
+                      size="sm"
+                      className={`gap-2 ${theme === 'dark' ? 'bg-background shadow-sm' : ''}`}
+                      onClick={() => setTheme('dark')}
+                    >
+                      <Moon className="h-4 w-4" />
+                      Dark
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

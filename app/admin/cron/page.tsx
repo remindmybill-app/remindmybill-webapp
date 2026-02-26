@@ -32,7 +32,7 @@ export default async function AdminCronPage() {
 
     return (
         <div className="p-6 space-y-6">
-            <h1 className="text-xl font-bold text-white">Cron Jobs</h1>
+            <h1 className="text-xl font-bold text-foreground">Cron Jobs</h1>
             <CronClient jobs={jobData} />
         </div>
     );

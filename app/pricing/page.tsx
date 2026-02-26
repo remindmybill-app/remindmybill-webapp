@@ -69,9 +69,9 @@ export default function PricingPage() {
       price: 0,
       priceSuffix: "forever",
       icon: Shield,
-      iconColor: "text-zinc-400",
-      borderClass: "border-zinc-700/50 hover:border-zinc-600/70",
-      bgClass: "bg-zinc-900/40",
+      iconColor: "text-muted-foreground",
+      borderClass: "border-border hover:border-accent",
+      bgClass: "bg-muted/40",
       features: [
         { text: "Track up to 7 subscriptions", included: true },
         { text: "Monthly spending overview", included: true },
@@ -96,8 +96,8 @@ export default function PricingPage() {
       price: isAnnual ? proAnnualPerMonth : proMonthly,
       priceSuffix: isAnnual ? `/mo (billed $${TIER_PRICING.pro.annual}/yr)` : "/month",
       icon: Sparkles,
-      iconColor: "text-blue-400",
-      borderClass: "border-blue-500/40 ring-1 ring-blue-500/20 shadow-lg shadow-blue-500/10",
+      iconColor: "text-primary",
+      borderClass: "border-primary/40 ring-1 ring-primary/20 shadow-lg shadow-primary/10",
       bgClass: "bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5",
       features: [
         { text: "Unlimited subscription tracking", included: true },
@@ -204,7 +204,7 @@ export default function PricingPage() {
               {/* Popular Badge */}
               {plan.highlight && (
                 <div className="absolute top-0 right-0 z-10">
-                  <div className="bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-bl-xl">
+                  <div className="bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-bl-xl">
                     Most Popular
                   </div>
                 </div>
@@ -243,11 +243,11 @@ export default function PricingPage() {
                   {plan.features.map((feature, i) => (
                     <li key={i} className="flex items-start gap-2.5">
                       {feature.included ? (
-                        <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-500" />
+                        <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
                       ) : (
-                        <X className="mt-0.5 h-4 w-4 flex-shrink-0 text-zinc-600" />
+                        <X className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
                       )}
-                      <span className={`text-sm ${feature.included ? "text-foreground" : "text-zinc-500"}`}>
+                      <span className={`text-sm ${feature.included ? "text-foreground" : "text-muted-foreground"}`}>
                         {feature.text}
                       </span>
                     </li>
@@ -258,7 +258,7 @@ export default function PricingPage() {
               <CardFooter className="pt-2 pb-6">
                 <Button
                   className={`w-full gap-2 h-12 text-sm font-semibold transition-all ${plan.id === 'pro'
-                    ? "bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/25"
+                    ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25"
                     : plan.id === 'lifetime'
                       ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black font-bold shadow-lg shadow-amber-500/25"
                       : ""
@@ -283,7 +283,7 @@ export default function PricingPage() {
         </div>
 
         {/* ─── Social Proof Stats ──────────────────────────────── */}
-        <div className="mb-16 grid grid-cols-3 gap-4 rounded-2xl border border-white/5 bg-zinc-900/30 p-4 sm:p-8">
+        <div className="mb-16 grid grid-cols-3 gap-4 rounded-2xl border border-border/50 bg-muted/30 p-4 sm:p-8">
           {[
             { value: "12,450+", label: "Active Users" },
             { value: "$1.2M+", label: "Saved Collectively" },
@@ -299,10 +299,10 @@ export default function PricingPage() {
         {/* ─── Feature Comparison Table ────────────────────────── */}
         <div className="mb-16">
           <h2 className="text-2xl font-bold text-center mb-8">Feature Comparison</h2>
-          <div className="overflow-x-auto rounded-2xl border border-white/5">
+          <div className="overflow-x-auto rounded-2xl border border-border/50">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-zinc-900/60 sticky top-0 z-10">
+                <tr className="bg-muted sticky top-0 z-10">
                   <th className="text-left p-4 font-semibold text-muted-foreground">Feature</th>
                   <th className="text-center p-4 font-semibold">
                     <span className="text-zinc-400">Guardian</span>
@@ -320,7 +320,7 @@ export default function PricingPage() {
               </thead>
               <tbody>
                 {comparisonFeatures.map((row, i) => (
-                  <tr key={i} className={`border-t border-white/5 ${i % 2 === 0 ? "bg-zinc-900/20" : ""}`}>
+                  <tr key={i} className={`border-t border-border/50 ${i % 2 === 0 ? "bg-muted/10" : ""}`}>
                     <td className="p-4 font-medium text-foreground">{row.name}</td>
                     <td className="p-4 text-center text-muted-foreground">{row.free}</td>
                     <td className="p-4 text-center text-muted-foreground">{row.pro}</td>
@@ -355,7 +355,7 @@ export default function PricingPage() {
             ].map((testimonial, i) => (
               <div
                 key={i}
-                className="rounded-2xl border border-white/5 bg-zinc-900/30 p-6 hover:border-white/10 transition-all"
+                className="rounded-2xl border border-border/50 bg-card p-6 hover:shadow-md transition-all"
               >
                 <p className="text-sm text-muted-foreground mb-4 italic">"{testimonial.quote}"</p>
                 <div>
@@ -395,10 +395,10 @@ export default function PricingPage() {
             ].map((faq, i) => (
               <div
                 key={i}
-                className="rounded-2xl border border-white/5 bg-zinc-900/30 p-6 hover:border-emerald-500/20 transition-all group"
+                className="rounded-2xl border border-border/50 bg-card p-6 hover:border-primary/20 transition-all group"
               >
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 rounded-lg bg-white/5 text-zinc-500 group-hover:text-emerald-400 transition-colors">
+                  <div className="p-2 rounded-lg bg-muted text-muted-foreground group-hover:text-primary transition-colors">
                     <faq.icon className="h-4 w-4" />
                   </div>
                   <h3 className="font-semibold">{faq.q}</h3>

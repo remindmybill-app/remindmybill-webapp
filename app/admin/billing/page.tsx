@@ -74,12 +74,12 @@ export default async function AdminBillingPage({
 
     return (
         <div className="p-6 space-y-6">
-            <h1 className="text-xl font-bold text-white">Billing Monitor</h1>
+            <h1 className="text-xl font-bold text-foreground">Billing Monitor</h1>
 
             {/* Revenue at Risk Banner */}
             {revenueAtRisk > 0 && (
-                <div className="bg-red-950/40 border border-red-800 rounded-xl px-5 py-3">
-                    <p className="text-red-400 text-sm font-semibold">
+                <div className="bg-destructive/10 border border-destructive rounded-xl px-5 py-3">
+                    <p className="text-destructive text-sm font-semibold">
                         ⚠ Revenue at Risk: ${(revenueAtRisk / 100).toFixed(2)}
                     </p>
                 </div>
@@ -92,8 +92,8 @@ export default async function AdminBillingPage({
                         key={tab}
                         href={`/admin/billing${tab === 'all' ? '' : `?status=${tab}`}`}
                         className={`text-sm px-4 py-1.5 rounded-lg border transition-colors ${currentStatus === tab
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'text-gray-400 border-gray-700 hover:text-white hover:border-gray-500'
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'text-muted-foreground border-border hover:text-foreground hover:border-accent'
                             }`}
                     >
                         {tab}
@@ -102,11 +102,11 @@ export default async function AdminBillingPage({
             </div>
 
             {/* Invoices Table */}
-            <div className="bg-gray-900 rounded-xl border border-gray-800">
+            <div className="bg-card rounded-xl border border-border">
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm min-w-[900px]">
                         <thead>
-                            <tr className="text-xs text-gray-500 border-b border-gray-800">
+                            <tr className="text-xs text-muted-foreground border-b border-border">
                                 <th className="text-left px-5 py-3">User</th>
                                 <th className="text-left px-5 py-3">Amount</th>
                                 <th className="text-left px-5 py-3">Status</th>
@@ -118,11 +118,11 @@ export default async function AdminBillingPage({
                         </thead>
                         <tbody>
                             {rows.map((row) => (
-                                <tr key={row.id} className="border-b border-gray-800/50">
-                                    <td className="px-5 py-3 text-gray-300 text-xs">
+                                <tr key={row.id} className="border-b border-border/50">
+                                    <td className="px-5 py-3 text-muted-foreground text-xs">
                                         {row.email}
                                     </td>
-                                    <td className="px-5 py-3 text-white">{row.amount}</td>
+                                    <td className="px-5 py-3 text-foreground">{row.amount}</td>
                                     <td className="px-5 py-3">
                                         <span
                                             className={`text-xs px-2 py-0.5 rounded-full ${row.status === 'paid'

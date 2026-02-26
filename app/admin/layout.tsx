@@ -30,13 +30,13 @@ export default function AdminLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div className="flex h-screen overflow-hidden bg-gray-950">
+        <div className="flex h-screen overflow-hidden bg-background">
             {/* LEFT SIDEBAR */}
-            <aside className="w-60 flex-shrink-0 bg-gray-900 border-r border-gray-800 flex flex-col">
+            <aside className="w-60 flex-shrink-0 bg-sidebar border-r border-sidebar-border flex flex-col">
                 {/* Header */}
-                <div className="px-5 py-5 border-b border-gray-800">
-                    <h1 className="text-white font-bold text-lg">🔐 RMMB Admin</h1>
-                    <p className="text-xs text-gray-600 mt-0.5">
+                <div className="px-5 py-5 border-b border-sidebar-border">
+                    <h1 className="text-sidebar-foreground font-bold text-lg">🔐 RMMB Admin</h1>
+                    <p className="text-xs text-muted-foreground mt-0.5">
                         Internal — Do Not Share
                     </p>
                 </div>
@@ -54,13 +54,13 @@ export default function AdminLayout({
                 </nav>
 
                 {/* Footer */}
-                <div className="px-5 py-4 border-t border-gray-800">
-                    <p className="text-xs text-gray-600">RemindMyBill © 2025</p>
+                <div className="px-5 py-4 border-t border-sidebar-border">
+                    <p className="text-xs text-muted-foreground">RemindMyBill © 2025</p>
                 </div>
             </aside>
 
             {/* MAIN CONTENT AREA */}
-            <main className="flex-1 overflow-auto bg-gray-950">{children}</main>
+            <main className="flex-1 overflow-auto bg-background">{children}</main>
         </div>
     );
 }

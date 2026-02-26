@@ -227,7 +227,7 @@ export default function AnalyticsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-zinc-50/50 dark:bg-black py-8">
+      <div className="min-h-screen bg-background py-8">
         <div className="mx-auto max-w-[1600px] px-4 space-y-8">
           <div className="grid gap-6 md:grid-cols-2">
             <Skeleton className="h-32 rounded-2xl" />
@@ -243,10 +243,10 @@ export default function AnalyticsPage() {
   if (!isLoading && subscriptions.length === 0) {
     return (
       <div className="min-h-[80vh] flex flex-col items-center justify-center p-6 text-center">
-        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-indigo-50 dark:bg-indigo-500/10 shadow-xl shadow-indigo-500/10">
+        <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-3xl bg-muted shadow-xl shadow-primary/10">
           <BarChart3 className="h-12 w-12 text-indigo-600 dark:text-indigo-400" />
         </div>
-        <h2 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Analytics Unavailable</h2>
+        <h2 className="text-3xl font-bold tracking-tight text-foreground">Analytics Unavailable</h2>
         <p className="mt-2 text-lg text-muted-foreground max-w-md">No subscriptions to analyze yet.</p>
       </div>
     )
@@ -255,7 +255,7 @@ export default function AnalyticsPage() {
   const isFreeUser = !isPro(profile?.user_tier || profile?.subscription_tier, profile?.is_pro)
 
   return (
-    <div className="min-h-screen bg-zinc-50/50 dark:bg-black py-6 sm:py-10 relative">
+    <div className="min-h-screen bg-background py-6 sm:py-10 relative">
       {/* Feature Lock Overlay for Free Tier */}
       {isFreeUser && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -264,7 +264,7 @@ export default function AnalyticsPage() {
               <Lock className="h-8 w-8 text-blue-400" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">Advanced Analytics</h2>
-            <p className="text-zinc-400 mb-6">
+            <p className="text-muted-foreground mb-6">
               Unlock spending velocity, forecasts, inflation alerts, and category breakdowns with Shield or Fortress.
             </p>
             <Button className="bg-blue-600 hover:bg-blue-700 text-white" size="lg" asChild>

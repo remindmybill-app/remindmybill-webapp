@@ -20,7 +20,7 @@ export default async function AdminTrustCenterPage() {
 
     return (
         <div className="p-6 space-y-6">
-            <h1 className="text-xl font-bold text-white">Trust Center</h1>
+            <h1 className="text-xl font-bold text-foreground">Trust Center</h1>
             <TrustCenterClient
                 benchmarks={benchmarks || []}
                 requests={requests || []}

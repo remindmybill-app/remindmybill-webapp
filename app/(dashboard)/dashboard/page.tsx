@@ -233,14 +233,14 @@ function DashboardContent() {
                     {/* Tier Status Widget */}
 
                     <div className="mb-8">
-                        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl text-zinc-900 dark:text-zinc-50">Dashboard</h1>
+                        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Dashboard</h1>
                         <p className="mt-2 text-muted-foreground">
                             {format(new Date(), "EEEE, MMM do")} &bull; No active tracking
                         </p>
                     </div>
 
-                    <div className="flex min-h-[50vh] flex-col items-center justify-center rounded-3xl border border-dashed border-zinc-200 bg-zinc-50/50 dark:border-zinc-800 dark:bg-zinc-900/50 p-12 text-center">
-                        <div className="mb-6 inline-flex items-center justify-center rounded-full bg-white p-4 shadow-sm ring-1 ring-black/5 dark:bg-zinc-800 dark:ring-white/10">
+                    <div className="flex min-h-[50vh] flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-muted/50 p-12 text-center">
+                        <div className="mb-6 inline-flex items-center justify-center rounded-full bg-card p-4 shadow-sm ring-1 ring-border">
                             <Sparkles className="h-8 w-8 text-indigo-500" />
                         </div>
                         <h2 className="mb-3 text-xl font-semibold tracking-tight">No active subscriptions found.</h2>
@@ -296,7 +296,7 @@ function DashboardContent() {
     }
 
     return (
-        <div className="overflow-x-hidden bg-zinc-50/50 dark:bg-black min-h-screen">
+        <div className="overflow-x-hidden bg-background min-h-screen">
             <div className="mx-auto max-w-[1280px] p-4 sm:p-6 lg:p-6">
                 {profile?.id && <InstallPWAPrompt userId={profile.id} />}
 
@@ -383,7 +383,7 @@ function DashboardContent() {
                 <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <div className="flex items-center gap-3">
-                            <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Dashboard</h1>
+                            <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
                             <Badge className={`${tierBadge.className} text-[10px] font-bold uppercase tracking-wider border-0 px-2 py-0.5`}>
                                 {userTier}
                             </Badge>
@@ -413,7 +413,7 @@ function DashboardContent() {
                                 <Button
                                     disabled={isScanning || isLimitReached}
                                     variant="outline"
-                                    className={`gap-2 h-10 px-4 ${isGmailConnected ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400" : "bg-white dark:bg-zinc-900 shadow-sm"} ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`gap-2 h-10 px-4 ${isGmailConnected ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400" : "bg-card shadow-sm"} ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     {isGmailConnected ? <CheckCircle2 className="h-4 w-4" /> : (isProUser ? <Inbox className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-500" />)}
                                     {isScanning ? "Scanning..." :
