@@ -50,7 +50,7 @@ export function ScanSettingsDialog({ trigger, onScan, isScanning }: ScanSettings
                     <RadioGroup defaultValue="30" value={days} onValueChange={setDays} className="grid grid-cols-1 gap-4">
                         <Label
                             htmlFor="opt-30"
-                            className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900 cursor-pointer [&:has([data-state=checked])]:border-indigo-600 dark:[&:has([data-state=checked])]:border-indigo-500"
+                            className="flex items-center justify-between rounded-xl border border-border bg-card p-4 hover:bg-muted cursor-pointer [&:has([data-state=checked])]:border-primary"
                         >
                             <div className="flex items-center gap-4">
                                 <RadioGroupItem value="30" id="opt-30" />
@@ -64,7 +64,7 @@ export function ScanSettingsDialog({ trigger, onScan, isScanning }: ScanSettings
 
                         <Label
                             htmlFor="opt-90"
-                            className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900 cursor-pointer [&:has([data-state=checked])]:border-indigo-600 dark:[&:has([data-state=checked])]:border-indigo-500"
+                            className="flex items-center justify-between rounded-xl border border-border bg-card p-4 hover:bg-muted cursor-pointer [&:has([data-state=checked])]:border-primary"
                         >
                             <div className="flex items-center gap-4">
                                 <RadioGroupItem value="90" id="opt-90" />
@@ -78,7 +78,7 @@ export function ScanSettingsDialog({ trigger, onScan, isScanning }: ScanSettings
 
                         <Label
                             htmlFor="opt-365"
-                            className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:bg-zinc-900 cursor-pointer [&:has([data-state=checked])]:border-indigo-600 dark:[&:has([data-state=checked])]:border-indigo-500"
+                            className="flex items-center justify-between rounded-xl border border-border bg-card p-4 hover:bg-muted cursor-pointer [&:has([data-state=checked])]:border-primary"
                         >
                             <div className="flex items-center gap-4">
                                 <RadioGroupItem value="365" id="opt-365" />
@@ -94,7 +94,7 @@ export function ScanSettingsDialog({ trigger, onScan, isScanning }: ScanSettings
 
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                    <Button onClick={handleScan} className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2">
+                    <Button onClick={handleScan} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
                         <Clock className="h-4 w-4" /> Start Scan
                     </Button>
                 </DialogFooter>

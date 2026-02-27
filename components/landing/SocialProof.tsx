@@ -24,15 +24,15 @@ export function SocialProof() {
                             key={i}
                             src={url}
                             alt="User"
-                            className="h-10 w-10 rounded-full border-2 border-[#020804] bg-muted grayscale hover:grayscale-0 transition-all cursor-crosshair"
+                            className="h-10 w-10 rounded-full border-2 border-background dark:border-[#020804] bg-muted grayscale hover:grayscale-0 transition-all cursor-crosshair"
                             whileHover={{ scale: 1.2, zIndex: 10 }}
                         />
                     ))}
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-[#020804] bg-emerald-950 text-[10px] font-bold text-emerald-500">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-background dark:border-[#020804] bg-emerald-100 dark:bg-emerald-950 text-[10px] font-bold text-emerald-600 dark:text-emerald-500">
                         +2k
                     </div>
                 </div>
-                <div className="text-sm text-white/40">
+                <div className="text-sm text-muted-foreground">
                     <span className="font-bold text-emerald-500">2,500+</span> professionals taking control
                 </div>
             </div>

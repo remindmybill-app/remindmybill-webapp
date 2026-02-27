@@ -214,9 +214,31 @@ export default function TrustCenterPage() {
         {/* HERO SECTION */}
         <div className="mb-16">
           <div className="mb-12 text-center">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-xl shadow-primary/20">
-              <Shield className="h-8 w-8 text-primary-foreground" />
+            <div className="mx-auto mb-8 relative flex h-24 w-24 items-center justify-center">
+              {/* Outer pulse rings */}
+              {[1, 2, 3].map((i) => (
+                <motion.span
+                  key={i}
+                  className="absolute inline-flex h-full w-full rounded-full bg-primary/20"
+                  animate={{ scale: [1, 2.2], opacity: [0.4, 0] }}
+                  transition={{
+                    duration: 2.2,
+                    repeat: Infinity,
+                    delay: i * 0.55,
+                    ease: "easeOut",
+                  }}
+                />
+              ))}
+              {/* Core icon container */}
+              <motion.div
+                className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-xl shadow-primary/30"
+                animate={{ scale: [1, 1.04, 1] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <Shield className="h-8 w-8 text-primary-foreground" />
+              </motion.div>
             </div>
+
             <h1 className="mb-4 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Trust Center</h1>
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
               Exposing hidden dark patterns and cancellation traps using our verified database.
@@ -247,9 +269,9 @@ export default function TrustCenterPage() {
                 )}
 
                 {searchQuery.length > 1 && (
-                  <div className="absolute top-full left-0 mt-2 w-full rounded-2xl border border-zinc-200 bg-white p-2 shadow-xl dark:border-zinc-800 dark:bg-zinc-900 z-50 max-h-[300px] overflow-y-auto custom-scrollbar">
+                  <div className="absolute top-full left-0 mt-2 w-full rounded-2xl border border-border bg-card p-2 shadow-xl z-50 max-h-[300px] overflow-y-auto custom-scrollbar">
                     {isSearching ? (
-                      <div className="p-4 flex justify-center text-zinc-400">
+                      <div className="p-4 flex justify-center text-muted-foreground">
                         <Loader2 className="h-5 w-5 animate-spin" />
                       </div>
                     ) : searchResults.length > 0 ? (
@@ -354,8 +376,8 @@ export default function TrustCenterPage() {
                   </Card>
 
                   <div className="lg:col-span-8 space-y-8">
-                    <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/60">
-                      <CardHeader className="p-8 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
+                    <Card className="rounded-3xl border-border bg-card shadow-sm">
+                      <CardHeader className="p-8 border-b border-border bg-muted/30">
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-muted shadow-sm">
                             <Zap className="h-5 w-5 text-primary" />
@@ -384,9 +406,9 @@ export default function TrustCenterPage() {
                           </ul>
                         </div>
                       </CardContent>
-                      <div className="grid grid-cols-2 border-t border-zinc-100 dark:border-zinc-800 divide-x divide-zinc-100 dark:divide-zinc-800">
+                      <div className="grid grid-cols-2 border-t border-border divide-x divide-border">
                         <div className="p-6 text-center">
-                          <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mb-1">Exit Difficulty</p>
+                          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Exit Difficulty</p>
                           <Badge variant={analysis.cancellation_difficulty.toLowerCase() === 'easy' ? 'secondary' : 'destructive'} className="rounded-md font-bold">
                             {analysis.cancellation_difficulty.toUpperCase()}
                           </Badge>
@@ -502,8 +524,8 @@ export default function TrustCenterPage() {
             ].map((feature, i) => (
               <div key={i} className="flex flex-col items-center text-center group transition-transform hover:-translate-y-1">
                 <div className={`mb-6 flex h-14 w-14 items-center justify-center rounded-2xl ${feature.bg} shadow-sm transition-all group-hover:shadow-md`}><feature.icon className={`h-6 w-6 ${feature.color}`} /></div>
-                <h3 className="mb-2 text-lg font-bold text-zinc-900 dark:text-zinc-50">{feature.title}</h3>
-                <p className="text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 px-4">{feature.desc}</p>
+                <h3 className="mb-2 text-lg font-bold text-foreground">{feature.title}</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground px-4">{feature.desc}</p>
               </div>
             ))}
           </div>

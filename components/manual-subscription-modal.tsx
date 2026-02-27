@@ -215,10 +215,10 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                     </Button>
                 )}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[480px] bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border-white/20 dark:border-white/10 shadow-2xl overflow-hidden p-0 gap-0">
+            <DialogContent className="sm:max-w-[480px] bg-card text-foreground backdrop-blur-xl border-border shadow-2xl overflow-hidden p-0 gap-0">
                 <div className="absolute inset-0 z-0 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-rose-500/10 pointer-events-none" />
 
-                <DialogHeader className="p-6 pb-2 relative z-10 border-b border-black/5 dark:border-white/10 space-y-1">
+                <DialogHeader className="p-6 pb-2 relative z-10 border-b border-border space-y-1">
                     <DialogTitle className="text-xl font-bold tracking-tight">{subscriptionToEdit ? "Edit Subscription" : "Add Subscription"}</DialogTitle>
                     <DialogDescription className="text-muted-foreground text-sm">
                         Track a new recurring expense automatically.
@@ -292,7 +292,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                                             role="combobox"
                                             aria-expanded={serviceOpen}
                                             className={cn(
-                                                "w-full h-16 pl-16 pr-4 text-left justify-start text-lg font-semibold bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10 hover:bg-white/80 dark:hover:bg-white/5 transition-all shadow-sm",
+                                                "w-full h-16 pl-16 pr-4 text-left justify-start text-lg font-semibold bg-input text-foreground border-border hover:bg-muted transition-all shadow-sm",
                                                 errors.name && "border-rose-500 ring-rose-500/20"
                                             )}
                                         >
@@ -345,7 +345,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                                             defaultValue={subscriptionToEdit?.currency || "USD"}
                                             value={watch("currency")}
                                         >
-                                            <SelectTrigger className="h-12 bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10 px-2 font-medium">
+                                            <SelectTrigger className="h-12 bg-input text-foreground border-border px-2 font-medium">
                                                 <SelectValue placeholder="USD" />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -373,7 +373,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                                                 }
                                             }}
                                             {...register("cost")}
-                                            className={cn("h-12 pl-8 text-lg font-medium bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10", errors.cost && "border-rose-500")}
+                                            className={cn("h-12 pl-8 text-lg font-medium bg-input text-foreground border-border", errors.cost && "border-rose-500")}
                                         />
                                     </div>
                                 </div>
@@ -381,7 +381,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                             <div className="space-y-2">
                                 <Label htmlFor="frequency" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Billing</Label>
                                 <Select onValueChange={(val) => setValue("frequency", val, { shouldValidate: true })} defaultValue={subscriptionToEdit?.frequency || "monthly"}>
-                                    <SelectTrigger className="h-12 bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10 font-medium">
+                                    <SelectTrigger className="h-12 bg-input text-foreground border-border font-medium">
                                         <SelectValue placeholder="Monthly" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -402,7 +402,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                                         <Button
                                             variant={"outline"}
                                             className={cn(
-                                                "w-full h-12 justify-start text-left font-normal bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10",
+                                                "w-full h-12 justify-start text-left font-normal bg-input text-foreground border-border",
                                                 !date && "text-muted-foreground",
                                                 errors.renewalDate && "border-rose-500"
                                             )}
@@ -424,7 +424,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                             <div className="space-y-2">
                                 <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Category</Label>
                                 <Select onValueChange={(val) => setValue("category", val)} defaultValue={subscriptionToEdit?.category || "Entertainment"}>
-                                    <SelectTrigger className="h-12 bg-white/50 dark:bg-black/20 border-black/5 dark:border-white/10">
+                                    <SelectTrigger className="h-12 bg-input text-foreground border-border">
                                         <SelectValue placeholder="Select" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -441,12 +441,12 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                             <Label htmlFor="sharedWithCount" className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Shared with how many people?</Label>
                             <div className="flex items-center gap-4">
 
-                                <div className="flex items-center bg-white/50 dark:bg-black/20 border border-black/5 dark:border-white/10 rounded-xl overflow-hidden h-12">
+                                <div className="flex items-center bg-input text-foreground border-border rounded-xl overflow-hidden h-12">
                                     <Button
                                         type="button"
                                         variant="ghost"
                                         size="icon"
-                                        className="h-12 w-12 rounded-none hover:bg-black/5 dark:hover:bg-white/5"
+                                        className="h-12 w-12 rounded-none hover:bg-muted text-foreground"
                                         onClick={() => {
                                             const current = Number(watch("sharedWithCount") || 1)
                                             if (current > 1) {
@@ -464,7 +464,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                                         type="button"
                                         variant="ghost"
                                         size="icon"
-                                        className="h-12 w-12 rounded-none hover:bg-black/5 dark:hover:bg-white/5"
+                                        className="h-12 w-12 rounded-none hover:bg-muted text-foreground"
                                         onClick={() => {
                                             const current = Number(watch("sharedWithCount") || 1)
                                             setValue("sharedWithCount", String(current + 1), { shouldValidate: true })
@@ -495,7 +495,7 @@ export function ManualSubscriptionModal({ onSubscriptionAdded, subscriptionToEdi
                                 <Label htmlFor="trial" className="text-sm font-medium cursor-pointer select-none">Free Trial?</Label>
                             </div>
 
-                            <Button type="submit" disabled={loading || !isValid} className="px-8 h-12 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-black font-bold shadow-lg shadow-zinc-500/20 hover:scale-[1.02] active:scale-95 transition-all">
+                            <Button type="submit" disabled={loading || !isValid} className="px-8 h-12 rounded-xl bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all">
                                 {loading ? "Saving..." : subscriptionToEdit ? "Save Changes" : "Add Subscription"}
                             </Button>
                         </div>

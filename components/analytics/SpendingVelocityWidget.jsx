@@ -11,7 +11,7 @@ export function SpendingVelocityWidget({ currentSpend, lastMonthSameDaySpend, cu
     const isDown = diff < 0
 
     return (
-        <Card className="rounded-2xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+        <Card className="rounded-2xl border-border bg-card shadow-sm">
             <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                     <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Spending Velocity</p>

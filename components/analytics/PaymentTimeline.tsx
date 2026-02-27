@@ -49,7 +49,7 @@ export function PaymentTimeline({ subscriptions, selectedMonth, userCurrency, on
     }, [subscriptions, selectedMonth, userCurrency])
 
     return (
-        <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 overflow-hidden">
+        <Card className="rounded-3xl border-border bg-card text-foreground shadow-sm overflow-hidden">
             <CardHeader className="p-8 pb-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -81,17 +81,17 @@ export function PaymentTimeline({ subscriptions, selectedMonth, userCurrency, on
                         timelineGroups.map((group) => {
                             const isHighSpend = group.totalDayCost > 50;
                             return (
-                                <div key={group.dateKey} className="relative pl-6 border-l-2 border-zinc-100 dark:border-zinc-800">
-                                    <div className={`absolute left-[-5px] top-2 h-2 w-2 rounded-full ${isHighSpend ? 'bg-orange-500' : 'bg-indigo-500'}`} />
+                                <div key={group.dateKey} className="relative pl-6 border-l-2 border-border">
+                                    <div className={`absolute left-[-5px] top-2 h-2 w-2 rounded-full ${isHighSpend ? 'bg-orange-500' : 'bg-primary'}`} />
                                     <div className="flex items-center justify-between mb-4">
-                                        <h4 className="text-sm font-bold text-zinc-500">
+                                        <h4 className="text-sm font-bold text-muted-foreground">
                                             {group.date.toLocaleDateString("en-US", { weekday: 'short', month: 'short', day: 'numeric' })}
                                         </h4>
                                         <span className="text-xs font-bold text-muted-foreground">{formatCurrency(Number(group.totalDayCost.toFixed(2)), userCurrency)}</span>
                                     </div>
                                     <div className="grid gap-3">
                                         {group.subs.map((sub: any) => (
-                                            <div key={sub.id} className="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 border border-zinc-100 dark:bg-zinc-900/20 dark:border-zinc-800">
+                                            <div key={sub.id} className="flex items-center justify-between p-4 rounded-xl bg-muted/50 border border-border">
                                                 <span className="text-sm font-medium">{sub.name}</span>
                                                 <span className="text-sm font-bold">{formatCurrency(Number(sub.costInUserCurrency.toFixed(2)), userCurrency)}</span>
                                             </div>

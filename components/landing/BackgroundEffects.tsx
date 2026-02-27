@@ -22,7 +22,7 @@ export function BackgroundEffects() {
     }, [mouseX, mouseY])
 
     return (
-        <div className="fixed inset-0 -z-10 overflow-hidden bg-[#010302]">
+        <div className="fixed inset-0 -z-10 overflow-hidden bg-background dark:bg-[#010302]">
             {/* Mesh Gradient / Glow */}
             <motion.div
                 className="pointer-events-none absolute -inset-[100px] opacity-20"

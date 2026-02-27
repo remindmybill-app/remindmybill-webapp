@@ -8,12 +8,12 @@ import { formatCurrency } from "@/lib/utils/currency"
 export function InflationWatchWidget({ alerts, currency }) {
     if (!alerts || alerts.length === 0) {
         return (
-            <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 overflow-hidden">
+            <Card className="rounded-3xl border-border bg-card shadow-sm overflow-hidden">
                 <CardContent className="p-12 text-center">
                     <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
                         <AlertCircle className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
                     </div>
-                    <h3 className="font-bold text-zinc-900 dark:text-zinc-100">Price Stability</h3>
+                    <h3 className="font-bold text-foreground">Price Stability</h3>
                     <p className="text-sm text-muted-foreground">No recent price increases detected across your subscriptions.</p>
                 </CardContent>
             </Card>
@@ -31,7 +31,7 @@ export function InflationWatchWidget({ alerts, currency }) {
             <CardContent className="p-6 pt-0">
                 <div className="space-y-3">
                     {alerts.map((alert, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 rounded-2xl bg-white border border-orange-100 dark:bg-zinc-900/40 dark:border-orange-500/10 shadow-sm">
+                        <div key={index} className="flex items-center justify-between p-4 rounded-2xl bg-background border border-orange-100 dark:border-orange-500/10 shadow-sm">
                             <div className="flex items-center gap-3">
                                 <div className="h-10 w-10 rounded-full bg-orange-100 dark:bg-orange-500/20 flex items-center justify-center text-orange-600 font-bold">
                                     {alert.name.charAt(0)}

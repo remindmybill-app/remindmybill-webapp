@@ -14,7 +14,7 @@ const formatCurrency = (amount) => {
 export function SpendingTrendsChart({ data, selectedMonth, onBarClick }) {
     if (!data || data.length === 0) {
         return (
-            <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 overflow-hidden h-[400px] flex items-center justify-center">
+            <Card className="rounded-3xl border-border bg-card shadow-sm overflow-hidden h-[400px] flex items-center justify-center">
                 <div className="text-center p-6">
                     <BarChart3 className="h-10 w-10 text-zinc-300 mx-auto mb-4" />
                     <p className="text-muted-foreground">No spending history available</p>
@@ -37,7 +37,7 @@ export function SpendingTrendsChart({ data, selectedMonth, onBarClick }) {
     })
 
     return (
-        <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 overflow-hidden">
+        <Card className="rounded-3xl border-border bg-card shadow-sm overflow-hidden">
             <CardHeader className="p-8 pb-0">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">

@@ -258,16 +258,16 @@ export default function AnalyticsPage() {
     <div className="min-h-screen bg-background py-6 sm:py-10 relative">
       {/* Feature Lock Overlay for Free Tier */}
       {isFreeUser && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="text-center p-8 max-w-md">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="text-center p-8 max-w-md bg-card rounded-3xl border border-border shadow-2xl">
             <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/20">
               <Lock className="h-8 w-8 text-blue-400" />
             </div>
-            <h2 className="text-2xl font-bold text-white mb-2">Advanced Analytics</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-2">Advanced Analytics</h2>
             <p className="text-muted-foreground mb-6">
               Unlock spending velocity, forecasts, inflation alerts, and category breakdowns with Shield or Fortress.
             </p>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white" size="lg" asChild>
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" size="lg" asChild>
               <Link href="/pricing">Upgrade to Unlock — $4.99/mo</Link>
             </Button>
           </div>

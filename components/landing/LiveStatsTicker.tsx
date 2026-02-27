@@ -13,19 +13,19 @@ const stats = [
 
 export function LiveStatsTicker() {
     return (
-        <div className="relative flex w-full overflow-hidden border-y border-white/5 bg-white/[0.02] py-4 backdrop-blur-sm">
+        <div className="relative flex w-full overflow-hidden border-y border-border dark:border-white/5 bg-card/50 dark:bg-white/[0.02] py-4 backdrop-blur-sm">
             <div className="flex animate-marquee whitespace-nowrap">
                 {[...stats, ...stats].map((stat, i) => (
                     <div key={i} className="mx-8 flex items-center gap-2">
                         <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                        <span className="text-sm font-medium tracking-wide text-white/50">{stat}</span>
+                        <span className="text-sm font-medium tracking-wide text-muted-foreground">{stat}</span>
                     </div>
                 ))}
             </div>
 
             {/* Gradients to fade edges */}
-            <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-[#020804] to-transparent z-10" />
-            <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-[#020804] to-transparent z-10" />
+            <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-background dark:from-[#020804] to-transparent z-10" />
+            <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-background dark:from-[#020804] to-transparent z-10" />
 
             <style jsx>{`
         .animate-marquee {

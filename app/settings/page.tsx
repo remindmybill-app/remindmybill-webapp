@@ -345,12 +345,12 @@ function SettingsContent() {
                     </Button>
                   )}
                   {profile?.cancellation_scheduled && (
-                    <div className="bg-yellow-500/10 border border-yellow-500 rounded-lg p-4 mb-4">
+                    <div className="bg-yellow-50 dark:opacity-100 dark:bg-yellow-500/10 border border-yellow-300 dark:border-yellow-500 rounded-lg p-4 mb-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <AlertTriangle className="w-5 h-5 text-yellow-500" />
-                        <h4 className="font-semibold text-white">Cancellation Scheduled</h4>
+                        <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-500" />
+                        <h4 className="font-semibold text-yellow-900 dark:text-white">Cancellation Scheduled</h4>
                       </div>
-                      <p className="text-gray-300 text-sm mb-3">
+                      <p className="text-yellow-800 dark:text-gray-300 text-sm mb-3">
                         Your subscription will end on{' '}
                         <strong>
                           {profile?.cancellation_date ? new Date(profile.cancellation_date).toLocaleDateString('en-US', {
@@ -362,7 +362,7 @@ function SettingsContent() {
                       </p>
                       <Button
                         onClick={() => window.location.href = '/reactivate?token=' + profile?.cancel_reactivation_token}
-                        className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                       >
                         Cancel Cancellation
                       </Button>

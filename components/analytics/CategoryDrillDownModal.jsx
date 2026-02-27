@@ -63,9 +63,9 @@ export function CategoryDrillDownModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl bg-zinc-50 dark:bg-zinc-950 border-white dark:border-zinc-800 p-0 overflow-hidden gap-0 rounded-3xl">
+            <DialogContent className="max-w-2xl bg-card text-foreground border-border p-0 overflow-hidden gap-0 rounded-3xl">
                 {/* Header Section with Color Gradient */}
-                <div className="p-8 pb-6 bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 relative overflow-hidden">
+                <div className="p-8 pb-6 bg-muted/30 border-b border-border relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-transparent to-white/10 opacity-20" style={{ backgroundColor: color }} />
 
                     <div className="flex items-start justify-between relative z-10">
@@ -74,7 +74,7 @@ export function CategoryDrillDownModal({
                                 <div className="h-3 w-3 rounded-full shadow-sm" style={{ backgroundColor: color }} />
                                 <h2 className="text-2xl font-bold tracking-tight">{categoryName}</h2>
                             </div>
-                            <p className="text-4xl font-bold text-zinc-900 dark:text-zinc-50">
+                            <p className="text-4xl font-bold text-foreground">
                                 {formatCurrency(totalCost, userCurrency)}
                                 <span className="text-lg text-muted-foreground font-medium ml-2">/mo</span>
                             </p>
@@ -112,7 +112,7 @@ export function CategoryDrillDownModal({
                 <div className="p-8 space-y-8">
                     {/* Heaviest Contributor Card */}
                     {heaviestContributor && (
-                        <div className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm flex items-center justify-between">
+                        <div className="p-4 rounded-2xl bg-card border border-border shadow-sm flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <div className="h-10 w-10 rounded-full bg-indigo-50 dark:bg-indigo-500/20 flex items-center justify-center">
                                     <Crown className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
@@ -120,7 +120,7 @@ export function CategoryDrillDownModal({
                                 <div>
                                     <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-0.5">Top Spender</p>
                                     <p className="font-medium text-sm">
-                                        <span className="font-bold text-zinc-900 dark:text-zinc-100">{heaviestContributor.name}</span> is {heaviestShare}% of this category
+                                        <span className="font-bold text-foreground">{heaviestContributor.name}</span> is {heaviestShare}% of this category
                                     </p>
                                 </div>
                             </div>
@@ -135,13 +135,13 @@ export function CategoryDrillDownModal({
                         <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4">Subscriptions ({categorySubs.length})</h3>
                         <div className="space-y-3">
                             {categorySubs.map(sub => (
-                                <div key={sub.id} className="group flex items-center justify-between p-3 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800/50 transition-colors">
+                                <div key={sub.id} className="group flex items-center justify-between p-3 rounded-xl hover:bg-muted transition-colors">
                                     <div className="flex items-center gap-3">
-                                        <div className="h-8 w-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center font-bold text-xs text-zinc-500">
+                                        <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center font-bold text-xs text-muted-foreground">
                                             {sub.name.charAt(0)}
                                         </div>
                                         <div>
-                                            <p className="font-bold text-sm text-zinc-900 dark:text-zinc-100">{sub.name}</p>
+                                            <p className="font-bold text-sm text-foreground">{sub.name}</p>
                                             <p className="text-xs text-muted-foreground">{sub.frequency || 'Monthly'}</p>
                                         </div>
                                     </div>

@@ -87,7 +87,7 @@ export function ActivityFeed({ subscriptions, userCurrency = "USD" }) {
 
     if (activities.length === 0) {
         return (
-            <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+            <Card className="rounded-3xl border-border bg-card shadow-sm">
                 <CardHeader className="p-6 pb-2">
                     <div className="flex items-center gap-2">
                         <Activity className="h-5 w-5 text-indigo-500" />
@@ -113,7 +113,7 @@ export function ActivityFeed({ subscriptions, userCurrency = "USD" }) {
     }, {})
 
     return (
-        <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 overflow-hidden">
+        <Card className="rounded-3xl border-border bg-card shadow-sm overflow-hidden">
             <CardHeader className="p-6 pb-2">
                 <div className="flex items-center gap-2">
                     <Bell className="h-5 w-5 text-indigo-500" />
@@ -122,8 +122,8 @@ export function ActivityFeed({ subscriptions, userCurrency = "USD" }) {
             </CardHeader>
             <CardContent className="p-6 pt-4 space-y-6">
                 {Object.entries(grouped).map(([day, items]) => (
-                    <div key={day} className="relative pl-4 border-l-2 border-zinc-100 dark:border-zinc-800">
-                        <div className="absolute left-[-5px] top-0 h-2.5 w-2.5 rounded-full bg-indigo-100 border-2 border-indigo-500 dark:bg-zinc-900" />
+                    <div key={day} className="relative pl-4 border-l-2 border-border">
+                        <div className="absolute left-[-5px] top-0 h-2.5 w-2.5 rounded-full bg-background border-2 border-primary" />
                         <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 leading-none">{day}</h4>
                         <div className="space-y-4">
                             {items.map((item) => (
@@ -138,7 +138,7 @@ export function ActivityFeed({ subscriptions, userCurrency = "USD" }) {
                                         )}
                                     </div>
                                     <div className="flex-1">
-                                        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 leading-tight">
+                                        <p className="text-sm font-medium text-foreground leading-tight">
                                             <span className="font-bold">{item.subName}</span>
                                             {item.type === 'payment' && ' renewed'}
                                             {item.type === 'upcoming' && ' is due'}
@@ -146,8 +146,8 @@ export function ActivityFeed({ subscriptions, userCurrency = "USD" }) {
                                         </p>
                                         <div className="flex items-center gap-2 mt-0.5">
                                             <span className={`text-xs font-bold ${item.type === 'price_change'
-                                                    ? (item.isIncrease ? 'text-red-600' : 'text-emerald-600')
-                                                    : 'text-zinc-500'
+                                                ? (item.isIncrease ? 'text-red-600' : 'text-emerald-600')
+                                                : 'text-zinc-500'
                                                 }`}>
                                                 {item.type === 'price_change' && (item.isIncrease ? '+' : '')}
                                                 {formatCurrency(item.amount, item.currency || userCurrency)}

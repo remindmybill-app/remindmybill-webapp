@@ -123,7 +123,7 @@ export function SmartInsightsCarousel({ subscriptions, velocity, categoryData, u
                             <Card className={`border-0 shadow-sm ${card.bgColor} backdrop-blur-sm`}>
                                 <CardContent className="flex flex-col gap-3 p-5">
                                     <div className="flex items-start justify-between">
-                                        <div className={`p-2 rounded-xl bg-white dark:bg-black/20 shadow-sm ${card.textColor}`}>
+                                        <div className={`p-2 rounded-xl bg-background shadow-sm ${card.textColor}`}>
                                             <card.icon className="w-5 h-5" />
                                         </div>
                                         <div className={`text-[10px] font-bold uppercase tracking-wider ${card.textColor} opacity-80`}>

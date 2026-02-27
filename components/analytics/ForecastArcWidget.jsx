@@ -9,14 +9,14 @@ export function ForecastArcWidget({ paid, total, currency }) {
     const progress = total > 0 ? (paid / total) * 100 : 0
 
     return (
-        <Card className="rounded-2xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
+        <Card className="rounded-2xl border-border bg-card shadow-sm">
             <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                     <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Bill Forecast</p>
                     <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{Math.round(progress)}% Paid</span>
                 </div>
                 <div className="space-y-4">
-                    <Progress value={progress} className="h-2 bg-zinc-100 dark:bg-zinc-800" />
+                    <Progress value={progress} className="h-2 bg-secondary" />
                     <div className="flex justify-between items-end">
                         <div>
                             <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Remaining</p>
