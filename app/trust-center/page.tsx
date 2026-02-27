@@ -214,30 +214,67 @@ export default function TrustCenterPage() {
         {/* HERO SECTION */}
         <div className="mb-16">
           <div className="mb-12 text-center">
-            <div className="mx-auto mb-8 relative flex h-24 w-24 items-center justify-center">
-              {/* Outer pulse rings */}
-              {[1, 2, 3].map((i) => (
-                <motion.span
+            {/* RADAR SCAN ANIMATION — replaces shield icon */}
+            <div className="mx-auto mb-10 relative flex h-40 w-40 items-center justify-center">
+
+              {/* Static concentric rings */}
+              {[1, 2, 3, 4].map((i) => (
+                <div
                   key={i}
-                  className="absolute inline-flex h-full w-full rounded-full bg-primary/20"
-                  animate={{ scale: [1, 2.2], opacity: [0.4, 0] }}
+                  className="absolute rounded-full border border-primary/15"
+                  style={{ width: `${i * 22}%`, height: `${i * 22}%` }}
+                />
+              ))}
+
+              {/* Rotating sweep arm */}
+              <motion.div
+                className="absolute inset-0 rounded-full"
+                style={{ transformOrigin: "center center" }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+              >
+                {/* Sweep gradient wedge */}
+                <div
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background:
+                      "conic-gradient(from 0deg, transparent 0deg, hsl(var(--primary) / 0.25) 60deg, hsl(var(--primary) / 0.05) 90deg, transparent 90deg)",
+                  }}
+                />
+                {/* Leading edge dot (the "beam tip") */}
+                <div
+                  className="absolute top-[50%] left-[50%] h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-primary shadow-[0_0_6px_2px_hsl(var(--primary)/0.6)]"
+                  style={{ transformOrigin: "left center", width: "50%" }}
+                />
+              </motion.div>
+
+              {/* Blip dots — simulating detected targets */}
+              {[
+                { top: "22%", left: "62%", delay: 0.8, color: "bg-emerald-400" },
+                { top: "60%", left: "28%", delay: 1.6, color: "bg-rose-400" },
+                { top: "70%", left: "65%", delay: 2.4, color: "bg-amber-400" },
+              ].map((blip, i) => (
+                <motion.div
+                  key={i}
+                  className={`absolute h-2 w-2 rounded-full ${blip.color} shadow-[0_0_8px_2px_currentColor]`}
+                  style={{ top: blip.top, left: blip.left }}
+                  animate={{ opacity: [0, 1, 1, 0], scale: [0.5, 1.2, 1, 0.5] }}
                   transition={{
-                    duration: 2.2,
+                    duration: 3,
                     repeat: Infinity,
-                    delay: i * 0.55,
-                    ease: "easeOut",
+                    delay: blip.delay,
+                    ease: "easeInOut",
                   }}
                 />
               ))}
-              {/* Core icon container */}
-              <motion.div
-                className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-xl shadow-primary/30"
-                animate={{ scale: [1, 1.04, 1] }}
-                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <Shield className="h-8 w-8 text-primary-foreground" />
-              </motion.div>
+
+              {/* Center crosshair dot */}
+              <div className="relative z-10 h-3 w-3 rounded-full bg-primary shadow-[0_0_12px_4px_hsl(var(--primary)/0.5)]" />
+
+              {/* Outer ring border */}
+              <div className="absolute inset-0 rounded-full border border-primary/25" />
             </div>
+
 
             <h1 className="mb-4 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">Trust Center</h1>
             <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
