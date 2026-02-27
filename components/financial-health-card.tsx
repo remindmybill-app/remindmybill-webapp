@@ -88,7 +88,7 @@ export function OptimizationPanel() {
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-xl bg-zinc-50 dark:bg-zinc-900/50 p-4 border border-zinc-100 dark:border-zinc-800">
+            <div className="rounded-xl bg-muted/50 p-4 border border-border">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-muted-foreground">Efficiency Level</span>
                 <Badge variant={optimizationLevel === 'high' ? 'default' : 'secondary'} className="capitalize">

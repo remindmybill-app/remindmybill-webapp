@@ -132,11 +132,11 @@ export function SubscriptionsTable() {
 
   return (
     <>
-      <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50 overflow-hidden">
-        <CardHeader className="p-6 border-b border-zinc-100 dark:border-zinc-800 flex flex-row items-center justify-between">
+      <Card className="rounded-3xl border-border bg-card shadow-sm overflow-hidden">
+        <CardHeader className="p-6 border-b border-border flex flex-row items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-500/10">
-              <TrendingUp className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-primary/10">
+              <TrendingUp className="h-5 w-5 text-primary" />
             </div>
             <div>
               <CardTitle className="text-xl font-bold leading-none">Portfolio</CardTitle>
@@ -170,7 +170,7 @@ export function SubscriptionsTable() {
             <>
               <div className="hidden md:block">
                 <table className="w-full">
-                  <thead className="bg-zinc-50/50 dark:bg-zinc-800/20 text-xs font-black uppercase tracking-widest text-zinc-400 border-b border-zinc-100 dark:border-zinc-800">
+                  <thead className="bg-muted/50 text-xs font-black uppercase tracking-widest text-muted-foreground border-b border-border">
                     <tr>
                       <th className="p-4 pl-6 text-left">Service</th>
                       <th className="p-4 text-right">Price</th>
@@ -180,7 +180,7 @@ export function SubscriptionsTable() {
                       <th className="p-4 pr-6 text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-50 dark:divide-zinc-800/50">
+                  <tbody className="divide-y divide-border/50">
                     {subscriptions.map((sub, index) => {
                       const Icon = categoryIcons[sub.category] || Package
                       const nextDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
@@ -191,24 +191,24 @@ export function SubscriptionsTable() {
                       const lockedClass = isLocked ? "opacity-50 grayscale pointer-events-none select-none relative" : ""
 
                       return (
-                        <tr key={sub.id} className={`group transition-all hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 cursor-default ${isLocked ? 'bg-zinc-50/50 dark:bg-zinc-900/50' : ''}`}>
+                        <tr key={sub.id} className={`group transition-all hover:bg-muted/50 cursor-default ${isLocked ? 'bg-muted/30' : ''}`}>
                           <td className={`p-4 pl-6 ${lockedClass}`}>
                             <div className="flex items-center gap-4">
-                              <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-zinc-200 group-hover:ring-indigo-500/30 transition-all dark:bg-zinc-800 dark:ring-zinc-700 overflow-hidden relative">
-                                <Icon className="h-5 w-5 text-zinc-600 dark:text-zinc-300 absolute" />
+                              <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-background shadow-sm ring-1 ring-border group-hover:ring-primary/30 transition-all overflow-hidden relative">
+                                <Icon className="h-5 w-5 text-muted-foreground absolute" />
                                 <img
                                   src={logoUrl}
                                   alt={sub.name}
-                                  className="h-full w-full object-cover relative z-10 bg-white"
+                                  className="h-full w-full object-cover relative z-10 bg-background"
                                   onError={(e) => {
                                     (e.target as HTMLImageElement).style.opacity = '0';
                                   }}
                                 />
                               </div>
                               <div>
-                                <span className="block text-sm font-bold text-zinc-900 dark:text-zinc-50 flex items-center gap-2">
+                                <span className="block text-sm font-bold text-foreground flex items-center gap-2">
                                   {sub.name}
-                                  {isLocked && <Lock className="h-3 w-3 text-zinc-400" />}
+                                  {isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
                                 </span>
                                 {sub.shared_with_count > 1 && !isLocked && (
                                   <span className="block mt-0.5 text-[9px] font-black uppercase tracking-tighter text-indigo-600 dark:text-indigo-400">
@@ -220,7 +220,7 @@ export function SubscriptionsTable() {
                             </div>
                           </td>
                           <td className={`p-4 text-right ${lockedClass}`}>
-                            <div className="font-black text-sm tracking-tighter text-zinc-900 dark:text-zinc-50">
+                            <div className="font-black text-sm tracking-tighter text-foreground">
                               {sub.shared_with_count > 1 ? (
                                 <div className="flex flex-col items-end">
                                   <span className="text-indigo-600 dark:text-indigo-400">{formatCurrency(sub.cost / sub.shared_with_count, sub.currency)}</span>

@@ -217,22 +217,22 @@ export default function LandingPage() {
                         {/* Feature 4 - Wide */}
                         <div className="md:col-span-3 rounded-[2rem] bg-card border border-border dark:bg-white/[0.03] dark:border-white/5 p-10 flex flex-col md:flex-row items-center gap-12 relative overflow-hidden group hover:border-emerald-500/20 transition-all duration-500">
                             <div className="flex-1">
-                                <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-8 border border-emerald-500/20">
-                                    <Eye className="h-7 w-7 text-emerald-500" />
+                                <div className="h-14 w-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-8 border border-primary/20">
+                                    <Eye className="h-7 w-7 text-primary" />
                                 </div>
                                 <h3 className="text-3xl font-black mb-4 tracking-tight">Pattern Detection</h3>
                                 <p className="text-muted-foreground text-lg leading-relaxed">
                                     Our algorithm spots design tricks companies use to keep you trapped. We flag hidden cancellation buttons and forced phone calls.
                                 </p>
                             </div>
-                            <div className="flex-1 w-full bg-zinc-100 dark:bg-black/40 rounded-2xl p-8 border border-border font-mono text-xs overflow-hidden relative">
+                            <div className="flex-1 w-full bg-muted/30 rounded-2xl p-8 border border-border font-mono text-xs overflow-hidden relative">
                                 <div className="flex items-center gap-3 mb-6">
                                     <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></div>
                                     <span className="text-muted-foreground uppercase tracking-widest">System Monitor // Active</span>
                                 </div>
                                 <div className="space-y-3">
                                     <p className="text-foreground/60 dark:text-white/60 flex items-center gap-2">
-                                        <span className="text-emerald-500">$</span> analyze --service gym-membership.com
+                                        <span className="text-primary">$</span> analyze --service gym-membership.com
                                     </p>
                                     <div className="p-3 bg-red-500/5 border border-red-500/20 rounded-lg text-red-500/80">
                                         [WARNING] Cancellation requires phone call
@@ -241,8 +241,8 @@ export default function LandingPage() {
                                         [ANALYSIS] Trust Score: 12/100 (EXTREME RISK)
                                     </div>
                                 </div>
-                                <div className="absolute -right-4 -bottom-4 opacity-5 pointer-events-none">
-                                    <Zap className="h-40 w-40" />
+                                <div className="absolute -right-4 -bottom-4 opacity-10 pointer-events-none">
+                                    <Zap className="h-40 w-40 text-primary/20 fill-current" />
                                 </div>
                             </div>
                         </div>
