@@ -1,30 +1,23 @@
 import {
     Html, Head, Body, Container, Section,
-    Img, Text, Button, Hr, Link
+    Img, Text, Button, Hr, Link, Heading
 } from '@react-email/components';
+import React from 'react';
 
-export default function CancellationWarning({
+export default function ConsolidatedDowngrade({
     name,
-    tier,
-    cancellationDate,
-    reactivationToken
+    previousTier,
+    subscriptionCount,
+    remainingAlerts
 }: {
     name: string;
-    tier: string;
-    cancellationDate: Date;
-    reactivationToken: string;
+    previousTier: string;
+    subscriptionCount: number;
+    remainingAlerts: number;
 }) {
-    const formattedDate = new Intl.DateTimeFormat('en-US', {
-        dateStyle: 'full',
-        timeStyle: 'short'
-    }).format(cancellationDate);
-
-    const daysRemaining = Math.max(0, Math.ceil(
-        (cancellationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-    ));
-
     const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://remindmybill-webapp.vercel.app';
-    const reactivationUrl = `${baseUrl}/reactivate?token=${reactivationToken}`;
+    const limit = 5;
+    const needsReview = subscriptionCount > limit;
 
     return (
         <Html>
@@ -48,51 +41,54 @@ export default function CancellationWarning({
 
                     {/* Main Content */}
                     <Section style={styles.content}>
-                        <Text style={styles.heading}>
-                            Subscription Cancellation Scheduled
-                        </Text>
+                        <Heading style={styles.heading}>
+                            Your RemindMyBill plan has been updated
+                        </Heading>
 
                         <Text style={styles.paragraph}>
                             Hi {name},
                         </Text>
 
                         <Text style={styles.paragraph}>
-                            We've received your request to cancel your <strong>{tier}</strong> subscription.
+                            Your <strong>{previousTier}</strong> subscription has ended, and your account has been transitioned to the <strong>Guardian (Free) plan</strong>.
                         </Text>
 
-                        {/* Countdown Box */}
-                        <Section style={styles.countdownBox}>
-                            <Text style={styles.countdownLabel}>
-                                ⏰ Your access will end on:
-                            </Text>
-                            <Text style={styles.countdownDate}>
-                                {formattedDate}
-                            </Text>
-                            <Text style={styles.countdownDays}>
-                                You have <strong>{daysRemaining} days</strong> remaining
-                            </Text>
+                        {/* What you lose */}
+                        <Section style={styles.warningBox}>
+                            <Text style={styles.boxTitle}>Plan Changes:</Text>
+                            <ul style={styles.featureList}>
+                                <li><strong>Analytics:</strong> Advanced spending insights are now locked.</li>
+                                <li><strong>Sub Limit:</strong> Guardian accounts are limited to {limit} active subscriptions.</li>
+                                <li><strong>Alert Limit:</strong> You have {remainingAlerts} email alerts remaining for this month.</li>
+                            </ul>
                         </Section>
 
-                        <Text style={styles.paragraph}>
-                            After this date, your account will automatically switch to the <strong>Free plan</strong>.
-                            You'll still be able to track up to 5 subscriptions with limited alerts.
-                        </Text>
+                        {needsReview ? (
+                            <Section style={styles.infoBox}>
+                                <Text style={styles.boxTitle}>Action Required: Select your active subscriptions</Text>
+                                <Text style={styles.smallParagraph}>
+                                    Currently, you have <strong>{subscriptionCount}</strong> subscriptions. Since the Guardian plan limit is <strong>{limit}</strong>, we've temporarily paused some of them.
+                                </Text>
+                                <Button href={`${baseUrl}/dashboard`} style={styles.primaryButton}>
+                                    Log in to manage my subscriptions
+                                </Button>
+                            </Section>
+                        ) : (
+                            <Button href={`${baseUrl}/dashboard`} style={styles.primaryButton}>
+                                Go to Dashboard
+                            </Button>
+                        )}
 
                         <Text style={styles.paragraph}>
-                            <strong>Changed your mind?</strong>
+                            Missed the perks of Pro? Upgrade back to <strong>Shield</strong> for unlimited everything.
                         </Text>
 
-                        {/* Primary CTA Button */}
-                        <Button href={reactivationUrl} style={styles.primaryButton}>
-                            Keep My {tier} Subscription
-                        </Button>
-
-                        <Text style={styles.smallText}>
-                            If the button doesn't work, copy and paste this link:<br />
-                            <Link href={reactivationUrl} style={styles.link}>
-                                {reactivationUrl}
+                        {/* Secondary CTA */}
+                        <Section style={{ textAlign: 'center' as const, marginTop: '20px' }}>
+                            <Link href={`${baseUrl}/pricing`} style={styles.secondaryLink}>
+                                Upgrade to Shield for $4.99/mo →
                             </Link>
-                        </Text>
+                        </Section>
                     </Section>
 
                     {/* Footer */}
@@ -144,12 +140,6 @@ const styles = {
         marginBottom: '32px',
         padding: '20px 0'
     },
-    logo: {
-        margin: '0 auto',
-        display: 'block',
-        maxWidth: '100%',
-        height: 'auto'
-    },
     content: {
         backgroundColor: '#1a1a1a',
         border: '1px solid #333',
@@ -161,7 +151,8 @@ const styles = {
         fontWeight: 'bold',
         color: '#ffffff',
         marginBottom: '24px',
-        marginTop: 0
+        marginTop: 0,
+        textAlign: 'center' as const
     },
     paragraph: {
         color: '#e5e5e5',
@@ -169,55 +160,57 @@ const styles = {
         lineHeight: '24px',
         marginBottom: '16px'
     },
-    countdownBox: {
-        backgroundColor: '#1e3a8a',
-        border: '2px solid #3b82f6',
+    smallParagraph: {
+        color: '#e5e5e5',
+        fontSize: '14px',
+        lineHeight: '20px',
+        marginBottom: '16px'
+    },
+    warningBox: {
+        backgroundColor: '#2a1a1a',
+        border: '1px solid #7f1d1d',
         borderRadius: '12px',
-        padding: '24px',
-        textAlign: 'center' as const,
+        padding: '20px',
         margin: '24px 0'
     },
-    countdownLabel: {
-        color: '#93c5fd',
-        fontSize: '14px',
-        marginBottom: '8px',
-        marginTop: 0
+    infoBox: {
+        backgroundColor: '#1e1b4b',
+        border: '1px solid #4338ca',
+        borderRadius: '12px',
+        padding: '20px',
+        margin: '24px 0'
     },
-    countdownDate: {
+    boxTitle: {
         color: '#ffffff',
-        fontSize: '20px',
+        fontSize: '16px',
         fontWeight: 'bold',
-        marginBottom: '8px',
+        marginBottom: '12px',
         marginTop: 0
     },
-    countdownDays: {
-        color: '#93c5fd',
+    featureList: {
+        color: '#e5e5e5',
         fontSize: '14px',
-        marginTop: 0,
-        marginBottom: 0
+        lineHeight: '22px',
+        paddingLeft: '20px',
+        margin: 0
     },
     primaryButton: {
         backgroundColor: '#3b82f6',
         color: '#ffffff',
-        padding: '14px 28px',
+        padding: '12px 24px',
         borderRadius: '8px',
         textDecoration: 'none',
-        display: 'inline-block',
+        display: 'block',
         fontWeight: '600',
         fontSize: '16px',
-        margin: '20px 0',
-        textAlign: 'center' as const
+        textAlign: 'center' as const,
+        margin: '10px 0'
     },
-    smallText: {
-        color: '#999',
-        fontSize: '12px',
-        lineHeight: '18px',
-        marginTop: '16px'
-    },
-    link: {
+    secondaryLink: {
         color: '#3b82f6',
-        textDecoration: 'underline',
-        wordBreak: 'break-all' as const
+        textDecoration: 'none',
+        fontWeight: '600',
+        fontSize: '15px'
     },
     hr: {
         borderColor: '#333',

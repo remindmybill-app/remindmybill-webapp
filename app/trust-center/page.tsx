@@ -358,7 +358,7 @@ export default function TrustCenterPage() {
                 )}
               </div>
             </div>
-            <p className="mt-4 text-center text-xs font-medium text-muted-foreground uppercase tracking-widest">
+            <p className="mt-4 text-center text-xs font-bold text-muted-foreground uppercase tracking-widest">
               T&C Audit &bull; UX Review &bull; Fee Transparency
             </p>
           </div>
@@ -534,7 +534,7 @@ export default function TrustCenterPage() {
                           </div>
                           <div>
                             <p className="font-bold text-zinc-900 dark:text-zinc-50">{service.name}</p>
-                            <p className="text-xs text-rose-600/80 dark:text-rose-400/80 line-clamp-1">{service.cancellation_method || 'Phone Call Required'}</p>
+                            <p className="text-xs text-foreground line-clamp-1">{service.cancellation_method || 'Phone Call Required'}</p>
                           </div>
                         </div>
                         <div className="text-right flex flex-col items-end gap-1">

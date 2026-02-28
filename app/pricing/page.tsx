@@ -73,7 +73,7 @@ export default function PricingPage() {
       borderClass: "border-border hover:border-accent",
       bgClass: "bg-muted/40",
       features: [
-        { text: "Track up to 7 subscriptions", included: true },
+        { text: "Track up to 5 subscriptions", included: true },
         { text: "Monthly spending overview", included: true },
         { text: "Health Score calculation", included: true },
         { text: "3 email alerts per month", included: true },
@@ -143,7 +143,7 @@ export default function PricingPage() {
 
   // ─── Feature Comparison Data ───────────────────────────────────
   const comparisonFeatures = [
-    { name: "Subscriptions tracked", free: "7", pro: "Unlimited", lifetime: "Unlimited" },
+    { name: "Subscriptions tracked", free: "5", pro: "Unlimited", lifetime: "Unlimited" },
     { name: "Email alerts", free: "3/month", pro: "Unlimited", lifetime: "Unlimited" },
     { name: "Push notifications", free: "Limited", pro: "Unlimited", lifetime: "Unlimited" },
     { name: "Advanced Analytics", free: "❌", pro: "✅", lifetime: "✅" },
@@ -379,7 +379,7 @@ export default function PricingPage() {
               },
               {
                 q: "What happens to my data if I downgrade?",
-                a: "Your data is always safe. On Free tier, subscriptions beyond the 7-limit become read-only until you upgrade again.",
+                a: "Your data is always safe. On Free tier, subscriptions beyond the 5-limit become read-only until you upgrade again.",
                 icon: ShieldCheck,
               },
               {

@@ -65,6 +65,11 @@ export interface Profile {
   cancel_reactivation_token: string | null
   previous_tier?: UserTier | null
   payment_error?: string | null
+  needs_subscription_review: boolean
+  // Notification preferences
+  email_reminders_enabled: boolean
+  push_notifications_enabled: boolean
+  reminder_timing: number
   created_at: string
   updated_at: string
 }
@@ -107,6 +112,7 @@ export interface Subscription {
   shared_with_count: number
   is_locked: boolean
   previous_cost: number | null
+  is_enabled: boolean
   last_price_change_date: string | null
   last_accessed_date: string | null
   created_at: string

@@ -50,7 +50,7 @@ export default function DowngradeConfirmation({
                         <Section style={styles.infoBox}>
                             <Text style={styles.boxTitle}>Your Free Plan Includes:</Text>
                             <ul style={styles.featureList}>
-                                <li>Track up to 7 subscriptions</li>
+                                <li>Track up to 5 subscriptions</li>
                                 <li>3 email alerts per month</li>
                                 <li>Health Score tracking</li>
                                 <li>Trust Center access</li>

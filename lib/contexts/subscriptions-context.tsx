@@ -12,6 +12,7 @@ interface SubscriptionsContextType {
     deleteSubscription: (id: string) => Promise<boolean>
     updateSubscription: (id: string, updates: Partial<Subscription>) => Promise<boolean>
     cancelSubscription: (id: string) => Promise<boolean>
+    toggleSubscription: (id: string, is_enabled: boolean) => Promise<boolean>
 }
 
 const SubscriptionsContext = createContext<SubscriptionsContextType | undefined>(undefined)
@@ -139,6 +140,22 @@ export function SubscriptionsProvider({ children }: { children: React.ReactNode 
         }
     }
 
+    const toggleSubscription = async (id: string, is_enabled: boolean) => {
+        try {
+            const { error } = await supabase.from("subscriptions").update({ is_enabled }).eq("id", id)
+            if (error) throw error
+
+            // Optimistic update
+            setSubscriptions((prev) => prev.map((sub) => (sub.id === id ? { ...sub, is_enabled } : sub)))
+            return true
+        } catch (err) {
+            console.error("Error toggling subscription:", err)
+            setError("Failed to toggle subscription")
+            fetchSubscriptions()
+            return false
+        }
+    }
+
     return (
         <SubscriptionsContext.Provider
             value={{
@@ -148,7 +165,8 @@ export function SubscriptionsProvider({ children }: { children: React.ReactNode 
                 refreshSubscriptions,
                 deleteSubscription,
                 updateSubscription,
-                cancelSubscription
+                cancelSubscription,
+                toggleSubscription
             }}
         >
             {children}
@@ -167,7 +185,8 @@ export function useSubscriptionsContext() {
             refreshSubscriptions: async () => { },
             deleteSubscription: async () => false,
             updateSubscription: async () => false,
-            cancelSubscription: async () => false
+            cancelSubscription: async () => false,
+            toggleSubscription: async () => false,
         }
     }
     return context

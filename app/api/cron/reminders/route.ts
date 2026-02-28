@@ -41,6 +41,7 @@ export async function GET() {
             .select('*, user_id')
             .eq('renewal_date', formattedDate)
             .eq('status', 'active')
+            .eq('is_enabled', true)
             .eq('is_locked', false);
         console.timeEnd('DB_Fetch_Subscriptions');
 

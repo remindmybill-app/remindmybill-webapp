@@ -55,13 +55,37 @@ const categoryIcons: Record<string, any> = {
 }
 
 export function SubscriptionsTable() {
-  const { subscriptions, isLoading, refreshSubscriptions, deleteSubscription, cancelSubscription } = useSubscriptions()
+  const { subscriptions, isLoading, refreshSubscriptions, deleteSubscription, cancelSubscription, toggleSubscription } = useSubscriptions()
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [selectedMobileSub, setSelectedMobileSub] = useState<Subscription | null>(null)
   const [confirmDeleteSub, setConfirmDeleteSub] = useState<{ id: string, name: string } | null>(null)
   const [confirmCancelSub, setConfirmCancelSub] = useState<{ id: string, name: string } | null>(null)
   const router = useRouter()
+
+  const { profile } = useProfile();
+  const isProStatus = isPro(profile?.subscription_tier, profile?.is_pro);
+
+  const handleToggleEnable = async (sub: Subscription) => {
+    if (!sub.is_enabled && !isProStatus) {
+      // Check limit for Guardian tier
+      const activeCount = subscriptions.filter(s => s.is_enabled !== false && s.status !== 'cancelled').length;
+      if (activeCount >= 5) {
+        toast.error("Upgrade to Shield to activate more subscriptions");
+        return;
+      }
+    }
+    const success = await toggleSubscription(sub.id, !sub.is_enabled);
+    if (success) {
+      toast.success(`Subscription ${!sub.is_enabled ? 'enabled' : 'disabled'}`);
+      router.refresh();
+      if (selectedMobileSub?.id === sub.id) {
+        setSelectedMobileSub({ ...selectedMobileSub, is_enabled: !sub.is_enabled });
+      }
+    } else {
+      toast.error(`Failed to ${!sub.is_enabled ? 'enable' : 'disable'} subscription`);
+    }
+  }
 
   const handleDelete = async (id: string) => {
     setDeletingId(id)
@@ -87,9 +111,6 @@ export function SubscriptionsTable() {
     }
     setConfirmCancelSub(null)
   }
-
-  const { profile } = useProfile();
-  const isProStatus = isPro(profile?.subscription_tier, profile?.is_pro);
 
   if (!isLoading && subscriptions.length === 0) {
     // ... (existing empty state code) ...
@@ -170,7 +191,7 @@ export function SubscriptionsTable() {
             <>
               <div className="hidden md:block">
                 <table className="w-full">
-                  <thead className="bg-muted/50 text-xs font-black uppercase tracking-widest text-muted-foreground border-b border-border">
+                  <thead className="bg-muted/50 text-xs font-semibold uppercase tracking-widest text-muted-foreground border-b border-border">
                     <tr>
                       <th className="p-4 pl-6 text-left">Service</th>
                       <th className="p-4 text-right">Price</th>
@@ -187,12 +208,12 @@ export function SubscriptionsTable() {
                       const { label, statusColor } = getRenewalDisplay(nextDate)
                       const logoUrl = `https://logo.clearbit.com/${sub.name.toLowerCase().replace(/\s+/g, '')}.com`
 
-                      const isLocked = !isProStatus && index >= 3
-                      const lockedClass = isLocked ? "opacity-50 grayscale pointer-events-none select-none relative" : ""
+                      const isPaused = sub.is_enabled === false
+                      const pausedClass = isPaused ? "opacity-50 grayscale" : ""
 
                       return (
-                        <tr key={sub.id} className={`group transition-all hover:bg-muted/50 cursor-default ${isLocked ? 'bg-muted/30' : ''}`}>
-                          <td className={`p-4 pl-6 ${lockedClass}`}>
+                        <tr key={sub.id} className={`group transition-all hover:bg-muted/50 ${isPaused ? 'bg-muted/30' : ''}`}>
+                          <td className={`p-4 pl-6 ${pausedClass}`}>
                             <div className="flex items-center gap-4">
                               <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-background shadow-sm ring-1 ring-border group-hover:ring-primary/30 transition-all overflow-hidden relative">
                                 <Icon className="h-5 w-5 text-muted-foreground absolute" />
@@ -208,9 +229,9 @@ export function SubscriptionsTable() {
                               <div>
                                 <span className="block text-sm font-bold text-foreground flex items-center gap-2">
                                   {sub.name}
-                                  {isLocked && <Lock className="h-3 w-3 text-muted-foreground" />}
+                                  {isPaused && <Lock className="h-3 w-3 text-muted-foreground" />}
                                 </span>
-                                {sub.shared_with_count > 1 && !isLocked && (
+                                {sub.shared_with_count > 1 && !isPaused && (
                                   <span className="block mt-0.5 text-[9px] font-black uppercase tracking-tighter text-indigo-600 dark:text-indigo-400">
                                     👥 Shared
                                   </span>
@@ -219,7 +240,7 @@ export function SubscriptionsTable() {
                               </div>
                             </div>
                           </td>
-                          <td className={`p-4 text-right ${lockedClass}`}>
+                          <td className={`p-4 text-right ${pausedClass}`}>
                             <div className="font-black text-sm tracking-tighter text-foreground">
                               {sub.shared_with_count > 1 ? (
                                 <div className="flex flex-col items-end">
@@ -231,10 +252,10 @@ export function SubscriptionsTable() {
                               )}
                             </div>
                           </td>
-                          <td className={`p-4 text-right ${lockedClass}`}>
+                          <td className={`p-4 text-right ${pausedClass}`}>
                             <div className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{sub.frequency || 'Monthly'}</div>
                           </td>
-                          <td className={`p-4 text-right ${lockedClass}`}>
+                          <td className={`p-4 text-right ${pausedClass}`}>
                             <div className="inline-flex items-center gap-2 justify-end">
                               <Calendar className="h-3 w-3 text-muted-foreground" />
                               <span className={`text-sm ${statusColor}`}>
@@ -242,54 +263,50 @@ export function SubscriptionsTable() {
                               </span>
                             </div>
                           </td>
-                          <td className={`p-4 text-right ${lockedClass}`}>
-                            <Badge variant="outline" className={`h-5 text-[10px] font-black uppercase tracking-widest ${isLocked ? 'bg-zinc-100 text-zinc-400 border-zinc-200' : 'bg-emerald-50/50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50'}`}>
-                              {isLocked ? 'Locked' : (sub.status || 'Active')}
+                          <td className={`p-4 text-right ${pausedClass}`}>
+                            <Badge variant="outline" className={`h-5 text-[10px] font-black uppercase tracking-widest flex items-center w-fit ml-auto ${isPaused ? 'bg-muted text-muted-foreground border-border' : 'bg-emerald-50/50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50'}`}>
+                              {isPaused ? "Paused" : (sub.status || 'Active')}
                             </Badge>
                           </td>
                           <td className="p-4 pr-6 text-right relative">
-                            {isLocked ? (
-                              <div className="flex justify-end">
-                                <Button variant="ghost" size="sm" className="h-8 w-8 text-zinc-400 cursor-not-allowed">
-                                  <Lock className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-end gap-1">
-                                <CalendarExportButton
-                                  name={sub.name}
-                                  cost={sub.cost / sub.shared_with_count}
-                                  currency={sub.currency === 'USD' ? '$' : sub.currency === 'EUR' ? '€' : '£'}
-                                  renewalDate={sub.renewal_date}
-                                  frequency={sub.frequency}
-                                />
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-zinc-200 dark:hover:bg-zinc-700">
-                                      {deletingId === sub.id ? (
-                                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                                      ) : (
-                                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
-                                      )}
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => setEditingSubscription(sub)}>
-                                      <Pencil className="mr-2 h-4 w-4" />
-                                      Edit
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setConfirmCancelSub({ id: sub.id, name: sub.name })}>
-                                      <XCircle className="mr-2 h-4 w-4" />
-                                      Cancel Subscription
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => setConfirmDeleteSub({ id: sub.id, name: sub.name })} className="text-destructive focus:text-destructive">
-                                      <Trash2 className="mr-2 h-4 w-4" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            )}
+                            <div className="flex items-center justify-end gap-1">
+                              <CalendarExportButton
+                                name={sub.name}
+                                cost={sub.cost / sub.shared_with_count}
+                                currency={sub.currency === 'USD' ? '$' : sub.currency === 'EUR' ? '€' : '£'}
+                                renewalDate={sub.renewal_date}
+                                frequency={sub.frequency}
+                              />
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-zinc-200 dark:hover:bg-zinc-700">
+                                    {deletingId === sub.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                                    ) : (
+                                      <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleToggleEnable(sub)}>
+                                    {sub.is_enabled === false ? <Zap className="mr-2 h-4 w-4" /> : <XCircle className="mr-2 h-4 w-4" />}
+                                    {sub.is_enabled === false ? 'Enable' : 'Disable'}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => setEditingSubscription(sub)}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => setConfirmCancelSub({ id: sub.id, name: sub.name })}>
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    Cancel Subscription
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => setConfirmDeleteSub({ id: sub.id, name: sub.name })} className="text-destructive focus:text-destructive">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </td>
                         </tr>
                       )
@@ -304,42 +321,12 @@ export function SubscriptionsTable() {
                   const Icon = categoryIcons[sub.category] || Package
                   const nextDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
                   const { label, statusColor } = getRenewalDisplay(nextDate)
-                  const isLocked = !isProStatus && index >= 3
-
-                  if (isLocked) {
-                    return (
-                      <div
-                        key={sub.id}
-                        className="rounded-2xl border border-zinc-100 bg-zinc-50 p-6 shadow-sm opacity-60 grayscale relative overflow-hidden"
-                      >
-                        <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-10">
-                          <div className="flex flex-col items-center gap-2">
-                            <div className="p-2 bg-zinc-900 rounded-full text-white">
-                              <Lock className="h-4 w-4" />
-                            </div>
-                            <span className="text-xs font-bold text-zinc-900 uppercase">Limit Reached</span>
-                          </div>
-                        </div>
-                        {/* Blurred Content */}
-                        <div className="blur-sm select-none">
-                          <div className="mb-4 flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <div className="h-12 w-12 rounded-xl bg-zinc-200" />
-                              <div>
-                                <div className="h-4 w-24 bg-zinc-200 rounded mb-2" />
-                                <div className="h-3 w-16 bg-zinc-200 rounded" />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  }
+                  const isPaused = sub.is_enabled === false
 
                   return (
                     <div
                       key={sub.id}
-                      className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 active:scale-[0.97] active:bg-zinc-50 dark:active:bg-zinc-800/50 transition-all duration-200"
+                      className={`rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 active:scale-[0.97] active:bg-zinc-50 dark:active:bg-zinc-800/50 transition-all duration-200 ${isPaused ? 'opacity-50 grayscale' : ''}`}
                       onClick={() => setSelectedMobileSub(sub)}
                     >
                       <div className="mb-4 flex items-center justify-between">
@@ -370,8 +357,8 @@ export function SubscriptionsTable() {
                             <p className="text-[9px] text-muted-foreground font-medium">Full: {formatCurrency(sub.cost, sub.currency)}</p>
                           )}
                         </div>
-                        <Badge variant="outline" className="h-7 px-3 text-[10px] font-black uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-800/20 border-zinc-200 dark:border-zinc-800">
-                          {sub.category}
+                        <Badge variant="outline" className={`h-7 px-3 text-[10px] font-black uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-800/20 border-zinc-200 dark:border-zinc-800 ${isPaused ? 'text-muted-foreground' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                          {isPaused ? "Paused" : sub.category}
                         </Badge>
                       </div>
                     </div>
@@ -399,6 +386,22 @@ export function SubscriptionsTable() {
           </DrawerHeader>
 
           <div className="flex flex-col gap-3 mb-8">
+            <Button
+              variant="outline"
+              className="h-16 w-full rounded-2xl flex items-center justify-between px-6 border-zinc-200 dark:border-zinc-800 active:scale-[0.98] transition-all"
+              onClick={() => {
+                if (selectedMobileSub) handleToggleEnable(selectedMobileSub);
+              }}
+            >
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-xl bg-orange-50 dark:bg-orange-500/10 flex items-center justify-center">
+                  {selectedMobileSub?.is_enabled === false ? <Zap className="h-5 w-5 text-orange-600 dark:text-orange-400" /> : <XCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />}
+                </div>
+                <span className="text-base font-bold">{selectedMobileSub?.is_enabled === false ? "Enable" : "Disable"} Subscription</span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </Button>
+
             <Button
               variant="outline"
               className="h-16 w-full rounded-2xl flex items-center justify-between px-6 border-zinc-200 dark:border-zinc-800 active:scale-[0.98] transition-all"

@@ -1,6 +1,5 @@
-"use client"
-
 import { SubscriptionsProvider } from "@/lib/contexts/subscriptions-context"
+import { SubscriptionReviewModal } from "@/components/subscription-review-modal"
 
 export default function DashboardLayout({
     children,
@@ -10,6 +9,7 @@ export default function DashboardLayout({
     return (
         <SubscriptionsProvider>
             {children}
+            <SubscriptionReviewModal />
         </SubscriptionsProvider>
     )
 }

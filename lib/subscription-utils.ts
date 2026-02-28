@@ -40,11 +40,11 @@ export function getTierDisplayName(tier?: string | null): string {
 
 /**
  * Get subscription tracking limit for a tier.
- * Free = 7, Pro/Lifetime = Infinity (unlimited).
+ * Free = 5, Pro/Lifetime = Infinity (unlimited).
  */
 export function getTierLimit(tier?: string | null): number {
     if (isPro(tier) || isLifetime(tier)) return Infinity
-    return TIER_LIMITS.free.subscriptions // 7
+    return TIER_LIMITS.free.subscriptions // 5
 }
 
 /**

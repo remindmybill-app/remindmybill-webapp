@@ -45,6 +45,7 @@ function DashboardContent() {
     const [lastSynced, setLastSynced] = useState<Date | null>(null)
     const searchParams = useSearchParams()
     const [isGmailConnected, setIsGmailConnected] = useState(false)
+    const [remainingEmails, setRemainingEmails] = useState<number | null>(null)
 
     // Review/Import modal state
     const [foundSubscriptions, setFoundSubscriptions] = useState<any[]>([])
@@ -58,12 +59,11 @@ function DashboardContent() {
     const isProUser = isPro(profile?.subscription_tier, profile?.is_pro)
     const tierBadge = TIER_BADGES[userTier]
     const subLimit = getTierLimit(userTier)
-    const activeSubCount = subscriptions.filter(s => s.status !== 'cancelled' && s.status !== 'paused').length
+    const activeSubCount = subscriptions.filter(s => s.status !== 'cancelled' && s.status !== 'paused' && s.is_enabled !== false).length
 
     // Free tier limits
-    const emailAlertsUsed = profile?.email_alerts_used ?? 0
     const emailAlertsLimit = profile?.email_alerts_limit ?? TIER_LIMITS.free.emailAlerts
-    const alertsExhausted = userTier === 'free' && emailAlertsUsed >= emailAlertsLimit
+    const alertsExhausted = userTier === 'free' && remainingEmails !== null && remainingEmails <= 0
     const isLimitReached = userTier === 'free' && activeSubCount >= subLimit
 
     // Check Gmail connection status on mount and when profile changes
@@ -79,8 +79,25 @@ function DashboardContent() {
     useEffect(() => {
         if (isAuthenticated) {
             refreshProfile()
+
+            // Fetch remaining emails for free users
+            if (userTier === 'free' && profile?.id) {
+                const supabase = getSupabaseBrowserClient()
+                const now = new Date()
+                const billingPeriodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+
+                supabase
+                    .from('email_quota_log')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('user_id', profile.id)
+                    .eq('billing_period_start', billingPeriodStart)
+                    .in('email_type', ['reminder', 'dunning'])
+                    .then(({ count }: { count: number | null }) => {
+                        setRemainingEmails(Math.max(0, 3 - (count || 0)))
+                    })
+            }
         }
-    }, [isAuthenticated, refreshProfile])
+    }, [isAuthenticated, refreshProfile, userTier, profile?.id])
 
     // Sync Lock Status
     useEffect(() => {
@@ -364,14 +381,14 @@ function DashboardContent() {
 
                 {/* ─── Limit Reached Banner ─────────────────────────── */}
                 {isLimitReached && (
-                    <div className="mb-6 rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-center justify-between dark:bg-amber-900/10 dark:border-amber-900/30">
+                    <div className="mb-6 rounded-xl bg-amber-50 border border-amber-200 p-4 flex items-center justify-between dark:bg-amber-900/10 dark:border-orange-900/30">
                         <div className="flex items-center gap-3">
                             <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
                                 <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-500" />
                             </div>
                             <div>
-                                <h3 className="font-bold text-amber-900 dark:text-amber-500">Free Tier Limit Reached</h3>
-                                <p className="text-sm text-amber-700 dark:text-amber-600">You've reached the {subLimit}-subscription limit. Upgrade to Shield for unlimited tracking.</p>
+                                <h3 className="font-bold text-amber-900 dark:text-foreground">Free Tier Limit Reached</h3>
+                                <p className="text-sm text-amber-700 dark:text-foreground">You've reached the {subLimit}-subscription limit. Upgrade to Shield for unlimited tracking.</p>
                             </div>
                         </div>
                         <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white border-none" asChild>
@@ -384,9 +401,18 @@ function DashboardContent() {
                     <div>
                         <div className="flex items-center gap-3">
                             <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
-                            <Badge className={`${tierBadge.className} text-[10px] font-bold uppercase tracking-wider border-0 px-2 py-0.5`}>
-                                {userTier}
-                            </Badge>
+                            <div className="flex flex-col gap-1">
+                                <Badge className={`${tierBadge.className} text-[10px] font-bold uppercase tracking-wider border-0 px-2 py-0.5 w-fit`}>
+                                    {userTier}
+                                </Badge>
+                                {userTier === 'free' && remainingEmails !== null && (
+                                    <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                        📧 {remainingEmails === 0
+                                            ? "Email alerts used up for this month. Upgrade for unlimited alerts."
+                                            : `${3 - remainingEmails} of 3 email alerts used this month`}
+                                    </p>
+                                )}
+                            </div>
                         </div>
                         <p className="mt-1 text-sm text-muted-foreground">
                             Financial Overview &bull; {activeSubCount} Active Subscriptions
@@ -415,9 +441,9 @@ function DashboardContent() {
                                     variant="outline"
                                     className={`gap-2 h-10 px-4 ${isGmailConnected ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400" : "bg-card shadow-sm"} ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
-                                    {isGmailConnected ? <CheckCircle2 className="h-4 w-4" /> : (isProUser ? <Inbox className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-500" />)}
+                                    {isLimitReached ? <Lock className="h-4 w-4 text-muted-foreground" /> : (isGmailConnected ? <CheckCircle2 className="h-4 w-4" /> : (isProUser ? <Inbox className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-500" />))}
                                     {isScanning ? "Scanning..." :
-                                        isLimitReached ? "Gmail Locked" :
+                                        isLimitReached ? <span className="text-muted-foreground">Gmail Locked</span> :
                                             isGmailConnected ? "Re-scan Gmail" :
                                                 isProUser ? "Sync Gmail" : "Sync Gmail (Pro)"}
                                 </Button>
@@ -472,7 +498,7 @@ function DashboardContent() {
                     <Card className="border-2 shadow-sm h-full">
                         <CardContent className="p-4 flex flex-col items-center justify-center">
                             <HealthScoreGauge
-                                score={subscriptions.length > 0 ? calculateHealthScore(subscriptions) : 0}
+                                score={subscriptions.filter(s => s.is_enabled !== false).length > 0 ? calculateHealthScore(subscriptions.filter(s => s.is_enabled !== false)) : 0}
                                 isLoading={false}
                                 size="sm"
                             />
@@ -530,14 +556,16 @@ function DashboardStatsCards({
 }) {
     const userCurrency = profile?.default_currency || "USD"
     const totalMonthlySpend = subscriptions.reduce((sum, sub) => {
+        if (sub.is_enabled === false || sub.status === 'cancelled' || sub.status === 'paused') return sum
         const converted = convertCurrency(sub.cost, sub.currency, userCurrency)
         return sum + converted
     }, 0)
-    const activeCount = subscriptions.filter(s => s.status !== 'cancelled' && s.status !== 'paused').length
+    const activeCount = subscriptions.filter(s => s.status !== 'cancelled' && s.status !== 'paused' && s.is_enabled !== false).length
 
     // Find next renewal
-    const nextRenewal = subscriptions.length > 0
-        ? subscriptions.reduce((earliest, sub) => {
+    const activeSubsForRenewal = subscriptions.filter(s => s.status !== 'cancelled' && s.status !== 'paused' && s.is_enabled !== false)
+    const nextRenewal = activeSubsForRenewal.length > 0
+        ? activeSubsForRenewal.reduce((earliest, sub) => {
             const earliestDate = getNextRenewalDate(earliest.renewal_date, earliest.frequency)
             const subDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
             return subDate < earliestDate ? sub : earliest

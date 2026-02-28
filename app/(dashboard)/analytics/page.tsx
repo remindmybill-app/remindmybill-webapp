@@ -62,7 +62,7 @@ export default function AnalyticsPage() {
     }
 
     const totalMonthlySpend = validSubscriptions.reduce((sum, sub) => {
-      if (sub.status !== 'active') return sum
+      if (sub.is_enabled === false || sub.status !== 'active') return sum
       const converted = convertCurrency(sub.cost, sub.currency, userCurrency)
       return sum + (converted / (sub.shared_with_count || 1))
     }, 0)
@@ -85,7 +85,7 @@ export default function AnalyticsPage() {
 
         // 2. Filter by status (optimistic: assume active subs were active back then)
         // If we had cancelled_at, we would use it here.
-        if (sub.status !== 'active') return sum
+        if (sub.is_enabled === false || sub.status !== 'active') return sum
 
         const converted = convertCurrency(sub.cost, sub.currency, userCurrency)
         const cost = converted / (sub.shared_with_count || 1)
@@ -118,7 +118,7 @@ export default function AnalyticsPage() {
     // Group by category
     const categoryMap = new Map<string, { current: number, previous: number }>()
     validSubscriptions.forEach((sub) => {
-      if (sub.status !== 'active') return
+      if (sub.is_enabled === false || sub.status !== 'active') return
 
       // Feature 1: Filter by selected month
       if (filterMonth) {
@@ -172,7 +172,7 @@ export default function AnalyticsPage() {
     let lastVelocitySpend = 0
 
     validSubscriptions.forEach(sub => {
-      if (sub.status !== 'active') return
+      if (sub.is_enabled === false || sub.status !== 'active') return
       const converted = convertCurrency(sub.cost, sub.currency, userCurrency) / (sub.shared_with_count || 1)
       const prevConverted = sub.previous_cost
         ? convertCurrency(sub.previous_cost, sub.currency, userCurrency) / (sub.shared_with_count || 1)
@@ -195,7 +195,7 @@ export default function AnalyticsPage() {
     // Calculate forecast
     let paid = 0
     validSubscriptions.forEach(sub => {
-      if (sub.status !== 'active') return
+      if (sub.is_enabled === false || sub.status !== 'active') return
       const renewalDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
       const converted = convertCurrency(sub.cost, sub.currency, userCurrency) / (sub.shared_with_count || 1)
       if (renewalDate < today && renewalDate >= startOfCurrentMonth) {
@@ -206,7 +206,7 @@ export default function AnalyticsPage() {
 
     // Inflation Watch (Price increases detected)
     const inflationAlerts = validSubscriptions
-      .filter(sub => sub.status === 'active' && sub.previous_cost && sub.cost > sub.previous_cost)
+      .filter(sub => sub.is_enabled !== false && sub.status === 'active' && sub.previous_cost && sub.cost > sub.previous_cost)
       .map(sub => ({
         name: sub.name,
         previousCost: sub.previous_cost,
@@ -216,7 +216,7 @@ export default function AnalyticsPage() {
 
     return {
       totalMonthlySpend,
-      activeCount: subscriptions.length,
+      activeCount: subscriptions.filter(s => s.is_enabled !== false && s.status !== 'cancelled').length,
       categoryData,
       spendingTrendData,
       velocity,

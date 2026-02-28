@@ -19,7 +19,7 @@ export function calculateHealthScore(subscriptions: Subscription[]): number {
     let score = 100;
 
     // Only consider active subscriptions
-    const activeSubscriptions = subscriptions.filter(s => s.status === 'active');
+    const activeSubscriptions = subscriptions.filter(s => s.status === 'active' && s.is_enabled !== false);
 
     // Penalty 1: Duplicates (fuzzy name matching)
     const nameCounts = new Map<string, number>();

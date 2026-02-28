@@ -16,7 +16,7 @@ export const TIER_NAMES: Record<UserTier, string> = {
 
 // ─── Tier Limits ────────────────────────────────────────────────────────────
 export const TIER_LIMITS: Record<UserTier, { subscriptions: number; emailAlerts: number }> = {
-    free: { subscriptions: 7, emailAlerts: 3 },
+    free: { subscriptions: 5, emailAlerts: 3 },
     pro: { subscriptions: Infinity, emailAlerts: Infinity },
     lifetime: { subscriptions: Infinity, emailAlerts: Infinity },
 }

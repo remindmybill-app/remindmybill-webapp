@@ -66,6 +66,44 @@ async function findUserByCustomer(customerId: string) {
     return null;
 }
 
+// ─── Helper: Send Consolidated Downgrade Email ──────────────────────────
+async function sendConsolidatedDowngrade({
+    user,
+    previousTier
+}: {
+    user: any,
+    previousTier: string
+}) {
+    try {
+        const { getRemainingEmailQuota, sendEmail } = await import('@/lib/email');
+        const { default: ConsolidatedDowngrade } = await import('@/lib/emails/ConsolidatedDowngrade');
+        const React = await import('react');
+
+        // Get updated stats
+        const { data: subs } = await supabaseAdmin
+            .from('subscriptions')
+            .select('id')
+            .eq('user_id', user.id);
+
+        const remainingAlerts = await getRemainingEmailQuota(user.id);
+
+        await sendEmail({
+            to: user.email,
+            subject: 'Your RemindMyBill plan has been updated',
+            react: React.createElement(ConsolidatedDowngrade, {
+                name: user.full_name || 'Valued Customer',
+                previousTier,
+                subscriptionCount: subs?.length || 0,
+                remainingAlerts
+            }),
+            userId: user.id,
+            emailType: 'downgrade'
+        });
+    } catch (err) {
+        console.error('[Webhook] Failed to send consolidated downgrade email:', err);
+    }
+}
+
 export async function POST(req: Request) {
     try {
         const body = await req.text();
@@ -108,19 +146,14 @@ export async function POST(req: Request) {
                 };
 
                 if (isLifetime) {
-                    // Lifetime one-time payment
                     updates.user_tier = 'lifetime';
                     updates.is_pro = true;
                     updates.subscription_tier = 'premium';
                     updates.subscription_limit = 99999;
                     updates.lifetime_purchase_date = new Date().toISOString();
                     updates.email_alerts_limit = 99999;
-                    // One-time payment → no subscription ID
                     updates.stripe_subscription_id = null;
-
-                    console.log(`[Webhook] Upgrading user ${userId} to LIFETIME`);
                 } else {
-                    // Pro subscription
                     updates.user_tier = 'pro';
                     updates.is_pro = true;
                     updates.subscription_tier = 'pro';
@@ -128,8 +161,6 @@ export async function POST(req: Request) {
                     updates.email_alerts_limit = 99999;
                     updates.subscription_interval = metadata.interval === 'yearly' ? 'annual' : 'monthly';
                     updates.stripe_subscription_id = session.subscription as string;
-
-                    console.log(`[Webhook] Upgrading user ${userId} to PRO (${metadata.interval})`);
                 }
 
                 const { error } = await supabaseAdmin
@@ -142,7 +173,6 @@ export async function POST(req: Request) {
                     return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
                 }
 
-                // Clear any existing payment errors on successful checkout
                 await supabaseAdmin
                     .from('profiles')
                     .update({ payment_error: null })
@@ -157,7 +187,6 @@ export async function POST(req: Request) {
                     { interval: metadata.interval }
                 );
 
-                // Send welcome email (non-blocking)
                 try {
                     const { data: profile } = await supabaseAdmin
                         .from('profiles')
@@ -176,6 +205,7 @@ export async function POST(req: Request) {
                             limit: 99999,
                             type: 'upgrade',
                             date: new Date().toLocaleDateString(),
+                            userId
                         });
                     }
                 } catch (emailErr) {
@@ -191,26 +221,16 @@ export async function POST(req: Request) {
                 const user = await findUserByCustomer(customerId);
 
                 if (!user) {
-                    console.warn(`[Webhook] No user found for customer ${customerId}`);
                     break;
                 }
 
-                console.log(`[Webhook] Subscription updated for user ${user.id}`, {
-                    id: subscription.id,
-                    cancel_at_period_end: subscription.cancel_at_period_end,
-                    cancel_at: subscription.cancel_at
-                });
-
-                // Check if subscription was cancelled (via Portal or API)
                 if (subscription.cancel_at_period_end && !user.cancellation_scheduled) {
-                    // User cancelled via Stripe Portal - sync to our database
                     const cancellationDate = (subscription as any).cancel_at
                         ? new Date((subscription as any).cancel_at * 1000)
                         : new Date((subscription as any).current_period_end * 1000);
 
                     const reactivationToken = crypto.randomBytes(32).toString('hex');
 
-                    // Update database
                     await supabaseAdmin
                         .from('profiles')
                         .update({
@@ -222,7 +242,6 @@ export async function POST(req: Request) {
                         })
                         .eq('id', user.id);
 
-                    // Send cancellation warning email
                     const hoursUntil = (cancellationDate.getTime() - Date.now()) / (1000 * 60 * 60);
 
                     if (hoursUntil > 24) {
@@ -245,15 +264,12 @@ export async function POST(req: Request) {
                                 subject: 'Your subscription will end soon',
                                 html: emailHtml
                             });
-
-                            console.log('[Webhook] Cancellation email sent to:', user.email);
                         } catch (emailErr) {
                             console.error('[Webhook] Failed to send cancellation email:', emailErr);
                         }
                     }
                 }
 
-                // Check if cancellation was undone (reactivated via Stripe Portal)
                 if (!subscription.cancel_at_period_end && user.cancellation_scheduled) {
                     await supabaseAdmin
                         .from('profiles')
@@ -264,29 +280,19 @@ export async function POST(req: Request) {
                             cancel_reactivation_token: null
                         })
                         .eq('id', user.id);
-
-                    console.log('[Webhook] Cancellation cleared via Stripe Portal for:', user.email);
                 }
 
                 break;
             }
 
-            // ─── Subscription Deleted (cancellation → downgrade to free) ─
+            // ─── Subscription Deleted ─
             case 'customer.subscription.deleted': {
                 const subscription = event.data.object as any;
                 const customerId = subscription.customer as string;
                 const user = await findUserByCustomer(customerId);
 
-                if (!user) {
-                    console.warn(`[Webhook] No user found for customer ${customerId}`);
-                    break;
-                }
-
-                // Don't downgrade Lifetime users (their payment is one-time, no subscription)
-                if (user.user_tier === 'lifetime') {
-                    console.log(`[Webhook] Skipping downgrade for lifetime user ${user.id}`);
-                    break;
-                }
+                if (!user) break;
+                if (user.user_tier === 'lifetime') break;
 
                 const previousTier = user.user_tier;
                 const { error } = await supabaseAdmin
@@ -295,19 +301,30 @@ export async function POST(req: Request) {
                         user_tier: 'free',
                         is_pro: false,
                         subscription_tier: 'free',
-                        subscription_limit: 7,
+                        subscription_limit: 5,
                         subscription_interval: null,
                         sms_addon_enabled: false,
                         stripe_subscription_id: null,
                         email_alerts_limit: 3,
                         tier_updated_at: new Date().toISOString(),
+                        needs_subscription_review: true,
                     })
                     .eq('id', user.id);
 
-                if (error) {
-                    console.error('[Webhook] Error downgrading user:', error);
-                } else {
-                    console.log(`[Webhook] Downgraded user ${user.id} to FREE`);
+                if (!error) {
+                    const { data: subs, error: subsError } = await supabaseAdmin
+                        .from('subscriptions')
+                        .select('id')
+                        .eq('user_id', user.id)
+                        .order('created_at', { ascending: true });
+
+                    if (!subsError && subs && subs.length > 5) {
+                        const subsToDisable = subs.slice(5).map(s => s.id);
+                        await supabaseAdmin
+                            .from('subscriptions')
+                            .update({ is_enabled: false })
+                            .in('id', subsToDisable);
+                    }
 
                     await logSubscriptionEvent(
                         user.id,
@@ -317,21 +334,7 @@ export async function POST(req: Request) {
                         event.id
                     );
 
-                    // Send downgrade email
-                    try {
-                        const { sendPlanChangeEmail } = await import('@/lib/email');
-                        await sendPlanChangeEmail({
-                            email: user.email,
-                            userName: user.full_name || 'Valued Customer',
-                            planName: 'Guardian (Free)',
-                            price: '$0.00',
-                            limit: 7,
-                            type: 'downgrade',
-                            date: new Date().toLocaleDateString(),
-                        });
-                    } catch (emailErr) {
-                        console.error('[Webhook] Failed to send downgrade email:', emailErr);
-                    }
+                    await sendConsolidatedDowngrade({ user, previousTier: getTierDisplayName(previousTier) });
                 }
                 break;
             }
@@ -342,24 +345,18 @@ export async function POST(req: Request) {
                 const customerId = invoice.customer as string;
                 const user = await findUserByCustomer(customerId);
 
-                if (!user) {
-                    console.warn(`[Webhook] No user found for customer ${customerId}`);
-                    break;
-                }
+                if (!user) break;
 
-                // Extract fields
                 const amount = (invoice.amount_due || 0) / 100;
                 const attemptCount = invoice.attempt_count || 1;
                 const email = invoice.customer_email || user.email;
                 const hostedInvoiceUrl = invoice.hosted_invoice_url || '';
 
-                // Retrieve payment method for card info
                 let cardBrand = 'Card';
                 let cardLast4 = '****';
 
                 try {
                     const paymentMethodId = (invoice as any).default_payment_method as string || (invoice as any).payment_intent && (await stripe.paymentIntents.retrieve((invoice as any).payment_intent as string)).payment_method as string;
-
                     if (paymentMethodId) {
                         const pm = await stripe.paymentMethods.retrieve(paymentMethodId);
                         if (pm?.card) {
@@ -371,25 +368,25 @@ export async function POST(req: Request) {
                     console.error('[Webhook] Failed to retrieve card details:', err);
                 }
 
-                console.warn(`[Webhook] Payment failed (Attempt ${attemptCount}) for user ${user.id}`);
-
-                // Send Email (Send first per requirement: "Final Notice BEFORE downgrading")
-                try {
-                    const { sendPaymentFailedEmail } = await import('@/lib/email');
-                    await sendPaymentFailedEmail({
-                        email,
-                        userName: user.full_name || 'Valued Customer',
-                        attemptCount,
-                        cardBrand,
-                        cardLast4,
-                        amount,
-                        hostedInvoiceUrl,
-                    });
-                } catch (emailErr) {
-                    console.error('[Webhook] Failed to send payment failed email:', emailErr);
+                // If not final attempt, send standard failed email (logged as dunning)
+                if (attemptCount < 3) {
+                    try {
+                        const { sendPaymentFailedEmail } = await import('@/lib/email');
+                        await sendPaymentFailedEmail({
+                            email,
+                            userName: user.full_name || 'Valued Customer',
+                            attemptCount,
+                            cardBrand,
+                            cardLast4,
+                            amount,
+                            hostedInvoiceUrl,
+                            userId: user.id
+                        });
+                    } catch (emailErr) {
+                        console.error('[Webhook] Failed to send payment failed email:', emailErr);
+                    }
                 }
 
-                // Log the event
                 await logSubscriptionEvent(
                     user.id,
                     'payment_failed',
@@ -405,80 +402,60 @@ export async function POST(req: Request) {
                     }
                 );
 
-                // Handle Initial Signup Failure specifically
                 if (invoice.billing_reason === 'subscription_create') {
-                    console.log(`[Webhook] Initial signup failed for user ${user.id}. Updating payment_error.`);
                     await supabaseAdmin
                         .from('profiles')
                         .update({ payment_error: 'initial_signup_failed' })
                         .eq('id', user.id);
-
-                    await logSubscriptionEvent(
-                        user.id,
-                        'payment_failed',
-                        user.user_tier,
-                        user.user_tier,
-                        event.id,
-                        { reason: 'initial_signup_failed', invoiceId: invoice.id }
-                    );
-                    break; // Exit early, do not send dunning emails or trigger downgrade logic
+                    break;
                 }
 
-                // Downgrade Logic (On 3rd failure or more)
                 if (attemptCount >= 3) {
-                    console.log(`[Webhook] Third failure detected. Downgrading user ${user.id} to FREE`);
-
+                    const previousTier = user.user_tier;
                     const { error: profileError } = await supabaseAdmin
                         .from('profiles')
                         .update({
                             user_tier: 'free',
                             is_pro: false,
                             subscription_tier: 'free',
-                            subscription_limit: 7,
+                            subscription_limit: 5,
                             email_alerts_limit: 3,
                             tier_updated_at: new Date().toISOString(),
+                            needs_subscription_review: true,
                         })
                         .eq('id', user.id);
 
-                    if (profileError) {
-                        console.error('[Webhook] Failed to downgrade profile:', profileError);
-                    } else {
-                        // Lock subscriptions beyond the 7th
+                    if (!profileError) {
                         const { data: subs, error: subsError } = await supabaseAdmin
                             .from('subscriptions')
                             .select('id')
                             .eq('user_id', user.id)
-                            .order('created_at', { ascending: true }); // Keep the 7 oldest, lock the rest? Or keep newest?
-                        // Usually better to keep the first 7 created.
+                            .order('created_at', { ascending: true });
 
-                        if (!subsError && subs && subs.length > 7) {
-                            const subsToLock = subs.slice(7).map(s => s.id);
-                            const { error: lockError } = await supabaseAdmin
+                        if (!subsError && subs && subs.length > 5) {
+                            const subsToDisable = subs.slice(5).map(s => s.id);
+                            await supabaseAdmin
                                 .from('subscriptions')
-                                .update({ status: 'locked' })
-                                .in('id', subsToLock);
-
-                            if (lockError) {
-                                console.error('[Webhook] Failed to lock subscriptions:', lockError);
-                            } else {
-                                console.log(`[Webhook] Locked ${subsToLock.length} subscriptions for user ${user.id}`);
-                            }
+                                .update({ is_enabled: false })
+                                .in('id', subsToDisable);
                         }
 
                         await logSubscriptionEvent(
                             user.id,
                             'downgrade',
-                            user.user_tier,
+                            previousTier,
                             'free',
                             event.id,
                             { reason: 'payment_failed_final' }
                         );
+
+                        // Send consolidated email instead of separate ones
+                        await sendConsolidatedDowngrade({ user, previousTier: getTierDisplayName(previousTier) });
                     }
                 }
                 break;
             }
 
-            // ─── Invoice Payment Succeeded (renewal tracking) ────────────
             case 'invoice.payment_succeeded': {
                 const invoice = event.data.object as any;
                 const customerId = invoice.customer as string;
@@ -493,10 +470,8 @@ export async function POST(req: Request) {
                         event.id,
                         { invoiceId: invoice.id, amount: invoice.amount_paid }
                     );
-                    console.log(`[Webhook] Renewal recorded for user ${user.id}`);
                 }
 
-                // Clear payment error on successful payment
                 if (user) {
                     await supabaseAdmin
                         .from('profiles')
@@ -514,5 +489,13 @@ export async function POST(req: Request) {
     } catch (error: any) {
         console.error('[Webhook] Handler failed:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    }
+}
+
+function getTierDisplayName(tier: string) {
+    switch (tier) {
+        case 'pro': return 'Shield (Pro)';
+        case 'lifetime': return 'Fortress (Lifetime)';
+        default: return 'Guardian (Free)';
     }
 }
