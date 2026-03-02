@@ -24,11 +24,13 @@ const pwaConfig = withPWA({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Explicitly force webpack (required for next-pwa)
-  turbopack: undefined, // Disable Turbopack
-  outputFileTracingRoot: process.cwd(),
+  // Required: Set root explicitly so Next.js 16 doesn't detect a
+  // parent-level lockfile as the workspace root (causes exit code 1).
+  // Also silences the turbopack/webpack coexistence warning from next-pwa.
+  turbopack: {
+    root: process.cwd(),
+  },
 
-  // Your existing config //
   images: {
     remotePatterns: [
       {
@@ -37,12 +39,6 @@ const nextConfig = {
       },
     ],
   },
-
-  // Ensure webpack is used
-  webpack: (config, { isServer }) => {
-    // Required for next-pwa
-    return config;
-  }
 };
 
 export default pwaConfig(nextConfig);

@@ -1,9 +1,8 @@
 
 import { createServerClient } from "@supabase/ssr"
-import { createClient } from "@supabase/supabase-js"
 import { NextResponse, type NextRequest } from "next/server"
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     let supabaseResponse = NextResponse.next({
         request,
     })
@@ -51,26 +50,31 @@ export async function middleware(request: NextRequest) {
                 return NextResponse.redirect(new URL("/dashboard", request.url))
             }
 
-            // Use service role client to bypass RLS for admin check
-            const adminSupabase = createClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.SUPABASE_SERVICE_ROLE_KEY!,
-                {
-                    auth: {
-                        persistSession: false,
-                        autoRefreshToken: false,
-                        detectSessionInUrl: false,
+            // Use an internal Node.js API route to check admin status.
+            // We cannot use createClient from @supabase/supabase-js here
+            // because middleware runs on the Edge Runtime which does not
+            // support the Node.js APIs that package depends on.
+            try {
+                const checkUrl = new URL("/api/admin/check-role", request.url)
+                checkUrl.searchParams.set("userId", user.id)
+
+                const adminCheckResponse = await fetch(checkUrl.toString(), {
+                    headers: {
+                        "x-internal-secret": process.env.INTERNAL_API_SECRET || "",
                     },
+                })
+
+                if (adminCheckResponse.ok) {
+                    const { isAdmin } = await adminCheckResponse.json()
+                    if (!isAdmin) {
+                        return NextResponse.redirect(new URL("/dashboard", request.url))
+                    }
+                } else {
+                    // If the check fails, deny access to admin routes
+                    return NextResponse.redirect(new URL("/dashboard", request.url))
                 }
-            )
-
-            const { data: profile } = await adminSupabase
-                .from("profiles")
-                .select("is_admin")
-                .eq("id", user.id)
-                .single()
-
-            if (!profile?.is_admin) {
+            } catch (err) {
+                console.error("[Middleware] Admin check failed:", err)
                 return NextResponse.redirect(new URL("/dashboard", request.url))
             }
 
@@ -105,6 +109,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
     matcher: [
-        "/((?!_next/static|_next/image|favicon.ico|api/cron|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+        "/((?!_next/static|_next/image|favicon.ico|api/cron|api/admin/check-role|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
     ],
 }
