@@ -38,6 +38,7 @@ export interface Profile {
   email: string
   full_name: string | null
   avatar_url: string | null
+  role?: string | null
   default_currency?: string
   // Legacy fields (kept for backward compat)
   subscription_tier?: 'free' | 'pro' | 'premium'

@@ -92,6 +92,20 @@ export function Navigation() {
               >
                 <Link href="/pricing">Pricing</Link>
               </Button>
+
+              {profile?.role === 'admin' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  asChild
+                  className="gap-2 text-muted-foreground border-border hover:text-foreground hover:border-primary transition-colors h-8"
+                >
+                  <Link href="/admin">
+                    <Shield className="h-4 w-4" />
+                    Admin
+                  </Link>
+                </Button>
+              )}
             </div>
 
             {/* Right Side Actions */}
