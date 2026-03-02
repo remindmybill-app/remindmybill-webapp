@@ -22,7 +22,7 @@ UPDATE profiles
 SET user_tier = 'pro'
 WHERE is_pro = true AND user_tier = 'free';
 
--- 3. Update subscription_limit for free users from 3 → 7
+-- 3. Update subscription_limit for free users from 3 → 7   
 UPDATE profiles
 SET subscription_limit = 7
 WHERE user_tier = 'free' AND subscription_limit <= 3;
