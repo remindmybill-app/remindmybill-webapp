@@ -37,8 +37,19 @@ export default function ProfilePage() {
   const [pushNotifications, setPushNotifications] = useState(false)
   const [reminderTiming, setReminderTiming] = useState("3")
 
+  // Auth state
+  const [authProvider, setAuthProvider] = useState<string | null>(null)
+
   // Load initial data
   useEffect(() => {
+    async function loadAuth() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        setAuthProvider(user.app_metadata.provider || null)
+      }
+    }
+    loadAuth()
+
     if (profile) {
       setFullName(profile.full_name || "")
       setEmail(profile.email || "")
@@ -46,15 +57,17 @@ export default function ProfilePage() {
       if (profile.push_notifications_enabled !== undefined) setPushNotifications(profile.push_notifications_enabled)
       if (profile.reminder_timing !== undefined) setReminderTiming(profile.reminder_timing.toString())
     }
-  }, [profile])
+  }, [profile, supabase.auth])
 
   // Derived stats
   const totalTracked = useMemo(() => {
+    // BUG 1 Fix: Sum cost of ALL subscriptions
     return subscriptions.reduce((sum, sub) => sum + Number(sub.cost || 0), 0)
   }, [subscriptions])
 
   const activeCount = useMemo(() => {
-    return subscriptions.filter(s => s.status === 'active').length
+    // BUG 1 Fix: Count only enabled subscriptions
+    return subscriptions.filter(s => s.is_enabled === true).length
   }, [subscriptions])
 
   const daysActive = useMemo(() => {
@@ -134,6 +147,13 @@ export default function ProfilePage() {
       toast.success("Notification preferences saved")
     } catch (err: any) {
       toast.error(err.message || "Failed to save preferences")
+      // Revert states on failure if needed, but since we use the hook profile data on load,
+      // a refresh would also revert them. For immediate UI feedback:
+      if (profile) {
+        setEmailReminders(profile.email_reminders_enabled ?? true)
+        setPushNotifications(profile.push_notifications_enabled ?? false)
+        setReminderTiming(profile.reminder_timing?.toString() ?? "3")
+      }
     } finally {
       setSavingNotifs(false)
     }
@@ -172,7 +192,7 @@ export default function ProfilePage() {
         {/* SECTION 1: Profile Header */}
         <Card className="bg-card border-border overflow-hidden">
           <CardContent className="p-8 sm:p-10 flex flex-col sm:flex-row items-center gap-8 text-center sm:text-left">
-            <Avatar className="h-28 w-28 border-4 border-background shadow-md shadow-black/5 dark:shadow-white/5">
+            <Avatar className="h-28 w-28 border-4 border-background shadow-md shadow-foreground/5">
               <AvatarFallback className="text-4xl font-bold bg-muted text-muted-foreground">
                 {profile?.full_name?.charAt(0).toUpperCase() || profile?.email?.charAt(0).toUpperCase() || "U"}
               </AvatarFallback>
@@ -184,7 +204,7 @@ export default function ProfilePage() {
                 <Badge variant="outline" className={`px-3 py-1 text-sm font-semibold uppercase tracking-wider ${getBadgeStyles(profile?.user_tier)}`}>
                   {getBadgeText(profile?.user_tier)}
                 </Badge>
-                <Badge variant="secondary" className="px-3 py-1 text-sm font-medium text-muted-foreground bg-secondary/50">
+                <Badge variant="secondary" className="px-3 py-1 text-sm font-medium text-muted-foreground bg-secondary">
                   Member since {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : 'Unknown'}
                 </Badge>
               </div>
@@ -282,47 +302,63 @@ export default function ProfilePage() {
             </Card>
 
             {/* SECTION 3 pt 2: Password Change */}
-            <Card className="bg-card border-border shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-foreground font-semibold">Change Password</CardTitle>
-                <CardDescription>Update your password to keep your account secure.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currentPassword" className="text-muted-foreground">Current Password</Label>
-                  <Input
-                    id="currentPassword"
-                    type="password"
-                    value={currentPassword}
-                    onChange={e => setCurrentPassword(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword" className="text-muted-foreground">New Password</Label>
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-muted-foreground">Confirm New Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
-                  />
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button onClick={handleSavePassword} disabled={savingPassword || (!currentPassword && !newPassword && !confirmPassword)}>
-                  {savingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Update Password
-                </Button>
-              </CardFooter>
-            </Card>
+            {authProvider === 'email' ? (
+              <Card className="bg-card border-border shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-foreground font-semibold">Change Password</CardTitle>
+                  <CardDescription>Update your password to keep your account secure.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPassword" title="Current Password" className="text-muted-foreground">Current Password</Label>
+                    <Input
+                      id="currentPassword"
+                      type="password"
+                      value={currentPassword}
+                      onChange={e => setCurrentPassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword" title="New Password" className="text-muted-foreground">New Password</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword" title="Confirm New Password" className="text-muted-foreground">Confirm New Password</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                    />
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Button onClick={handleSavePassword} disabled={savingPassword || (!currentPassword && !newPassword && !confirmPassword)}>
+                    {savingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Update Password
+                  </Button>
+                </CardFooter>
+              </Card>
+            ) : (
+              <Card className="bg-card border-border shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-foreground font-semibold">Security</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-lg bg-muted/50 p-4 border border-border">
+                    <p className="text-sm text-muted-foreground">
+                      You signed in with <span className="font-semibold capitalize">{authProvider || 'Google'}</span>.
+                      Password management is handled by your {authProvider || 'Google'} account.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
           </div>
 

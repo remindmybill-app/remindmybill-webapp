@@ -49,7 +49,6 @@ export function SubscriptionsProvider({ children }: { children: React.ReactNode 
                 .from("subscriptions")
                 .select("*")
                 .eq("user_id", user.id)
-                .eq("status", "active")
                 .order("created_at", { ascending: false })
 
             if (fetchError) {

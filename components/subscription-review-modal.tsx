@@ -24,28 +24,30 @@ export function SubscriptionReviewModal() {
     const router = useRouter()
     const supabase = getSupabaseBrowserClient()
 
-    const [isOpen, setIsOpen] = useState(false)
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     const [isSaving, setIsSaving] = useState(false)
     const [errorText, setErrorText] = useState<string | null>(null)
+    const [initialized, setInitialized] = useState(false)
+
+    const showModal = profile?.needs_subscription_review === true && subscriptions.length > 5
 
     // Initialize modal state
     useEffect(() => {
-        if (profile?.needs_subscription_review === true && subscriptions.length > 5) {
-            setIsOpen(true)
+        if (showModal && !initialized) {
             // Pre-select based on is_enabled
             const initialSelected = new Set<string>()
             subscriptions.forEach(sub => {
                 if (sub.is_enabled) initialSelected.add(sub.id)
             })
             setSelectedIds(initialSelected)
-        } else {
-            setIsOpen(false)
+            setInitialized(true)
+        } else if (!showModal && initialized) {
+            setInitialized(false)
         }
-    }, [profile?.needs_subscription_review, subscriptions])
+    }, [showModal, initialized, subscriptions])
 
-    // If closed or shouldn't show, render nothing
-    if (!isOpen) return null
+    // If shouldn't show, render nothing
+    if (!showModal) return null
 
     const selectedCount = selectedIds.size
 
@@ -69,6 +71,10 @@ export function SubscriptionReviewModal() {
     const handleSave = async () => {
         if (selectedCount < 1) {
             setErrorText("You must select at least 1 subscription to keep")
+            return
+        }
+        if (selectedCount > 5) {
+            setErrorText("Deselect one to add another")
             return
         }
 
@@ -100,7 +106,7 @@ export function SubscriptionReviewModal() {
                 description: "Your unselected subscriptions have been paused."
             })
 
-            setIsOpen(false)
+            // The modal will close automatically because profile.needs_subscription_review is now false
             await Promise.all([refreshProfile(), refreshSubscriptions()])
 
         } catch (err) {
@@ -117,7 +123,7 @@ export function SubscriptionReviewModal() {
     }
 
     return (
-        <Dialog open={isOpen} onOpenChange={() => { }}>
+        <Dialog open={showModal} onOpenChange={() => { }}>
             {/* 
         onOpenChange is a no-op so clicking outside or pressing ESC doesn't close it 
         and no DialogClose button is provided
@@ -150,8 +156,8 @@ export function SubscriptionReviewModal() {
                                 <div
                                     key={sub.id}
                                     className={`flex items-center justify-between rounded-lg border p-3 transition-colors ${checked
-                                            ? "border-primary bg-primary/5 dark:bg-primary/10"
-                                            : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
+                                        ? "border-primary bg-primary/5 dark:bg-primary/10"
+                                        : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950"
                                         }`}
                                     onClick={() => handleToggle(sub.id, !checked)}
                                 >

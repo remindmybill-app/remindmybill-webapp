@@ -4,6 +4,7 @@ import { PlanChangeEmail } from '@/emails/PlanChangeEmail';
 import { BillReminderEmail } from '@/emails/BillReminderEmail';
 import { PaymentFailed } from './emails/PaymentFailed';
 import { createClient } from '@supabase/supabase-js';
+import { startOfMonth } from 'date-fns';
 
 // Initialize Supabase Admin Client for logging and quota checks
 const supabaseAdmin = createClient(
@@ -29,38 +30,67 @@ interface SendEmailOptions {
 async function logEmailSent(userId: string, emailType: EmailType) {
     try {
         const now = new Date();
-        const billingPeriodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        const billingPeriodStart = startOfMonth(now).toISOString();
 
         await supabaseAdmin.from('email_quota_log').insert({
             user_id: userId,
             email_type: emailType,
-            billing_period_start: billingPeriodStart,
-            sent_at: now.toISOString()
+            sent_at: now.toISOString(),
+            billing_period_start: billingPeriodStart
         });
     } catch (err) {
         console.error('[Email] Failed to log email sent event:', err);
+        // Do NOT block if logging fails
     }
 }
 
 /**
- * Checks if a user has remaining email quota
+ * Checks if a user has remaining email quota (limit of 3 for free users)
  */
-export async function getRemainingEmailQuota(userId: string) {
-    try {
-        const now = new Date();
-        const billingPeriodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+export async function canSendReminderEmail(userId: string, userTier: string): Promise<boolean> {
+    // Pro and Lifetime users: always send
+    if (userTier !== 'free') return true;
 
-        const { data, error } = await supabaseAdmin
+    try {
+        const startOfMonthDate = startOfMonth(new Date()).toISOString();
+
+        const { count, error } = await supabaseAdmin
             .from('email_quota_log')
-            .select('email_type')
+            .select('*', { count: 'exact', head: true })
             .eq('user_id', userId)
-            .eq('billing_period_start', billingPeriodStart)
-            .in('email_type', ['reminder', 'dunning']);
+            .in('email_type', ['reminder', 'dunning'])
+            .gte('billing_period_start', startOfMonthDate);
 
         if (error) throw error;
 
-        const count = data?.length || 0;
-        return Math.max(0, 3 - count);
+        return (count ?? 0) < 3;
+    } catch (err) {
+        console.error('[Email] Failed to check email quota:', err);
+        // Default to safe side if check fails? Or allow?
+        // Requirement says "allow up to 3", if error we might want to block to be safe or allow.
+        // Usually, if quota check fails, we might want to let it through but log it.
+        // However, the rule says "Call this check BEFORE sending".
+        return false;
+    }
+}
+
+/**
+ * Gets remaining email quota for display
+ */
+export async function getRemainingEmailQuota(userId: string) {
+    try {
+        const startOfMonthDate = startOfMonth(new Date()).toISOString();
+
+        const { count, error } = await supabaseAdmin
+            .from('email_quota_log')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .in('email_type', ['reminder', 'dunning'])
+            .gte('billing_period_start', startOfMonthDate);
+
+        if (error) throw error;
+
+        return Math.max(0, 3 - (count || 0));
     } catch (err) {
         console.error('[Email] Failed to check email quota:', err);
         return 0;
@@ -179,15 +209,14 @@ export async function sendBillReminderEmail({
     cancellationLink?: string;
     userId: string;
 }) {
-    // Check quota before sending for free users (handled by caller usually, but final check here)
+    // Check quota before sending for free users
     const { data: profile } = await supabaseAdmin.from('profiles').select('user_tier').eq('id', userId).single();
+    const userTier = profile?.user_tier || 'free';
 
-    if (profile?.user_tier === 'free') {
-        const remaining = await getRemainingEmailQuota(userId);
-        if (remaining <= 0) {
-            console.log(`[Email] Quota exhausted for user ${userId}. Skipping reminder for ${serviceName}.`);
-            return { success: false, error: 'QUOTA_EXHAUSTED' };
-        }
+    const allowed = await canSendReminderEmail(userId, userTier);
+    if (!allowed) {
+        console.log(`[Email] Quota exhausted for user ${userId} (${userTier}). Skipping reminder for ${serviceName}.`);
+        return { success: false, error: 'QUOTA_EXHAUSTED' };
     }
 
     return sendEmail({

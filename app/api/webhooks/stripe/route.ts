@@ -307,7 +307,6 @@ export async function POST(req: Request) {
                         stripe_subscription_id: null,
                         email_alerts_limit: 3,
                         tier_updated_at: new Date().toISOString(),
-                        needs_subscription_review: true,
                     })
                     .eq('id', user.id);
 
@@ -325,6 +324,12 @@ export async function POST(req: Request) {
                             .update({ is_enabled: false })
                             .in('id', subsToDisable);
                     }
+
+                    // Set review flag AFTER disabling subscriptions
+                    await supabaseAdmin
+                        .from('profiles')
+                        .update({ needs_subscription_review: true })
+                        .eq('id', user.id);
 
                     await logSubscriptionEvent(
                         user.id,
@@ -421,7 +426,6 @@ export async function POST(req: Request) {
                             subscription_limit: 5,
                             email_alerts_limit: 3,
                             tier_updated_at: new Date().toISOString(),
-                            needs_subscription_review: true,
                         })
                         .eq('id', user.id);
 
@@ -439,6 +443,12 @@ export async function POST(req: Request) {
                                 .update({ is_enabled: false })
                                 .in('id', subsToDisable);
                         }
+
+                        // Set review flag AFTER disabling subscriptions
+                        await supabaseAdmin
+                            .from('profiles')
+                            .update({ needs_subscription_review: true })
+                            .eq('id', user.id);
 
                         await logSubscriptionEvent(
                             user.id,

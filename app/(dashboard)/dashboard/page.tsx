@@ -81,20 +81,15 @@ function DashboardContent() {
             refreshProfile()
 
             // Fetch remaining emails for free users
-            if (userTier === 'free' && profile?.id) {
-                const supabase = getSupabaseBrowserClient()
-                const now = new Date()
-                const billingPeriodStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
-
-                supabase
-                    .from('email_quota_log')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('user_id', profile.id)
-                    .eq('billing_period_start', billingPeriodStart)
-                    .in('email_type', ['reminder', 'dunning'])
-                    .then(({ count }: { count: number | null }) => {
-                        setRemainingEmails(Math.max(0, 3 - (count || 0)))
+            if (userTier === 'free') {
+                fetch('/api/user/email-quota')
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.remaining !== undefined) {
+                            setRemainingEmails(data.remaining)
+                        }
                     })
+                    .catch(err => console.error("Failed to fetch email quota:", err))
             }
         }
     }, [isAuthenticated, refreshProfile, userTier, profile?.id])
@@ -407,9 +402,9 @@ function DashboardContent() {
                                 </Badge>
                                 {userTier === 'free' && remainingEmails !== null && (
                                     <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                        📧 {remainingEmails === 0
-                                            ? "Email alerts used up for this month. Upgrade for unlimited alerts."
-                                            : `${3 - remainingEmails} of 3 email alerts used this month`}
+                                        {remainingEmails === 0
+                                            ? "📧 No email alerts left this month — Upgrade for unlimited"
+                                            : `📧 ${3 - remainingEmails} of 3 email alerts used this month`}
                                     </p>
                                 )}
                             </div>
