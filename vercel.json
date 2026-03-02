@@ -1,5 +1,4 @@
 {
-    "buildCommand": "next build --webpack",
     "crons": [
         {
             "path": "/api/cron/reminders",
