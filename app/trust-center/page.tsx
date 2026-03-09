@@ -509,9 +509,9 @@ export default function TrustCenterPage() {
             </div>
 
             {/* Hall of Shame */}
-            <div className="rounded-3xl border border-border bg-card shadow-sm p-6">
+            <div className="rounded-3xl border border-border bg-card shadow-sm p-6 text-zinc-50">
               <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-xl font-bold flex items-center gap-2">
+                <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
                   <span className="text-2xl">⚠️</span> High Risk Services
                 </h2>
                 <Badge variant="secondary" className="bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400">
@@ -533,7 +533,7 @@ export default function TrustCenterPage() {
                             {service.name.substring(0, 1)}
                           </div>
                           <div>
-                            <p className="font-bold text-zinc-900 dark:text-zinc-50">{service.name}</p>
+                            <p className="font-bold text-zinc-900 dark:text-zinc-50 high-risk-item">{service.name}</p>
                             <p className="text-xs text-foreground line-clamp-1">{service.cancellation_method || 'Phone Call Required'}</p>
                           </div>
                         </div>

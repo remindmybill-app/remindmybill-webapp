@@ -1,5 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
+
+* {
+  font-family: 'Inter', ui-sans-serif, system-ui !important;
+}
+
+.font-bold {
+  font-weight: 700 !important;
+}
+
+.font-semibold {
+  font-weight: 600 !important;
+}
+
+.dark .text-foreground {
+  color: hsl(0 0% 95%) !important;
+}
+
+.dark .high-risk-item,
+.dark .cancelled-status {
+  color: #f5f5f5 !important;
+  background: rgba(239, 68, 68, 0.15) !important;
+}
 
 @custom-variant dark (&:is(.dark *));
 

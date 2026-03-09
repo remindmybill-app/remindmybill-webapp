@@ -264,9 +264,15 @@ export function SubscriptionsTable() {
                             </div>
                           </td>
                           <td className={`p-4 text-right ${pausedClass}`}>
-                            <Badge variant="outline" className={`h-5 text-[10px] font-black uppercase tracking-widest flex items-center w-fit ml-auto ${isPaused ? 'bg-muted text-muted-foreground border-border' : 'bg-emerald-50/50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50'}`}>
-                              {isPaused ? "Paused" : (sub.status || 'Active')}
-                            </Badge>
+                            {sub.status === 'cancelled' ? (
+                              <span className="px-3 py-1 bg-red-500/20 border border-red-400 text-white font-semibold text-xs rounded-full cancelled-status ml-auto flex items-center w-fit">
+                                Cancelled
+                              </span>
+                            ) : (
+                              <Badge variant="outline" className={`h-5 text-[10px] font-black uppercase tracking-widest flex items-center w-fit ml-auto ${isPaused ? 'bg-muted text-muted-foreground border-border' : 'bg-emerald-50/50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50'}`}>
+                                {isPaused ? "Paused" : (sub.status || 'Active')}
+                              </Badge>
+                            )}
                           </td>
                           <td className="p-4 pr-6 text-right relative">
                             <div className="flex items-center justify-end gap-1">

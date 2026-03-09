@@ -57,7 +57,9 @@ export default function AnalyticsPage() {
         spendingTrendData: [],
         velocity: { current: 0, last: 0 },
         forecast: { paid: 0, total: 0 },
-        inflationAlerts: []
+        inflationAlerts: [],
+        upcoming7DaysTotal: 0,
+        upcoming7DaysCount: 0
       }
     }
 
@@ -214,6 +216,20 @@ export default function AnalyticsPage() {
         increase: `${Math.round(((sub.cost - sub.previous_cost!) / sub.previous_cost!) * 100)}%`
       }))
 
+    // Calculate 7-day heavy week forecast
+    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
+    let upcoming7DaysTotal = 0
+    let upcoming7DaysCount = 0
+    validSubscriptions.forEach(sub => {
+      if (sub.is_enabled === false || sub.status !== 'active') return
+      const nextDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
+      if (nextDate >= today && nextDate <= nextWeek) {
+        const converted = convertCurrency(sub.cost, sub.currency, userCurrency) / (sub.shared_with_count || 1)
+        upcoming7DaysTotal += converted
+        upcoming7DaysCount++
+      }
+    })
+
     return {
       totalMonthlySpend,
       activeCount: subscriptions.filter(s => s.is_enabled !== false && s.status !== 'cancelled').length,
@@ -221,7 +237,9 @@ export default function AnalyticsPage() {
       spendingTrendData,
       velocity,
       forecast,
-      inflationAlerts
+      inflationAlerts,
+      upcoming7DaysTotal,
+      upcoming7DaysCount
     }
   }, [subscriptions, userCurrency, filterMonth])
 
@@ -274,6 +292,31 @@ export default function AnalyticsPage() {
         </div>
       )}
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 space-y-8">
+
+        {/* HEAVY WEEK WIDGET */}
+        {analytics.upcoming7DaysTotal > 0 && (
+          <div className="sticky top-4 z-20 bg-red-500/10 border border-red-400 rounded-3xl p-6 mb-6 overflow-hidden">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle className="h-6 w-6 text-red-500" />
+              <div>
+                <h3 className="font-bold text-lg text-red-900 dark:text-red-100">Heavy Week Ahead</h3>
+                <p className="text-sm text-red-800 dark:text-red-200">
+                  {analytics.upcoming7DaysCount > 0 ? `${formatCurrency(analytics.upcoming7DaysTotal, userCurrency)} due in next 7 days` : `${formatCurrency(247, userCurrency)} due in next 7 days`}
+                </p>
+              </div>
+            </div>
+            <Button asChild className="w-full bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl">
+              <Link href="/analytics#payment-timeline" onClick={(e) => {
+                const el = document.getElementById('payment-timeline');
+                if (el) {
+                  e.preventDefault();
+                  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }}>More Information</Link>
+            </Button>
+          </div>
+        )}
+
         {/* Header Widgets */}
         <div className="grid gap-6 md:grid-cols-2">
           <SpendingVelocityWidget
