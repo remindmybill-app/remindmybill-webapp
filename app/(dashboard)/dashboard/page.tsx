@@ -131,7 +131,7 @@ function DashboardContent() {
 
         // Handle Stripe upgrade success
         if (success === 'true' || checkout === 'success') {
-            const tierName = tier === 'lifetime' ? 'Fortress' : 'Shield'
+            const tierName = tier === 'lifetime' ? 'Lifetime' : 'Pro'
             toast.success(`Welcome to ${tierName}! 🚀`, {
                 description: "Your plan is now active. Enjoy all your new features!",
                 duration: 6000,

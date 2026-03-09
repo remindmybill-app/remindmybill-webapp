@@ -9,11 +9,11 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_mock'
 // Set these in your .env.local / Vercel Environment Variables
 // Find them in: Stripe Dashboard → Product Catalog → Click Product → Copy "Price API ID"
 
-// Pro (Shield) tier
+// Pro tier
 export const PRO_PRICE_ID_MONTHLY = process.env.STRIPE_PRO_PRICE_ID_MONTHLY || 'price_REPLACE_ME_MONTHLY';
 export const PRO_PRICE_ID_YEARLY = process.env.STRIPE_PRO_PRICE_ID_YEARLY || 'price_REPLACE_ME_YEARLY';
 
-// Lifetime (Fortress) tier — one-time payment
+// Lifetime tier — one-time payment
 export const LIFETIME_PRICE_ID = process.env.STRIPE_LIFETIME_PRICE_ID || 'price_REPLACE_ME_LIFETIME';
 
 // SMS Add-On for Pro users — recurring monthly
