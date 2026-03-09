@@ -258,8 +258,8 @@ export default function AnalyticsPage() {
     <div className="min-h-screen bg-background py-6 sm:py-10 relative">
       {/* Feature Lock Overlay for Free Tier */}
       {isFreeUser && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-          <div className="text-center p-8 max-w-md bg-card rounded-3xl border border-border shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="text-center p-8 max-w-md bg-card rounded-3xl border border-border shadow-2xl pointer-events-auto relative z-10">
             <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/20">
               <Lock className="h-8 w-8 text-blue-400" />
             </div>
