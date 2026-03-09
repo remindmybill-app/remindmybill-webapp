@@ -64,7 +64,7 @@ export default function PricingPage() {
   const plans = [
     {
       id: 'free' as const,
-      name: "Guardian",
+      name: "Free",
       tagline: "Essential Protection",
       price: 0,
       priceSuffix: "forever",
@@ -91,14 +91,14 @@ export default function PricingPage() {
     },
     {
       id: 'pro' as const,
-      name: "Shield",
+      name: "Pro",
       tagline: "Full Protection Suite",
       price: isAnnual ? proAnnualPerMonth : proMonthly,
       priceSuffix: isAnnual ? `/mo (billed $${TIER_PRICING.pro.annual}/yr)` : "/month",
       icon: Sparkles,
-      iconColor: "text-primary",
-      borderClass: "border-primary/40 ring-1 ring-primary/20 shadow-lg shadow-primary/10",
-      bgClass: "bg-gradient-to-br from-blue-500/5 via-transparent to-cyan-500/5",
+      iconColor: "text-emerald-500",
+      borderClass: "border-emerald-500/40 ring-1 ring-emerald-500/20 shadow-lg shadow-emerald-500/10",
+      bgClass: "bg-gradient-to-br from-emerald-500/5 via-transparent to-green-500/5",
       features: [
         { text: "Unlimited subscription tracking", included: true },
         { text: "Unlimited email alerts", included: true },
@@ -117,7 +117,7 @@ export default function PricingPage() {
     },
     {
       id: 'lifetime' as const,
-      name: "Fortress",
+      name: "Lifetime",
       tagline: "Lifetime Protection",
       price: TIER_PRICING.lifetime.oneTime,
       priceSuffix: "one-time payment",
@@ -258,7 +258,7 @@ export default function PricingPage() {
               <CardFooter className="pt-2 pb-6">
                 <Button
                   className={`w-full gap-2 h-12 text-sm font-semibold transition-all ${plan.id === 'pro'
-                    ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25"
+                    ? "bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/25"
                     : plan.id === 'lifetime'
                       ? "bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-black font-bold shadow-lg shadow-amber-500/25"
                       : ""
@@ -305,15 +305,15 @@ export default function PricingPage() {
                 <tr className="bg-muted sticky top-0 z-10">
                   <th className="text-left p-4 font-semibold text-muted-foreground">Feature</th>
                   <th className="text-center p-4 font-semibold">
-                    <span className="text-zinc-400">Guardian</span>
+                    <span className="text-zinc-400">Free</span>
                     <span className="block text-xs text-muted-foreground font-normal">Free</span>
                   </th>
                   <th className="text-center p-4 font-semibold">
-                    <span className="text-blue-400">Shield</span>
+                    <span className="text-emerald-500">Pro</span>
                     <span className="block text-xs text-muted-foreground font-normal">$4.99/mo</span>
                   </th>
                   <th className="text-center p-4 font-semibold">
-                    <span className="text-amber-400">Fortress</span>
+                    <span className="text-amber-400">Lifetime</span>
                     <span className="block text-xs text-muted-foreground font-normal">$99 once</span>
                   </th>
                 </tr>
@@ -340,17 +340,17 @@ export default function PricingPage() {
               {
                 quote: "RemindMyBill saved me $240 by catching a forgotten gym membership. The Pro tier paid for itself in the first month!",
                 name: "Sarah K.",
-                role: "Shield User",
+                role: "Pro User",
               },
               {
                 quote: "The Payment Calendar is a game-changer. I can see exactly when every bill hits and plan my budget accordingly.",
                 name: "Marcus T.",
-                role: "Shield User",
+                role: "Pro User",
               },
               {
                 quote: "Best $99 I ever spent. Lifetime access means I never have to worry about subscription bills sneaking up on me again.",
                 name: "Elena R.",
-                role: "Fortress User",
+                role: "Lifetime User",
               },
             ].map((testimonial, i) => (
               <div
@@ -389,7 +389,7 @@ export default function PricingPage() {
               },
               {
                 q: "What happens if I cancel?",
-                a: "You will retain access to your Pro features until the end of your current billing cycle. After that, your account will revert to the Guardian (Free) tier.",
+                a: "You will retain access to your Pro features until the end of your current billing cycle. After that, your account will revert to the Free tier.",
                 icon: Zap,
               },
             ].map((faq, i) => (

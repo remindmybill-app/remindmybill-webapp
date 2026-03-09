@@ -265,7 +265,7 @@ export default function AnalyticsPage() {
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-2">Advanced Analytics</h2>
             <p className="text-muted-foreground mb-6">
-              Unlock spending velocity, forecasts, inflation alerts, and category breakdowns with Shield or Fortress.
+              Unlock spending velocity, forecasts, inflation alerts, and category breakdowns with Pro or Lifetime.
             </p>
             <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" size="lg" asChild>
               <Link href="/pricing">Upgrade to Unlock — $4.99/mo</Link>
@@ -305,19 +305,23 @@ export default function AnalyticsPage() {
         {/* Trends Chart - 30% Height Concept in layout */}
         <div className="grid gap-8 grid-cols-1 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-8">
-            <SpendingTrendsChart
-              data={analytics.spendingTrendData}
-              selectedMonth={filterMonth}
-              onBarClick={(payload: any) => setFilterMonth(payload.month === filterMonth ? null : payload.month)}
-            />
+            <div id="spending-trends">
+              <SpendingTrendsChart
+                data={analytics.spendingTrendData}
+                selectedMonth={filterMonth}
+                onBarClick={(payload: any) => setFilterMonth(payload.month === filterMonth ? null : payload.month)}
+              />
+            </div>
 
             {/* Payment Timeline */}
-            <PaymentTimeline
-              subscriptions={subscriptions}
-              selectedMonth={filterMonth}
-              userCurrency={userCurrency}
-              onReset={() => setFilterMonth(null)}
-            />
+            <div id="payment-timeline">
+              <PaymentTimeline
+                subscriptions={subscriptions}
+                selectedMonth={filterMonth}
+                userCurrency={userCurrency}
+                onReset={() => setFilterMonth(null)}
+              />
+            </div>
           </div>
 
           {/* Right Column: Activity Feed + Categories */}
@@ -329,7 +333,7 @@ export default function AnalyticsPage() {
             />
 
             {/* Category Breakdown */}
-            <div className="space-y-6">
+            <div id="category-breakdown" className="space-y-6">
               <h3 className="text-lg font-bold px-2">Category Breakdown</h3>
               {analytics.categoryData.map((category, index) => (
                 <CategoryCard

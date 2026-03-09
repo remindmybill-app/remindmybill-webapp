@@ -135,7 +135,7 @@ export function SubscriptionReviewModal() {
                     </div>
                     <DialogTitle className="text-center text-2xl text-foreground">Your plan has changed</DialogTitle>
                     <DialogDescription className="text-center text-base text-muted-foreground">
-                        You've been moved to the <strong className="text-foreground font-medium">Guardian plan</strong>.
+                        You've been moved to the <strong className="text-foreground font-medium">Free plan</strong>.
                         You can keep up to 5 active subscriptions. Please select which ones to keep &mdash;
                         the rest will remain saved but paused.
                     </DialogDescription>
@@ -203,7 +203,7 @@ export function SubscriptionReviewModal() {
                         onClick={handleUpgrade}
                         disabled={isSaving}
                     >
-                        Upgrade to Shield
+                        Upgrade to Pro
                     </Button>
                 </div>
             </DialogContent>

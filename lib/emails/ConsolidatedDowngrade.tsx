@@ -50,7 +50,7 @@ export default function ConsolidatedDowngrade({
                         </Text>
 
                         <Text style={styles.paragraph}>
-                            Your <strong>{previousTier}</strong> subscription has ended, and your account has been transitioned to the <strong>Guardian (Free) plan</strong>.
+                            Your <strong>{previousTier}</strong> subscription has ended, and your account has been transitioned to the <strong>Free plan</strong>.
                         </Text>
 
                         {/* What you lose */}
@@ -58,7 +58,7 @@ export default function ConsolidatedDowngrade({
                             <Text style={styles.boxTitle}>Plan Changes:</Text>
                             <ul style={styles.featureList}>
                                 <li><strong>Analytics:</strong> Advanced spending insights are now locked.</li>
-                                <li><strong>Sub Limit:</strong> Guardian accounts are limited to {limit} active subscriptions.</li>
+                                <li><strong>Sub Limit:</strong> Free accounts are limited to {limit} active subscriptions.</li>
                                 <li><strong>Alert Limit:</strong> You have {remainingAlerts} email alerts remaining for this month.</li>
                             </ul>
                         </Section>
@@ -67,7 +67,7 @@ export default function ConsolidatedDowngrade({
                             <Section style={styles.infoBox}>
                                 <Text style={styles.boxTitle}>Action Required: Select your active subscriptions</Text>
                                 <Text style={styles.smallParagraph}>
-                                    Currently, you have <strong>{subscriptionCount}</strong> subscriptions. Since the Guardian plan limit is <strong>{limit}</strong>, we've temporarily paused some of them.
+                                    Currently, you have <strong>{subscriptionCount}</strong> subscriptions. Since the Free plan limit is <strong>{limit}</strong>, we've temporarily paused some of them.
                                 </Text>
                                 <Button href={`${baseUrl}/dashboard`} style={styles.primaryButton}>
                                     Log in to manage my subscriptions
@@ -80,13 +80,13 @@ export default function ConsolidatedDowngrade({
                         )}
 
                         <Text style={styles.paragraph}>
-                            Missed the perks of Pro? Upgrade back to <strong>Shield</strong> for unlimited everything.
+                            Missed the perks of Pro? Upgrade back to <strong>Pro</strong> for unlimited everything.
                         </Text>
 
                         {/* Secondary CTA */}
                         <Section style={{ textAlign: 'center' as const, marginTop: '20px' }}>
                             <Link href={`${baseUrl}/pricing`} style={styles.secondaryLink}>
-                                Upgrade to Shield for $4.99/mo →
+                                Upgrade to Pro for $4.99/mo →
                             </Link>
                         </Section>
                     </Section>

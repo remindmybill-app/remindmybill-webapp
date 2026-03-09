@@ -200,7 +200,7 @@ export async function POST(req: Request) {
                         await sendPlanChangeEmail({
                             email,
                             userName: profile?.full_name || 'Valued Customer',
-                            planName: isLifetime ? 'Fortress (Lifetime)' : 'Shield (Pro)',
+                            planName: isLifetime ? 'Lifetime' : 'Pro',
                             price: isLifetime ? '$99 one-time' : (metadata.interval === 'yearly' ? '$39/year' : '$4.99/mo'),
                             limit: 99999,
                             type: 'upgrade',
@@ -504,8 +504,8 @@ export async function POST(req: Request) {
 
 function getTierDisplayName(tier: string) {
     switch (tier) {
-        case 'pro': return 'Shield (Pro)';
-        case 'lifetime': return 'Fortress (Lifetime)';
-        default: return 'Guardian (Free)';
+        case 'pro': return 'Pro';
+        case 'lifetime': return 'Lifetime';
+        default: return 'Free';
     }
 }

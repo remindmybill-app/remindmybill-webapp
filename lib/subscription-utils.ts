@@ -33,9 +33,9 @@ export function isLifetime(tier?: string | null): boolean {
  * Get the marketing display name for a tier.
  */
 export function getTierDisplayName(tier?: string | null): string {
-    if (isLifetime(tier)) return TIER_NAMES.lifetime   // "Fortress"
-    if (isPro(tier)) return TIER_NAMES.pro              // "Shield"
-    return TIER_NAMES.free                               // "Guardian"
+    if (isLifetime(tier)) return TIER_NAMES.lifetime   // "Lifetime"
+    if (isPro(tier)) return TIER_NAMES.pro              // "Pro"
+    return TIER_NAMES.free                               // "Free"
 }
 
 /**

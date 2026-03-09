@@ -68,10 +68,10 @@ export function SubscriptionsTable() {
 
   const handleToggleEnable = async (sub: Subscription) => {
     if (!sub.is_enabled && !isProStatus) {
-      // Check limit for Guardian tier
+      // Check limit for Free tier
       const activeCount = subscriptions.filter(s => s.is_enabled !== false && s.status !== 'cancelled').length;
       if (activeCount >= 5) {
-        toast.error("Upgrade to Shield to activate more subscriptions");
+        toast.error("Upgrade to Pro to activate more subscriptions");
         return;
       }
     }

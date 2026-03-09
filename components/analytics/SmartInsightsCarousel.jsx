@@ -19,6 +19,7 @@ export function SmartInsightsCarousel({ subscriptions, velocity, categoryData, u
                 title: 'Spending Velocity',
                 message: `You're spending ${increasePercent}% faster than last month`,
                 action: 'View Details',
+                scrollTarget: 'spending-trends',
                 icon: Rocket,
                 color: 'bg-blue-500',
                 textColor: 'text-blue-600',
@@ -43,6 +44,7 @@ export function SmartInsightsCarousel({ subscriptions, velocity, categoryData, u
                     title: 'Category Alert',
                     message: `${drifter.name} is up ${delta}% this month`,
                     action: 'Review Breakdown',
+                    scrollTarget: 'category-breakdown',
                     icon: TrendingUp,
                     color: 'bg-orange-500',
                     textColor: 'text-orange-600',
@@ -69,6 +71,7 @@ export function SmartInsightsCarousel({ subscriptions, velocity, categoryData, u
                 title: `Save ${formatCurrency(potentialSavings, userCurrency)}/mo`,
                 message: `Cancel ${unusedSubs.length} unused subscription${unusedSubs.length > 1 ? 's' : ''}`,
                 action: 'See Which Ones',
+                scrollTarget: 'category-breakdown',
                 icon: Lightbulb,
                 color: 'bg-emerald-500',
                 textColor: 'text-emerald-600',
@@ -96,6 +99,7 @@ export function SmartInsightsCarousel({ subscriptions, velocity, categoryData, u
                 title: 'Heavy Week Ahead',
                 message: `${upcomingBills.length} bills due: ${formatCurrency(upcomingTotal, userCurrency)} total`,
                 action: 'View Timeline',
+                scrollTarget: 'payment-timeline',
                 icon: AlertTriangle,
                 color: 'bg-amber-500',
                 textColor: 'text-amber-600',
@@ -134,7 +138,14 @@ export function SmartInsightsCarousel({ subscriptions, velocity, categoryData, u
                                         <h4 className="font-bold text-lg leading-tight mb-1">{card.title}</h4>
                                         <p className="text-xs text-muted-foreground font-medium">{card.message}</p>
                                     </div>
-                                    <div className={`flex items-center gap-1 text-xs font-bold ${card.textColor} mt-1 cursor-pointer hover:underline`}>
+                                    <div
+                                        className={`flex items-center gap-1 text-xs font-bold ${card.textColor} mt-1 cursor-pointer hover:underline`}
+                                        onClick={() => {
+                                            if (card.scrollTarget) {
+                                                document.getElementById(card.scrollTarget)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                                            }
+                                        }}
+                                    >
                                         {card.action} <ArrowRight className="w-3 h-3" />
                                     </div>
                                 </CardContent>

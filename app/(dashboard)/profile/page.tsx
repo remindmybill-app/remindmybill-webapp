@@ -83,9 +83,9 @@ export default function ProfilePage() {
   }
 
   const getBadgeText = (tier?: string) => {
-    if (tier === 'lifetime') return "Fortress"
-    if (tier === 'pro' || tier === 'premium') return "Shield"
-    return "Guardian"
+    if (tier === 'lifetime') return "Lifetime"
+    if (tier === 'pro' || tier === 'premium') return "Pro"
+    return "Free"
   }
 
   // Handlers

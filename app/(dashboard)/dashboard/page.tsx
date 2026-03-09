@@ -364,7 +364,7 @@ function DashboardContent() {
                                     ⚠️ You've used all {emailAlertsLimit} email alerts this month
                                 </h3>
                                 <p className="text-sm text-orange-700 dark:text-orange-500">
-                                    Upgrade to Shield for unlimited alerts and never miss a renewal.
+                                    Upgrade to Pro for unlimited alerts and never miss a renewal.
                                 </p>
                             </div>
                         </div>
@@ -383,7 +383,7 @@ function DashboardContent() {
                             </div>
                             <div>
                                 <h3 className="font-bold text-amber-900 dark:text-foreground">Free Tier Limit Reached</h3>
-                                <p className="text-sm text-amber-700 dark:text-foreground">You've reached the {subLimit}-subscription limit. Upgrade to Shield for unlimited tracking.</p>
+                                <p className="text-sm text-amber-700 dark:text-foreground">You've reached the {subLimit}-subscription limit. Upgrade to Pro for unlimited tracking.</p>
                             </div>
                         </div>
                         <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white border-none" asChild>
@@ -398,7 +398,7 @@ function DashboardContent() {
                             <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
                             <div className="flex flex-col gap-1">
                                 <Badge className={`${tierBadge.className} text-[10px] font-bold uppercase tracking-wider border-0 px-2 py-0.5 w-fit`}>
-                                    {userTier}
+                                    {tierBadge.label}
                                 </Badge>
                                 {userTier === 'free' && remainingEmails !== null && (
                                     <p className="text-[10px] text-muted-foreground flex items-center gap-1">
@@ -470,19 +470,19 @@ function DashboardContent() {
                                 Subscription Limit Reached
                             </DialogTitle>
                             <DialogDescription>
-                                You're tracking {activeSubCount} subscriptions (Guardian tier limit).
+                                You're tracking {activeSubCount} subscriptions (Free tier limit).
                                 You're managing more subscriptions than 68% of users!
                             </DialogDescription>
                         </DialogHeader>
                         <p className="text-sm text-muted-foreground">
-                            Upgrade to Shield to track unlimited subscriptions and unlock advanced analytics.
+                            Upgrade to Pro to track unlimited subscriptions and unlock advanced analytics.
                         </p>
                         <div className="flex gap-3 justify-end mt-2">
                             <Button variant="ghost" onClick={() => setShowLimitModal(false)}>
                                 Maybe Later
                             </Button>
                             <Button className="bg-blue-600 hover:bg-blue-700" asChild>
-                                <Link href="/pricing">Upgrade to Shield — $4.99/mo</Link>
+                                <Link href="/pricing">Upgrade to Pro — $4.99/mo</Link>
                             </Button>
                         </div>
                     </DialogContent>
@@ -521,7 +521,7 @@ function DashboardContent() {
                         {!isProUser && (
                             <div className="rounded-xl bg-indigo-600 p-6 text-white shadow-lg">
                                 <Shield className="h-8 w-8 mb-4 opacity-50" />
-                                <h3 className="font-bold text-lg leading-tight mb-2">Upgrade to Shield</h3>
+                                <h3 className="font-bold text-lg leading-tight mb-2">Upgrade to Pro</h3>
                                 <p className="text-indigo-100 text-sm mb-4">Unlock unlimited tracking, advanced insights, and instant alerts.</p>
                                 <Button className="w-full bg-white text-indigo-600 hover:bg-white/90" asChild>
                                     <Link href="/pricing">View Plans</Link>

@@ -36,7 +36,7 @@ export async function upgradeUserToPro(userId: string) {
             await sendPlanChangeEmail({
                 email: profile.email,
                 userName: profile.full_name?.split(' ')[0] || 'User',
-                planName: 'Shield (Pro)',
+                planName: 'Pro',
                 price: '$4.99/mo',
                 limit: 99999,
                 type: 'upgrade',
@@ -97,7 +97,7 @@ export async function downgradeUserToFree(userId: string) {
             await sendPlanChangeEmail({
                 email: profile.email,
                 userName: profile.full_name?.split(' ')[0] || 'User',
-                planName: 'Guardian (Free)',
+                planName: 'Free',
                 price: '$0.00',
                 limit: 7,
                 type: 'downgrade',

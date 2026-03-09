@@ -9,9 +9,9 @@ export const STRIPE_PRICE_IDS = {
 
 // ─── Tier Display Names ─────────────────────────────────────────────────────
 export const TIER_NAMES: Record<UserTier, string> = {
-    free: 'Guardian',
-    pro: 'Shield',
-    lifetime: 'Fortress',
+    free: 'Free',
+    pro: 'Pro',
+    lifetime: 'Lifetime',
 }
 
 // ─── Tier Limits ────────────────────────────────────────────────────────────
@@ -58,17 +58,17 @@ export const TIER_PRICING = {
 export const TIER_BADGES: Record<UserTier, { emoji: string; label: string; className: string }> = {
     free: {
         emoji: '🛡️',
-        label: 'Guardian',
+        label: 'Free',
         className: 'bg-zinc-500/20 text-zinc-400',
     },
     pro: {
         emoji: '✨',
-        label: 'Shield Member',
-        className: 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 text-blue-400',
+        label: 'Pro',
+        className: 'bg-emerald-500/20 text-emerald-500',
     },
     lifetime: {
         emoji: '👑',
-        label: 'Fortress Member',
+        label: 'Lifetime',
         className: 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-400',
     },
 }
