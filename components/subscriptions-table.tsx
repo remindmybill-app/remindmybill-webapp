@@ -265,13 +265,17 @@ export function SubscriptionsTable() {
                           </td>
                           <td className={`p-4 text-right ${pausedClass}`}>
                             {sub.status === 'cancelled' ? (
-                              <span className="px-3 py-1 bg-red-500/20 border border-red-400 text-white font-semibold text-xs rounded-full cancelled-status ml-auto flex items-center w-fit">
+                              <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/25 border border-red-500 text-red-200 tracking-wide uppercase cancelled-status ml-auto flex items-center w-fit">
                                 Cancelled
                               </span>
                             ) : (
-                              <Badge variant="outline" className={`h-5 text-[10px] font-black uppercase tracking-widest flex items-center w-fit ml-auto ${isPaused ? 'bg-muted text-muted-foreground border-border' : 'bg-emerald-50/50 text-emerald-600 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-900/50'}`}>
+                              <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase flex items-center w-fit ml-auto ${
+                                isPaused 
+                                  ? "bg-amber-500/20 border border-amber-400 text-amber-300" 
+                                  : "bg-emerald-500/20 border border-emerald-400 text-emerald-300"
+                              }`}>
                                 {isPaused ? "Paused" : (sub.status || 'Active')}
-                              </Badge>
+                              </span>
                             )}
                           </td>
                           <td className="p-4 pr-6 text-right relative">
@@ -363,9 +367,13 @@ export function SubscriptionsTable() {
                             <p className="text-[9px] text-muted-foreground font-medium">Full: {formatCurrency(sub.cost, sub.currency)}</p>
                           )}
                         </div>
-                        <Badge variant="outline" className={`h-7 px-3 text-[10px] font-black uppercase tracking-widest bg-zinc-50/50 dark:bg-zinc-800/20 border-zinc-200 dark:border-zinc-800 ${isPaused ? 'text-muted-foreground' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase ${
+                          isPaused 
+                            ? "bg-amber-500/20 border border-amber-400 text-amber-300" 
+                            : "bg-emerald-500/20 border border-emerald-400 text-emerald-300"
+                        }`}>
                           {isPaused ? "Paused" : sub.category}
-                        </Badge>
+                        </span>
                       </div>
                     </div>
                   )

@@ -527,14 +527,14 @@ export default function TrustCenterPage() {
                   riskyServices
                     .filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
                     .map((service) => (
-                      <div key={service.id} className="group flex items-center justify-between rounded-xl border border-rose-100 bg-rose-50/10 p-4 transition-all hover:bg-rose-50 hover:shadow-md dark:border-rose-900/30 dark:bg-rose-950/20 dark:hover:bg-rose-900/30" onClick={() => handleSelectService(service)}>
+                      <div key={service.id} className="group flex items-center justify-between rounded-xl border border-rose-900/40 bg-rose-950/20 p-4 transition-all hover:bg-rose-900/30 cursor-pointer" onClick={() => handleSelectService(service)}>
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold text-sm">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-500/20 text-rose-300 font-bold text-sm">
                             {service.name.substring(0, 1)}
                           </div>
                           <div>
-                            <p className="font-bold text-zinc-900 dark:text-zinc-50 high-risk-item">{service.name}</p>
-                            <p className="text-xs text-foreground line-clamp-1">{service.cancellation_method || 'Phone Call Required'}</p>
+                            <p className="font-bold text-zinc-50">{service.name}</p>
+                            <p className="text-xs text-rose-300/90 line-clamp-1">{service.cancellation_method || 'Phone Call Required'}</p>
                           </div>
                         </div>
                         <div className="text-right flex flex-col items-end gap-1">

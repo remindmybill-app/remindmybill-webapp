@@ -5,6 +5,16 @@ import { sendBillReminderEmail } from '@/lib/email';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+/**
+ * Returns the first day of the month for the given date as a YYYY-MM-DD string.
+ */
+function startOfMonth(date: Date): string {
+    const d = new Date(date);
+    d.setDate(1);
+    d.setHours(0, 0, 0, 0);
+    return d.toISOString().split('T')[0];
+}
+
 // This route should be called by Vercel Cron
 export async function GET() {
     try {
@@ -54,6 +64,8 @@ export async function GET() {
             }, { status: 200 });
         }
 
+        console.log('[Cron DEBUG] Found', subs?.length ?? 0, 'subscriptions for', formattedDate);
+
         if (!subs || subs.length === 0) {
             console.log('[Cron] No subscriptions found for renewal in 3 days.');
             return NextResponse.json({ success: true, count: 0 });
@@ -66,17 +78,18 @@ export async function GET() {
 
         // 3. Extract unique user IDs
         const userIds = [...new Set(subsToProcess.map(s => s.user_id))].filter(Boolean);
+        console.log('[Cron DEBUG] User IDs:', userIds);
 
         if (userIds.length === 0) {
             console.warn('[Cron] No user_ids extracted.');
             return NextResponse.json({ success: true, count: 0 });
         }
 
-        // 4. Fetch Profiles WITH tier info for alert limit checking
+        // 4. Fetch Profiles — only columns that actually exist in the profiles table
         console.time('DB_Fetch_Profiles');
         const { data: profiles, error: profilesError } = await supabaseAdmin
             .from('profiles')
-            .select('id, email, full_name, user_tier, email_alerts_used, email_alerts_limit')
+            .select('id, email, full_name, user_tier')
             .in('id', userIds);
         console.timeEnd('DB_Fetch_Profiles');
 
@@ -89,11 +102,13 @@ export async function GET() {
             }, { status: 200 });
         }
 
+        console.log('[Cron DEBUG] Profiles loaded:', profiles?.length || 0);
+        console.log('[Cron DEBUG] First profile:', profiles?.[0]);
+
         // 5. Map profiles by ID
         const profileMap = new Map<string, any>((profiles || []).map((p: any) => [p.id, p]));
-        console.log(`[Cron] Loaded ${profiles?.length} profiles.`);
 
-        // 6. Send emails with tier-aware limits
+        // 6. Send emails with tier-aware limits (quota checked via email_quota_log)
         console.time('Email_Phase_FailFast');
 
         const sendWithTimeout = (data: any) => Promise.race([
@@ -111,20 +126,28 @@ export async function GET() {
                 return { id: sub.id, status: 'skipped', reason: 'no_email' };
             }
 
-            // ─── Tier-aware alert limit check ───
+            // ─── Tier-aware alert limit check via email_quota_log ───
             const userTier = userProfile.user_tier || 'free';
             if (userTier === 'free') {
-                const alertsUsed = userProfile.email_alerts_used ?? 0;
-                const alertsLimit = userProfile.email_alerts_limit ?? 3;
+                const { count, error: quotaError } = await supabaseAdmin
+                    .from('email_quota_log')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('user_id', sub.user_id)
+                    .in('email_type', ['reminder', 'dunning'])
+                    .gte('billing_period_start', startOfMonth(new Date()));
 
-                if (alertsUsed >= alertsLimit) {
-                    console.log(`[Cron] Skipping ${sub.id} - Free user ${sub.user_id} alert limit reached (${alertsUsed}/${alertsLimit}).`);
+                if (quotaError) {
+                    console.error(`[Cron] Quota check error for user ${sub.user_id}:`, quotaError);
+                }
+
+                if ((count ?? 0) >= 3) {
+                    console.log(`[Cron] Skipping ${sub.id} - Free user ${sub.user_id} alert limit reached (${count}/3).`);
                     return { id: sub.id, status: 'skipped', reason: 'alert_limit_reached' };
                 }
             }
 
             try {
-                const { error: emailError } = await sendWithTimeout({
+                const result = await sendWithTimeout({
                     email: userProfile.email,
                     userName: userProfile.full_name?.split(' ')[0] || 'User',
                     serviceName: sub.name,
@@ -134,20 +157,21 @@ export async function GET() {
                     category: sub.category,
                     isTrial: sub.is_trial || false,
                     cancellationLink: sub.cancellation_link,
+                    userId: sub.user_id,
                 }) as any;
 
-                if (emailError) {
-                    console.error(`[Cron] Failed send to ${userProfile.email}:`, emailError);
-                    return { id: sub.id, status: 'failed', email: userProfile.email, error: emailError };
+                if (result?.error) {
+                    console.error(`[Cron] Failed send to ${userProfile.email}:`, result.error);
+                    return { id: sub.id, status: 'failed', email: userProfile.email, error: result.error };
                 }
 
-                // Increment alert counter for free tier users
-                if (userTier === 'free') {
-                    await supabaseAdmin
-                        .from('profiles')
-                        .update({ email_alerts_used: (userProfile.email_alerts_used ?? 0) + 1 })
-                        .eq('id', sub.user_id);
-                }
+                // Log to email_quota_log after successful send
+                await supabaseAdmin.from('email_quota_log').insert({
+                    user_id: sub.user_id,
+                    email_type: 'reminder',
+                    sent_at: new Date().toISOString(),
+                    billing_period_start: startOfMonth(new Date()),
+                });
 
                 return { id: sub.id, status: 'sent', email: userProfile.email };
             } catch (err: any) {

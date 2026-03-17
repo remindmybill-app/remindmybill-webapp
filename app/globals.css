@@ -20,8 +20,9 @@
 
 .dark .high-risk-item,
 .dark .cancelled-status {
-  color: #f5f5f5 !important;
-  background: rgba(239, 68, 68, 0.15) !important;
+  color: #fecaca !important; /* text-red-200 */
+  background: rgba(239, 68, 68, 0.25) !important; /* bg-red-500/25 */
+  border: 1px solid #ef4444 !important; /* border-red-500 */
 }
 
 @custom-variant dark (&:is(.dark *));
