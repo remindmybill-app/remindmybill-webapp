@@ -1,16 +1,16 @@
 {
-    "crons": [
-        {
-            "path": "/api/cron/reminders",
-            "schedule": "0 9 * * *"
-        },
-        {
-            "path": "/api/cron/reset-limits",
-            "schedule": "0 0 1 * *"
-        },
-        {
-            "path": "/api/cron/process-cancellations",
-            "schedule": "0 0 * * *"
-        }
-    ]
+  "crons": [
+    {
+      "path": "/api/cron/reminders",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/reset-limits",
+      "schedule": "0 0 1 * *"
+    },
+    {
+      "path": "/api/cron/process-cancellations",
+      "schedule": "0 0 * * *"
+    }
+  ]
 }

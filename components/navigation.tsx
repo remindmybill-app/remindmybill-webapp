@@ -93,6 +93,7 @@ export function Navigation() {
                 <Link href="/pricing">Pricing</Link>
               </Button>
 
+
               {profile?.role === 'admin' && (
                 <Button
                   variant="outline"
@@ -271,6 +272,18 @@ export function Navigation() {
                         >
                           <Link href="/pricing">Pricing</Link>
                         </Button>
+                        {profile?.role === 'admin' && (
+                          <Button
+                            variant={isActive("/admin") ? "secondary" : "ghost"}
+                            className={`justify-start gap-2 ${isActive("/admin") ? "bg-primary/10 text-primary" : "text-muted-foreground"}`}
+                            asChild
+                          >
+                            <Link href="/admin">
+                              <Shield className="h-4 w-4" />
+                              Admin
+                            </Link>
+                          </Button>
+                        )}
                         <Button
                           variant={isActive("/settings") ? "secondary" : "ghost"}
                           className={`justify-start ${isActive("/settings") ? "bg-primary/10 text-primary" : ""}`}

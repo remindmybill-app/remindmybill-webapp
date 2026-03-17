@@ -2,8 +2,9 @@
 import React, { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Tv, Music, Code, Dumbbell, Cloud, Mail, Package, Gamepad2, Inbox, Sparkles, TrendingUp, Calendar, MoreHorizontal, Pencil, Trash2, Loader2, Zap, XCircle, ChevronRight, Lock } from "lucide-react"
+import { Tv, Music, Code, Dumbbell, Cloud, Mail, Package, Gamepad2, Inbox, Sparkles, TrendingUp, Calendar, MoreHorizontal, Pencil, Trash2, Loader2, Zap, XCircle, ChevronRight, Lock, Pause } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Link from "next/link"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { useProfile } from "@/lib/hooks/use-profile"
 import { isPro } from "@/lib/subscription-utils"
@@ -61,7 +62,50 @@ export function SubscriptionsTable() {
   const [selectedMobileSub, setSelectedMobileSub] = useState<Subscription | null>(null)
   const [confirmDeleteSub, setConfirmDeleteSub] = useState<{ id: string, name: string } | null>(null)
   const [confirmCancelSub, setConfirmCancelSub] = useState<{ id: string, name: string } | null>(null)
+  
+  // Show/Hide Paused Toggle
+  const [showPaused, setShowPaused] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  
+  // Inline limit warning
+  const [limitReachedSubId, setLimitReachedSubId] = useState<string | null>(null)
+
   const router = useRouter()
+
+  React.useEffect(() => {
+    setMounted(true)
+    const stored = localStorage.getItem('rmb_show_paused')
+    if (stored) {
+      setShowPaused(stored === 'true')
+    }
+  }, [])
+
+  React.useEffect(() => {
+    if (!limitReachedSubId) return;
+    
+    // Auto-hide after 4 seconds
+    const timer = setTimeout(() => {
+      setLimitReachedSubId(null);
+    }, 4000);
+
+    // Auto-hide on scroll
+    const handleScroll = () => {
+      setLimitReachedSubId(null);
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [limitReachedSubId]);
+
+  const toggleShowPaused = () => {
+    const newState = !showPaused
+    setShowPaused(newState)
+    localStorage.setItem('rmb_show_paused', String(newState))
+  }
 
   const { profile } = useProfile();
   const isProStatus = isPro(profile?.subscription_tier, profile?.is_pro);
@@ -71,7 +115,7 @@ export function SubscriptionsTable() {
       // Check limit for Free tier
       const activeCount = subscriptions.filter(s => s.is_enabled !== false && s.status !== 'cancelled').length;
       if (activeCount >= 5) {
-        toast.error("Upgrade to Pro to activate more subscriptions");
+        setLimitReachedSubId(sub.id);
         return;
       }
     }
@@ -151,6 +195,9 @@ export function SubscriptionsTable() {
     )
   }
 
+  const pausedCount = subscriptions.filter(s => s.is_enabled === false).length
+  const displayedSubscriptions = subscriptions.filter(s => showPaused || s.is_enabled !== false)
+
   return (
     <>
       <Card className="rounded-3xl border-border bg-card shadow-sm overflow-hidden">
@@ -164,9 +211,27 @@ export function SubscriptionsTable() {
               <p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest font-bold">Management Panel</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="text-xs font-bold uppercase tracking-widest text-indigo-600" onClick={refreshSubscriptions}>
-            Refresh
-          </Button>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-2">
+              <Button 
+                variant={showPaused ? "secondary" : "outline"} 
+                size="sm" 
+                onClick={toggleShowPaused}
+                className="h-8 rounded-full text-xs font-semibold"
+              >
+                <Pause className="mr-2 h-3.5 w-3.5" />
+                Show Paused
+              </Button>
+              <Button variant="ghost" size="sm" className="text-xs font-bold uppercase tracking-widest text-indigo-600 h-8" onClick={refreshSubscriptions}>
+                Refresh
+              </Button>
+            </div>
+            {mounted && !showPaused && pausedCount > 0 && (
+              <p className="text-xs text-muted-foreground transition-opacity animate-in fade-in">
+                {pausedCount} subscription{pausedCount === 1 ? '' : 's'} paused — click to show
+              </p>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {isLoading ? (
@@ -202,7 +267,7 @@ export function SubscriptionsTable() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/50">
-                    {subscriptions.map((sub, index) => {
+                    {displayedSubscriptions.map((sub, index) => {
                       const Icon = categoryIcons[sub.category] || Package
                       const nextDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
                       const { label, statusColor } = getRenewalDisplay(nextDate)
@@ -210,10 +275,12 @@ export function SubscriptionsTable() {
 
                       const isPaused = sub.is_enabled === false
                       const pausedClass = isPaused ? "opacity-50 grayscale" : ""
+                      const isLimitReached = limitReachedSubId === sub.id
 
                       return (
-                        <tr key={sub.id} className={`group transition-all hover:bg-muted/50 ${isPaused ? 'bg-muted/30' : ''}`}>
-                          <td className={`p-4 pl-6 ${pausedClass}`}>
+                        <React.Fragment key={sub.id}>
+                          <tr className={`group transition-all hover:bg-muted/50 ${isPaused ? 'bg-muted/30' : ''}`}>
+                            <td className={`p-4 pl-6 ${pausedClass}`}>
                             <div className="flex items-center gap-4">
                               <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-background shadow-sm ring-1 ring-border group-hover:ring-primary/30 transition-all overflow-hidden relative">
                                 <Icon className="h-5 w-5 text-muted-foreground absolute" />
@@ -319,6 +386,20 @@ export function SubscriptionsTable() {
                             </div>
                           </td>
                         </tr>
+                        {/* Inline Error Message Row */}
+                        {isLimitReached && (
+                          <tr className="bg-orange-50/50 dark:bg-orange-500/5 animate-in slide-in-from-top-2 fade-in duration-200 border-x-2 border-x-orange-500/20">
+                            <td colSpan={6} className="p-3 text-center">
+                              <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
+                                You&apos;ve reached your 5 subscription limit.{" "}
+                                <Link href="/pricing" className="text-primary hover:underline font-bold inline-flex items-center">
+                                  Upgrade to Pro for unlimited <ChevronRight className="h-3 w-3 ml-0.5" />
+                                </Link>
+                              </p>
+                            </td>
+                          </tr>
+                        )}
+                        </React.Fragment>
                       )
                     })}
                   </tbody>
@@ -327,18 +408,19 @@ export function SubscriptionsTable() {
 
               {/* Mobile View with Locked State */}
               <div className="space-y-4 p-4 md:hidden">
-                {subscriptions.map((sub, index) => {
+                {displayedSubscriptions.map((sub, index) => {
                   const Icon = categoryIcons[sub.category] || Package
                   const nextDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
                   const { label, statusColor } = getRenewalDisplay(nextDate)
                   const isPaused = sub.is_enabled === false
+                  const isLimitReached = limitReachedSubId === sub.id
 
                   return (
-                    <div
-                      key={sub.id}
-                      className={`rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 active:scale-[0.97] active:bg-zinc-50 dark:active:bg-zinc-800/50 transition-all duration-200 ${isPaused ? 'opacity-50 grayscale' : ''}`}
-                      onClick={() => setSelectedMobileSub(sub)}
-                    >
+                    <div key={sub.id} className="relative space-y-2">
+                      <div
+                        className={`rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 active:scale-[0.97] active:bg-zinc-50 dark:active:bg-zinc-800/50 transition-all duration-200 ${isPaused ? 'opacity-50 grayscale' : ''}`}
+                        onClick={() => setSelectedMobileSub(sub)}
+                      >
                       <div className="mb-4 flex items-center justify-between">
                         <div className="flex items-center gap-4">
                           <div className="h-12 w-12 flex items-center justify-center rounded-xl bg-zinc-50 dark:bg-zinc-800 ring-1 ring-zinc-100 dark:ring-zinc-700">
@@ -375,6 +457,18 @@ export function SubscriptionsTable() {
                           {isPaused ? "Paused" : sub.category}
                         </span>
                       </div>
+                    </div>
+                    {/* Inline Error Message for Mobile */}
+                    {isLimitReached && (
+                      <div className="rounded-xl bg-orange-50/80 dark:bg-orange-500/10 border border-orange-200/50 dark:border-orange-500/20 p-3 mx-2 animate-in slide-in-from-top-1 fade-in duration-200">
+                        <p className="text-xs text-center font-medium text-orange-800 dark:text-orange-200">
+                          You&apos;ve reached your 5 subscription limit.<br/>
+                          <Link href="/pricing" className="text-primary hover:underline font-bold mt-1 inline-flex items-center">
+                            Upgrade to Pro for unlimited <ChevronRight className="h-3 w-3 ml-0.5" />
+                          </Link>
+                        </p>
+                      </div>
+                    )}
                     </div>
                   )
                 })}

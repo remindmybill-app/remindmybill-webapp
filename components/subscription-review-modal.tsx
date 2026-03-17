@@ -133,8 +133,8 @@ export function SubscriptionReviewModal() {
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/30">
                         <ShieldAlert className="h-8 w-8 text-orange-600 dark:text-orange-500" />
                     </div>
-                    <DialogTitle className="text-center text-2xl text-foreground">Your plan has changed</DialogTitle>
-                    <DialogDescription className="text-center text-base text-muted-foreground">
+                    <DialogTitle className="text-center text-xl font-semibold text-foreground">Your plan has changed</DialogTitle>
+                    <DialogDescription className="text-center text-sm text-muted-foreground">
                         You've been moved to the <strong className="text-foreground font-medium">Free plan</strong>.
                         You can keep up to 5 active subscriptions. Please select which ones to keep &mdash;
                         the rest will remain saved but paused.
@@ -143,8 +143,8 @@ export function SubscriptionReviewModal() {
 
                 <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4">
                     <div className="mb-3 flex items-center justify-between">
-                        <span className="text-foreground font-medium">Select up to 5</span>
-                        <span className="text-primary font-semibold">
+                        <span className="text-foreground font-medium text-sm">Select up to 5</span>
+                        <span className="text-primary font-semibold text-sm">
                             {selectedCount} / 5 selected
                         </span>
                     </div>
@@ -156,7 +156,7 @@ export function SubscriptionReviewModal() {
                                 <div
                                     key={sub.id}
                                     className={`flex items-center justify-between rounded-lg p-3 transition-all cursor-pointer ${checked
-                                        ? "bg-primary/10 border border-primary/30"
+                                        ? "bg-primary/10 border border-primary/30 opacity-100"
                                         : "bg-card border border-transparent opacity-60"
                                         }`}
                                     onClick={() => handleToggle(sub.id, !checked)}
@@ -169,11 +169,11 @@ export function SubscriptionReviewModal() {
                                             className={checked ? "border-primary" : ""}
                                         />
                                         <div>
-                                            <p className="font-medium text-sm leading-none text-foreground">{sub.name}</p>
-                                            <p className="text-sm text-muted-foreground mt-1">{sub.category}</p>
+                                            <p className="font-medium text-foreground">{sub.name}</p>
+                                            <p className="text-xs text-muted-foreground mt-1">{sub.category}</p>
                                         </div>
                                     </div>
-                                    <div className="text-right font-medium text-sm text-foreground">
+                                    <div className="text-right font-medium text-foreground">
                                         {formatCurrency(sub.cost, sub.currency)}
                                     </div>
                                 </div>
@@ -199,7 +199,7 @@ export function SubscriptionReviewModal() {
                     </Button>
                     <Button
                         variant="ghost"
-                        className="w-full h-12 text-muted-foreground hover:text-foreground hover:bg-transparent"
+                        className="w-full h-12 text-muted-foreground text-sm hover:text-foreground hover:bg-transparent border-none bg-transparent shadow-none"
                         onClick={handleUpgrade}
                         disabled={isSaving}
                     >

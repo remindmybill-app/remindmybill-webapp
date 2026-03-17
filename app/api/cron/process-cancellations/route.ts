@@ -4,8 +4,10 @@ import Stripe from "stripe";
 import { Resend } from "resend";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export async function GET(req: Request) {
+    console.log('[Cron Cancellations] Starting cancellation processing...');
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
         apiVersion: "2025-01-27.acacia" as any,
     });
@@ -89,5 +91,6 @@ export async function GET(req: Request) {
         }
     }
 
+    console.log('[Cron Cancellations] Processing complete.', results);
     return NextResponse.json(results);
 }

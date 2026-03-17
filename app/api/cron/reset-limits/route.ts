@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 /**
@@ -8,6 +9,7 @@ export const runtime = 'nodejs';
  * Schedule: 0 0 1 * * (1st of each month at midnight UTC)
  */
 export async function GET() {
+    console.log('[Cron Reset] Starting monthly limit reset...');
     try {
         const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
         if (!hasServiceKey) {
@@ -34,6 +36,7 @@ export async function GET() {
 
         console.log('[Cron Reset] Reset complete for free tier users.');
 
+        console.log('[Cron Reset] Reset finished successfully.');
         return NextResponse.json({
             success: true,
             timestamp: new Date().toISOString(),
