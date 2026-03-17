@@ -21,7 +21,6 @@ export async function GET() {
         // 0. Configuration check & Logging
         const hasResendKey = !!process.env.RESEND_API_KEY;
         const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
-        console.log(`[Cron DEBUG] Starting Fail-Fast logic. RESEND: ${hasResendKey}, ADMIN_KEY: ${hasServiceKey}`);
 
         if (!hasResendKey || !hasServiceKey) {
             console.error('[Cron] Missing API Keys');
@@ -40,12 +39,9 @@ export async function GET() {
         targetDate.setDate(today.getDate() + 3);
         const formattedDate = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD
 
-        console.log(`[Cron] Target date: ${formattedDate}`);
+        console.log(`[Cron] Reminders job started. Target date: ${formattedDate}`);
 
         // 2. Query Subscriptions
-        console.log(`[Cron] Searching for renewal_date MATCHING: ${formattedDate}`);
-
-        console.time('DB_Fetch_Subscriptions');
         const { data: subs, error: subsError } = await supabaseAdmin
             .from('subscriptions')
             .select('*, user_id')
@@ -53,7 +49,6 @@ export async function GET() {
             .eq('status', 'active')
             .eq('is_enabled', true)
             .eq('is_locked', false);
-        console.timeEnd('DB_Fetch_Subscriptions');
 
         if (subsError) {
             console.error('[Cron] Database error (subscriptions):', subsError);
@@ -64,21 +59,18 @@ export async function GET() {
             }, { status: 200 });
         }
 
-        console.log('[Cron DEBUG] Found', subs?.length ?? 0, 'subscriptions for', formattedDate);
-
         if (!subs || subs.length === 0) {
-            console.log('[Cron] No subscriptions found for renewal in 3 days.');
+            console.log(`[Cron] No subscriptions due for renewal.`);
             return NextResponse.json({ success: true, count: 0 });
         }
 
         // --- BATCH LIMIT: Max 50 ---
         const totalFound = subs.length;
         const subsToProcess = subs.slice(0, 50);
-        console.log(`[Cron] Found ${totalFound} subscriptions. Processing first ${subsToProcess.length}.`);
+        console.log(`[Cron] Found ${totalFound} subscriptions due for renewal.`);
 
         // 3. Extract unique user IDs
         const userIds = [...new Set(subsToProcess.map(s => s.user_id))].filter(Boolean);
-        console.log('[Cron DEBUG] User IDs:', userIds);
 
         if (userIds.length === 0) {
             console.warn('[Cron] No user_ids extracted.');
@@ -86,12 +78,10 @@ export async function GET() {
         }
 
         // 4. Fetch Profiles — only columns that actually exist in the profiles table
-        console.time('DB_Fetch_Profiles');
         const { data: profiles, error: profilesError } = await supabaseAdmin
             .from('profiles')
             .select('id, email, full_name, user_tier')
             .in('id', userIds);
-        console.timeEnd('DB_Fetch_Profiles');
 
         if (profilesError) {
             console.error('[Cron] Database error (profiles):', profilesError);
@@ -102,15 +92,10 @@ export async function GET() {
             }, { status: 200 });
         }
 
-        console.log('[Cron DEBUG] Profiles loaded:', profiles?.length || 0);
-        console.log('[Cron DEBUG] First profile:', profiles?.[0]);
-
         // 5. Map profiles by ID
         const profileMap = new Map<string, any>((profiles || []).map((p: any) => [p.id, p]));
 
         // 6. Send emails with tier-aware limits (quota checked via email_quota_log)
-        console.time('Email_Phase_FailFast');
-
         const sendWithTimeout = (data: any) => Promise.race([
             sendBillReminderEmail(data),
             new Promise((_, reject) =>
@@ -122,7 +107,7 @@ export async function GET() {
             const userProfile = profileMap.get(sub.user_id);
 
             if (!userProfile?.email) {
-                console.warn(`[Cron] Skipping ${sub.id} - No email for user ${sub.user_id}.`);
+                console.warn(`[Cron] Skipped ${sub.name} for ${sub.user_id}: no_email`);
                 return { id: sub.id, status: 'skipped', reason: 'no_email' };
             }
 
@@ -141,7 +126,7 @@ export async function GET() {
                 }
 
                 if ((count ?? 0) >= 3) {
-                    console.log(`[Cron] Skipping ${sub.id} - Free user ${sub.user_id} alert limit reached (${count}/3).`);
+                    console.warn(`[Cron] Skipped ${sub.name} for ${sub.user_id}: alert_limit_reached`);
                     return { id: sub.id, status: 'skipped', reason: 'alert_limit_reached' };
                 }
             }
@@ -161,7 +146,7 @@ export async function GET() {
                 }) as any;
 
                 if (result?.error) {
-                    console.error(`[Cron] Failed send to ${userProfile.email}:`, result.error);
+                    console.error(`[Cron] Failed to send to ${userProfile.email}: ${result.error}`);
                     return { id: sub.id, status: 'failed', email: userProfile.email, error: result.error };
                 }
 
@@ -173,21 +158,21 @@ export async function GET() {
                     billing_period_start: startOfMonth(new Date()),
                 });
 
+                console.log(`[Cron] Email sent to ${userProfile.email} for ${sub.name}`);
                 return { id: sub.id, status: 'sent', email: userProfile.email };
             } catch (err: any) {
-                console.error(`[Cron] Error (Timeout or Exception) for ${userProfile.email}:`, err.message);
+                console.error(`[Cron] Failed to send to ${userProfile.email}: ${err.message}`);
                 return { id: sub.id, status: 'failed', email: userProfile.email, error: err.message };
             }
         });
 
         const results = await Promise.all(emailPromises);
-        console.timeEnd('Email_Phase_FailFast');
 
         const sentCount = results.filter(r => r.status === 'sent').length;
         const failedCount = results.filter(r => r.status === 'failed').length;
         const skippedCount = results.filter(r => r.status === 'skipped').length;
 
-        console.log(`[Cron] FAIL FAST complete. Sent: ${sentCount}, Failed: ${failedCount}, Skipped: ${skippedCount}.`);
+        console.log(`[Cron] Complete. Sent: ${sentCount}, Skipped: ${skippedCount}, Failed: ${failedCount}`);
 
         return NextResponse.json({
             success: true,
