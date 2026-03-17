@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Shield, AlertTriangle, CheckCircle2, Search, ArrowRight, Lock, TrendingUp, AlertCircle, HelpCircle, Globe, Zap, Fingerprint, Loader2, X } from "lucide-react"
+import { Shield, AlertTriangle, CheckCircle2, Search, ArrowRight, Lock, TrendingUp, AlertCircle, HelpCircle, Globe, Zap, Fingerprint, Loader2, X, LogOut } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -26,6 +26,8 @@ interface Platform {
   difficulty_level: "Easy" | "Medium" | "Hard" | "Impossible"
   cancellation_method: string
   website_url?: string
+  cancellation_steps?: string[]
+  cancellation_url?: string
 }
 
 interface TrustAnalysis {
@@ -40,7 +42,10 @@ interface TrustAnalysis {
   alert_count: number
   cancellation_url?: string
   cancellation_method?: string
+  cancellation_steps?: string[]
 }
+
+import { useSearchParams } from "next/navigation"
 
 export default function TrustCenterPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -58,6 +63,7 @@ export default function TrustCenterPage() {
   const [requestServiceName, setRequestServiceName] = useState("")
 
   const supabase = getSupabaseBrowserClient()
+  const searchParams = useSearchParams()
 
   // Fetch Leaderboards on Mount
   useEffect(() => {
@@ -88,6 +94,34 @@ export default function TrustCenterPage() {
 
     fetchLeaderboards()
   }, [])
+
+  // Handle ?service= URL param
+  useEffect(() => {
+    const serviceParam = searchParams.get('service')
+    if (serviceParam && !isSearching) {
+      const checkService = async () => {
+        try {
+          const { data } = await supabase
+            .from('service_benchmarks')
+            .select('*')
+            .ilike('name', serviceParam)
+            .single()
+            
+          if (data) {
+            handleSelectService(data as any)
+          } else {
+            toast.info(`Search for "${serviceParam}" in the Trust Center for cancellation help.`)
+            setSearchQuery(serviceParam)
+          }
+        } catch (err) {
+          // Fallback if not found
+          toast.info(`Search for "${serviceParam}" in the Trust Center for cancellation help.`)
+          setSearchQuery(serviceParam)
+        }
+      }
+      checkService()
+    }
+  }, [searchParams, supabase])
 
   // Debounced Search
   const performSearch = useCallback(
@@ -143,8 +177,9 @@ export default function TrustCenterPage() {
       risk_flags: [],
       trend: service.trust_score < 50 ? "falling" : "stable",
       alert_count: 0,
-      cancellation_url: service.website_url,
-      cancellation_method: service.cancellation_method
+      cancellation_url: service.cancellation_url || service.website_url,
+      cancellation_method: service.cancellation_method,
+      cancellation_steps: service.cancellation_steps
     })
     setSearchQuery("")
     setSearchResults([])
@@ -450,11 +485,40 @@ export default function TrustCenterPage() {
                             {analysis.cancellation_difficulty.toUpperCase()}
                           </Badge>
                         </div>
-                        <div className="p-6 text-center">
-                          {analysis.cancellation_url && <Button asChild size="sm" variant="outline" className="w-full"><a href={analysis.cancellation_url} target="_blank" rel="noopener noreferrer">Direct Cancel Link <ArrowRight className="ml-2 h-4 w-4" /></a></Button>}
+                        <div className="p-6 text-center w-full col-span-2">
+                          {analysis.cancellation_url && <Button asChild size="sm" variant="outline" className="w-[80%] mx-auto"><a href={analysis.cancellation_url} target="_blank" rel="noopener noreferrer">Go to Cancellation Page <ArrowRight className="ml-2 h-4 w-4" /></a></Button>}
                         </div>
                       </div>
                     </Card>
+
+                    {/* HOW TO CANCEL SECTION */}
+                    {analysis.cancellation_steps && analysis.cancellation_steps.length > 0 && (
+                      <Card className="rounded-3xl border-border bg-card shadow-sm mt-8">
+                        <CardHeader className="p-8 border-b border-border bg-muted/30">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 shadow-sm">
+                              <LogOut className="h-5 w-5 text-orange-500" />
+                            </div>
+                            <div>
+                              <CardTitle className="text-xl font-bold leading-none text-foreground">How to Cancel</CardTitle>
+                              <CardDescription className="mt-1 text-muted-foreground">Step-by-step guidance</CardDescription>
+                            </div>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-8 pt-6 space-y-4">
+                          {analysis.cancellation_steps.map((step, index) => (
+                            <div key={index} className="flex gap-4">
+                              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-xs font-bold text-white shadow-sm mt-0.5">
+                                {index + 1}
+                              </div>
+                              <p className="text-sm font-medium leading-relaxed text-zinc-700 dark:text-zinc-300">
+                                {step}
+                              </p>
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    )}
                   </div>
                 </div>
               </motion.div>

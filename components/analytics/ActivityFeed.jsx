@@ -4,85 +4,41 @@ import { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Activity, Bell, AlertTriangle, CheckCircle2, TrendingUp, TrendingDown } from "lucide-react"
 import { formatCurrency } from "@/lib/utils/currency"
-import { format, isToday, isYesterday, parseISO, subMonths, subYears, addMonths, addYears } from "date-fns"
+import { format, isToday, isYesterday, parseISO } from "date-fns"
 
 export function ActivityFeed({ subscriptions, userCurrency = "USD" }) {
     const activities = useMemo(() => {
-        const events = []
-        const now = new Date()
-        const sevenDaysAgo = new Date(now)
-        sevenDaysAgo.setDate(now.getDate() - 7)
+        // Find last 5 real subscription events based on updated_at
+        const sortedSubs = [...subscriptions].sort((a, b) => {
+            const dateA = a.updated_at ? new Date(a.updated_at).getTime() : new Date(a.created_at).getTime();
+            const dateB = b.updated_at ? new Date(b.updated_at).getTime() : new Date(b.created_at).getTime();
+            return dateB - dateA;
+        });
 
-        subscriptions.forEach(sub => {
-            // 1. Simulate recent renewal
-            // Logic: Find the most recent past payment date
-            if (sub.status === 'active') {
-                let checkDate = parseISO(sub.renewal_date)
-                // Normalize checkDate to be the "next" renewal. 
-                // We want to find if the *previous* cycle fell in the last 7 days.
+        const recentSubs = sortedSubs.slice(0, 5);
 
-                // If renewal_date is future, we rollback one cycle to find "last payment"
-                const freq = sub.frequency?.toLowerCase() || 'monthly'
-
-                // Safety loop limit
-                let activeDate = new Date(checkDate)
-
-                // If the future renewal is close (e.g. today), it might logically be "paying today" depending on time.
-                // But usually "renewal_date" update happens after payment. 
-                // Let's assume renewal_date IS the next payment. 
-                // So last payment was = renewal_date - 1 cycle.
-
-                let lastPayment = new Date(activeDate)
-                if (freq === 'yearly' || freq === 'annual') {
-                    lastPayment = subYears(activeDate, 1)
-                } else {
-                    lastPayment = subMonths(activeDate, 1) // default monthly
-                }
-
-                // If this lastPayment is within window?
-                if (lastPayment >= sevenDaysAgo && lastPayment <= now) {
-                    events.push({
-                        id: `pay-${sub.id}`,
-                        type: 'payment',
-                        date: lastPayment,
-                        subName: sub.name,
-                        amount: sub.cost,
-                        currency: sub.currency
-                    })
-                }
-
-                // Also check if "renewal_date" itself is today (due today)
-                if (isToday(activeDate)) {
-                    events.push({
-                        id: `due-${sub.id}`,
-                        type: 'upcoming',
-                        date: activeDate,
-                        subName: sub.name,
-                        amount: sub.cost,
-                        currency: sub.currency
-                    })
-                }
+        return recentSubs.map(sub => {
+            const updatedAt = sub.updated_at ? new Date(sub.updated_at) : new Date(sub.created_at);
+            const createdAt = new Date(sub.created_at);
+            
+            // Infer what happened
+            let actionType = 'renewed';
+            if (sub.status === 'cancelled' || sub.is_enabled === false) {
+                actionType = 'paused';
+            } else if (Math.abs(updatedAt.getTime() - createdAt.getTime()) < 60000) {
+                // created recently and no major updates
+                actionType = 'added';
             }
 
-            // 2. Price Changes
-            if (sub.last_price_change_date) {
-                const changeDate = parseISO(sub.last_price_change_date)
-                if (changeDate >= sevenDaysAgo && changeDate <= now) {
-                    const diff = sub.cost - (sub.previous_cost || 0)
-                    events.push({
-                        id: `price-${sub.id}`,
-                        type: 'price_change',
-                        date: changeDate,
-                        subName: sub.name,
-                        amount: diff,
-                        isIncrease: diff > 0,
-                        currency: sub.currency
-                    })
-                }
-            }
-        })
-
-        return events.sort((a, b) => b.date.getTime() - a.date.getTime())
+            return {
+                id: `act-${sub.id}-${updatedAt.getTime()}`,
+                type: actionType,
+                date: updatedAt,
+                subName: sub.name,
+                amount: sub.cost,
+                currency: sub.currency
+            };
+        });
     }, [subscriptions])
 
     if (activities.length === 0) {
@@ -129,27 +85,19 @@ export function ActivityFeed({ subscriptions, userCurrency = "USD" }) {
                             {items.map((item) => (
                                 <div key={item.id} className="flex items-start gap-3">
                                     <div className="mt-0.5">
-                                        {item.type === 'payment' && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
-                                        {item.type === 'upcoming' && <AlertTriangle className="h-4 w-4 text-amber-500" />}
-                                        {item.type === 'price_change' && (
-                                            item.isIncrease
-                                                ? <TrendingUp className="h-4 w-4 text-red-500" />
-                                                : <TrendingDown className="h-4 w-4 text-emerald-500" />
-                                        )}
+                                        {item.type === 'renewed' && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                                        {item.type === 'added' && <CheckCircle2 className="h-4 w-4 text-blue-500" />}
+                                        {item.type === 'paused' && <AlertTriangle className="h-4 w-4 text-amber-500" />}
                                     </div>
                                     <div className="flex-1">
                                         <p className="text-sm font-medium text-foreground leading-tight">
                                             <span className="font-bold">{item.subName}</span>
-                                            {item.type === 'payment' && ' renewed'}
-                                            {item.type === 'upcoming' && ' is due'}
-                                            {item.type === 'price_change' && (item.isIncrease ? ' price hike' : ' price drop')}
+                                            {item.type === 'renewed' && ' Renewed'}
+                                            {item.type === 'added' && ' Added'}
+                                            {item.type === 'paused' && ' Paused'}
                                         </p>
                                         <div className="flex items-center gap-2 mt-0.5">
-                                            <span className={`text-xs font-bold ${item.type === 'price_change'
-                                                ? (item.isIncrease ? 'text-red-600' : 'text-emerald-600')
-                                                : 'text-zinc-500'
-                                                }`}>
-                                                {item.type === 'price_change' && (item.isIncrease ? '+' : '')}
+                                            <span className="text-xs font-bold text-zinc-500">
                                                 {formatCurrency(item.amount, item.currency || userCurrency)}
                                             </span>
                                         </div>

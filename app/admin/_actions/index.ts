@@ -185,16 +185,29 @@ export async function triggerCronJob(jobName: string) {
             : new URL('http://localhost:3000');
 
         const response = await fetch(`${baseUrl.origin}/api/cron/${jobName}`, {
-            method: 'POST',
+            method: 'GET',
             headers: {
-                'x-cron-secret': process.env.CRON_SECRET!,
+                'Authorization': `Bearer ${process.env.CRON_SECRET}`,
                 'Content-Type': 'application/json',
             },
         });
 
         const result = await response.json().catch(() => ({ message: response.statusText }));
         const status = response.ok ? 'success' : 'error';
-        const resultMessage = result.message || result.error || response.statusText;
+        
+        let resultMessage = result.message || result.error || response.statusText;
+
+        if (response.ok) {
+           if (jobName === 'reminders') {
+               resultMessage = `Sent ${result.sent_count || 0} emails`;
+           } else if (jobName === 'process-cancellations') {
+               resultMessage = `Processed ${result.processed || 0} cancellations`;
+           } else if (jobName === 'reset-limits') {
+               resultMessage = 'Reset limits for free users';
+           } else {
+               resultMessage = 'Success';
+           }
+        }
 
         // Log to cron_logs
         await supabase

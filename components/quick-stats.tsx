@@ -69,7 +69,7 @@ export function QuickStats() {
       })
       : null
 
-  let renewalValue = "None"
+  let renewalValue = "—"
   let renewalColor = ""
 
   if (nextRenewal) {

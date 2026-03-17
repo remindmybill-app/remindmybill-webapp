@@ -2,12 +2,14 @@
 import React, { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Tv, Music, Code, Dumbbell, Cloud, Mail, Package, Gamepad2, Inbox, Sparkles, TrendingUp, Calendar, MoreHorizontal, Pencil, Trash2, Loader2, Zap, XCircle, ChevronRight, Lock, Pause } from "lucide-react"
+import { Tv, Music, Code, Dumbbell, Cloud, Mail, Package, Gamepad2, Inbox, Sparkles, TrendingUp, Calendar, MoreHorizontal, Pencil, Trash2, Loader2, Zap, XCircle, ChevronRight, Lock, Pause, Receipt, Plus, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { useProfile } from "@/lib/hooks/use-profile"
 import { isPro } from "@/lib/subscription-utils"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+
 import { formatCurrency } from "@/lib/utils/currency"
 import { formatDistanceToNow, parseISO } from "date-fns"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -55,7 +57,7 @@ const categoryIcons: Record<string, any> = {
   Gaming: Gamepad2,
 }
 
-export function SubscriptionsTable() {
+export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }) {
   const { subscriptions, isLoading, refreshSubscriptions, deleteSubscription, cancelSubscription, toggleSubscription } = useSubscriptions()
   const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -157,37 +159,61 @@ export function SubscriptionsTable() {
   }
 
   if (!isLoading && subscriptions.length === 0) {
-    // ... (existing empty state code) ...
     return (
-      <Card className="rounded-3xl border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/50">
-        <CardHeader className="p-8">
-          <CardTitle className="text-xl font-bold">Active Subscriptions</CardTitle>
-        </CardHeader>
-        <CardContent className="p-8 pt-0">
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="mb-6 rounded-3xl bg-zinc-50 dark:bg-zinc-800 p-8 ring-1 ring-zinc-200 dark:ring-zinc-700">
-              <Inbox className="h-14 w-14 text-zinc-400" />
+      <Card className="rounded-3xl border-border bg-card shadow-sm">
+        <CardHeader className="p-6 border-b border-border flex flex-row items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-primary/10">
+              <TrendingUp className="h-5 w-5 text-primary" />
             </div>
-            <h3 className="mb-2 text-xl font-heavy">No assets tracked</h3>
-            <p className="mb-8 max-w-sm text-sm text-muted-foreground text-balance">
-              Link your primary inbox to automatically visualize and manage your monthly recurring expenditures.
+            <div>
+              <CardTitle className="text-xl font-bold leading-none">Portfolio</CardTitle>
+              <p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest font-bold">Management Panel</p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-8">
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="mb-6 rounded-2xl bg-muted/50 p-6">
+              <Receipt className="h-12 w-12 text-muted-foreground" />
+            </div>
+            <h3 className="mb-2 text-lg font-semibold text-foreground">No subscriptions yet</h3>
+            <p className="mb-8 max-w-sm text-sm text-muted-foreground">
+              Add your first subscription to start tracking your spending and get renewal reminders.
             </p>
-
-            {/* Desktop Analyze Button */}
-            <Button size="lg" className="hidden md:flex h-12 rounded-xl bg-zinc-900 px-8 text-md font-bold dark:bg-indigo-600 dark:hover:bg-indigo-700">
-              <Sparkles className="h-5 w-5 mr-2" />
-              Analyze Inbox
-            </Button>
-
-            {/* Mobile Sticky Analyze Button */}
-            <div className="md:hidden fixed bottom-20 left-4 right-4 z-40 animate-in fade-in slide-in-from-bottom-10 duration-700">
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 animate-pulse transition duration-1000"></div>
-                <Button size="lg" className="relative w-full h-14 rounded-2xl bg-zinc-900 text-lg font-bold shadow-2xl dark:bg-indigo-600 dark:hover:bg-indigo-700 border border-white/10 active:scale-95 transition-transform">
-                  <Sparkles className="h-6 w-6 mr-3 text-indigo-400 animate-pulse" />
-                  Scan Gmail For Bills
-                </Button>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <ManualSubscriptionModal
+                onSubscriptionAdded={refreshSubscriptions}
+                trigger={
+                  <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 h-11 rounded-xl">
+                    <Plus className="h-4 w-4" />
+                    Add Subscription
+                  </Button>
+                }
+              />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span tabIndex={0}>
+                      <Button
+                        variant="outline"
+                        className="gap-2 h-11 rounded-xl font-semibold"
+                        disabled={!isProStatus}
+                        onClick={onScanGmail}
+                      >
+                        <Mail className="h-4 w-4" />
+                        Connect Gmail
+                        {!isProStatus && <Lock className="h-3 w-3 ml-1 text-muted-foreground" />}
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {!isProStatus && (
+                    <TooltipContent>
+                      <p>Available on Pro</p>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </CardContent>
@@ -372,6 +398,12 @@ export function SubscriptionsTable() {
                                   <DropdownMenuItem onClick={() => setEditingSubscription(sub)}>
                                     <Pencil className="mr-2 h-4 w-4" />
                                     Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => {
+                                      router.push(`/trust-center?service=${encodeURIComponent(sub.name)}`)
+                                    }}>
+                                    <LogOut className="mr-2 h-4 w-4" />
+                                    Help me cancel
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => setConfirmCancelSub({ id: sub.id, name: sub.name })}>
                                     <XCircle className="mr-2 h-4 w-4" />

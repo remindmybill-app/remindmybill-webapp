@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { format } from "date-fns"
 import { toast } from "sonner"
 import { HealthScoreGauge, OptimizationPanel } from "@/components/financial-health-card"
 import { StatCard } from "@/components/quick-stats"
@@ -16,7 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Inbox, Bell, Sparkles, Plus, Lock, TrendingUp, AlertTriangle, CheckCircle2, Crown, Shield, Smartphone, DollarSign, Layers, Clock } from "lucide-react"
+import { Inbox, Bell, Sparkles, Plus, Lock, TrendingUp, AlertTriangle, CheckCircle2, Crown, Shield, Smartphone, DollarSign, Layers, Clock, X } from "lucide-react"
 import { useAuth } from "@/lib/hooks/use-auth"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { useProfile } from "@/lib/hooks/use-profile"
@@ -35,10 +34,47 @@ import { syncSubscriptionLockStatus } from "@/app/actions/subscription-lock"
 import { SubscriptionsProvider } from "@/lib/contexts/subscriptions-context"
 import type { UserTier } from "@/lib/types"
 
+// ─── Welcome Banner ──────────────────────────────────────────────────────────
+function WelcomeBanner({ profile, subscriptionCount }: { profile: any; subscriptionCount: number }) {
+    const [dismissed, setDismissed] = useState(true) // default hidden to avoid flash
+
+    useEffect(() => {
+        const wasDismissed = localStorage.getItem('welcome_dismissed') === 'true'
+        if (!wasDismissed) setDismissed(false)
+    }, [])
+
+    if (dismissed || subscriptionCount > 0 || !profile?.created_at) return null
+
+    // Only show if account is less than 3 days old
+    const createdAt = new Date(profile.created_at)
+    const daysSinceCreated = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
+    if (daysSinceCreated >= 3) return null
+
+    const handleDismiss = () => {
+        setDismissed(true)
+        localStorage.setItem('welcome_dismissed', 'true')
+    }
+
+    return (
+        <div className="bg-primary/10 border border-primary/20 text-foreground rounded-lg p-4 mb-6 flex items-start justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+            <p className="text-sm font-medium">
+                👋 Welcome to RemindMyBill! Start by adding your first subscription below. We&apos;ll remind you before every renewal.
+            </p>
+            <button
+                onClick={handleDismiss}
+                className="shrink-0 rounded-md p-1 hover:bg-primary/10 transition-colors"
+                aria-label="Dismiss welcome banner"
+            >
+                <X className="h-4 w-4 text-muted-foreground" />
+            </button>
+        </div>
+    )
+}
+
 function DashboardContent() {
     const { isAuthenticated, signIn, isLoading: authLoading } = useAuth()
     const router = useRouter()
-    const { subscriptions, refreshSubscriptions } = useSubscriptions()
+    const { subscriptions, refreshSubscriptions, isLoading: subsLoading } = useSubscriptions()
     const { profile, refreshProfile } = useProfile()
     const [isScanning, setIsScanning] = useState(false)
     const [scanRange, setScanRange] = useState(45)
@@ -46,6 +82,7 @@ function DashboardContent() {
     const searchParams = useSearchParams()
     const [isGmailConnected, setIsGmailConnected] = useState(false)
     const [remainingEmails, setRemainingEmails] = useState<number | null>(null)
+    const [prevSubCount, setPrevSubCount] = useState<number | null>(null)
 
     // Review/Import modal state
     const [foundSubscriptions, setFoundSubscriptions] = useState<any[]>([])
@@ -110,6 +147,20 @@ function DashboardContent() {
             return () => clearTimeout(timer);
         }
     }, [profile?.id, subscriptions.length, profile?.subscription_tier, profile?.is_pro]);
+
+    // ─── First Subscription Toast ─────────────────────────────────────────
+    useEffect(() => {
+        if (!subsLoading && subscriptions.length === 1 && prevSubCount === 0) {
+            const alreadyShown = localStorage.getItem('first_sub_toast_shown') === 'true'
+            if (!alreadyShown) {
+                toast.success("✅ First subscription added! We'll remind you 3 days before it renews.")
+                localStorage.setItem('first_sub_toast_shown', 'true')
+            }
+        }
+        if (!subsLoading) {
+            setPrevSubCount(subscriptions.length)
+        }
+    }, [subscriptions.length, prevSubCount, subsLoading]);
 
 
     // Handle Post-Sync Success & Error Reporting
@@ -238,79 +289,13 @@ function DashboardContent() {
 
     const hasSubscriptions = subscriptions.length > 0
 
-    if (!hasSubscriptions) {
-        return (
-            <div className="min-h-screen bg-background">
-                <div className="mx-auto max-w-[1600px] p-6 lg:p-8">
-                    {/* Tier Status Widget */}
-
-                    <div className="mb-8">
-                        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Dashboard</h1>
-                        <p className="mt-2 text-muted-foreground">
-                            {format(new Date(), "EEEE, MMM do")} &bull; No active tracking
-                        </p>
-                    </div>
-
-                    <div className="flex min-h-[50vh] flex-col items-center justify-center rounded-3xl border border-dashed border-border bg-muted/50 p-12 text-center">
-                        <div className="mb-6 inline-flex items-center justify-center rounded-full bg-card p-4 shadow-sm ring-1 ring-border">
-                            <Sparkles className="h-8 w-8 text-indigo-500" />
-                        </div>
-                        <h2 className="mb-3 text-xl font-semibold tracking-tight">No active subscriptions found.</h2>
-                        <p className="mb-8 max-w-sm text-muted-foreground">
-                            Add your first one to start tracking your recurring expenses and optimization potential.
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
-                            <ScanSettingsDialog
-                                onScan={handleScanInbox}
-                                isScanning={isScanning}
-                                trigger={
-                                    <Button
-                                        disabled={isScanning}
-                                        size="lg"
-                                        className="flex-1 gap-2 bg-indigo-600 hover:bg-indigo-700 h-12 text-md shadow-lg shadow-indigo-500/20"
-                                    >
-                                        {isProUser ? <Inbox className="h-5 w-5" /> : <Lock className="h-5 w-5" />}
-                                        {isScanning ? "Scanning Gmail..." :
-                                            isGmailConnected ? "Re-scan Gmail" :
-                                                isProUser ? "Connect Gmail" : "Connect Gmail (Pro)"}
-                                    </Button>
-                                }
-                            />
-
-                            <ManualSubscriptionModal onSubscriptionAdded={refreshSubscriptions} />
-                        </div>
-                        <p className="mt-6 text-xs text-muted-foreground max-w-xs mx-auto">
-                            {isGmailConnected ? (
-                                <span className="flex items-center justify-center gap-1 text-emerald-600 font-medium">
-                                    <CheckCircle2 className="h-3 w-3" /> Gmail Account Linked
-                                </span>
-                            ) : (
-                                "We use read-only permissions to find receipts. Your data is never sold."
-                            )}
-                        </p>
-                    </div>
-                </div>
-
-                <GmailImportModal
-                    isOpen={isReviewOpen}
-                    onClose={() => setIsReviewOpen(false)}
-                    foundSubscriptions={foundSubscriptions}
-                    onImportComplete={() => {
-                        refreshSubscriptions()
-                        setFoundSubscriptions([])
-                    }}
-                    onRescan={handleScanInbox}
-                    isScanning={isScanning}
-                    range={scanRange}
-                />
-            </div>
-        )
-    }
-
     return (
         <div className="overflow-x-hidden bg-background min-h-screen">
             <div className="mx-auto max-w-[1280px] p-4 sm:p-6 lg:p-6">
                 {profile?.id && <InstallPWAPrompt userId={profile.id} />}
+
+                {/* ─── Welcome Banner (new users only) ────────────── */}
+                <WelcomeBanner profile={profile} subscriptionCount={subscriptions.length} />
 
                 {/* ─── Slim Cancellation Banner ───────────────────── */}
                 {profile?.cancellation_scheduled && profile?.cancellation_date && (
@@ -511,7 +496,7 @@ function DashboardContent() {
                 {/* ─── Main Content Row ────────────────────────────── */}
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-4 items-start">
                     <div className="space-y-4">
-                        <SubscriptionsTable />
+                        <SubscriptionsTable onScanGmail={handleScanInbox} />
                     </div>
 
                     <div className="space-y-4">
@@ -567,7 +552,7 @@ function DashboardStatsCards({
         })
         : null
 
-    let renewalValue = "None"
+    let renewalValue = "—"
     let renewalColor = "text-muted-foreground"
     let countdown = ""
 

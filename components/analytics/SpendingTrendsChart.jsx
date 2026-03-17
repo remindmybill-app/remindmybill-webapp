@@ -51,6 +51,21 @@ export function SpendingTrendsChart({ data, selectedMonth, onBarClick }) {
                     )}
                 </div>
                 <CardDescription>6-month spending history and monthly deltas</CardDescription>
+                
+                <div className="flex flex-wrap items-center gap-4 mt-4 text-xs font-medium text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 rounded-sm bg-[#ef4444]"></div>
+                        <span>Higher than previous</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 rounded-sm bg-[#10b981]"></div>
+                        <span>Lower than previous</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-3 h-3 rounded-sm bg-[#6366f1]"></div>
+                        <span>No change / First month</span>
+                    </div>
+                </div>
             </CardHeader>
             <CardContent className="p-8 pt-0">
                 <div className="h-[300px] w-full mt-4">

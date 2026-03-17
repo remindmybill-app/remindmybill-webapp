@@ -8,7 +8,13 @@ export const runtime = 'nodejs';
  * Monthly cron – resets email_alerts_used to 0 for free tier users.
  * Schedule: 0 0 1 * * (1st of each month at midnight UTC)
  */
-export async function GET() {
+export async function GET(request: Request) {
+    const authHeader = request.headers.get('authorization');
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        console.error('[Cron] Unauthorized call blocked');
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     console.log('[Cron Reset] Starting monthly limit reset...');
     try {
         const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;

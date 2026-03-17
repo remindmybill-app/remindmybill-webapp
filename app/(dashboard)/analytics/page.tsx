@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart3, ArrowRight, Info, AlertTriangle, AlertCircle, Lock } from "lucide-react"
+import { BarChart3, BarChart2, ArrowRight, Info, AlertTriangle, AlertCircle, Lock } from "lucide-react"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useProfile } from "@/lib/hooks/use-profile"
@@ -273,27 +273,36 @@ export default function AnalyticsPage() {
   const isFreeUser = !isPro(profile?.user_tier || profile?.subscription_tier, profile?.is_pro)
 
   return (
-    <div className="min-h-screen bg-background py-6 sm:py-10 relative">
-      {/* Feature Lock Overlay for Free Tier */}
-      {isFreeUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-          <div className="text-center p-8 max-w-md bg-card rounded-3xl border border-border shadow-2xl pointer-events-auto relative z-10">
-            <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/20">
-              <Lock className="h-8 w-8 text-blue-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-foreground mb-2">Advanced Analytics</h2>
-            <p className="text-muted-foreground mb-6">
-              Unlock spending velocity, forecasts, inflation alerts, and category breakdowns with Pro or Lifetime.
-            </p>
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" size="lg" asChild>
-              <Link href="/pricing">Upgrade to Unlock — $4.99/mo</Link>
-            </Button>
-          </div>
-        </div>
-      )}
+    <div className="min-h-screen bg-background py-6 sm:py-10">
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 space-y-8">
+        
+        {/* Page Title - Not blurred or covered by overlay */}
+        <div className="flex flex-col gap-1.5 px-2">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Analytics</h1>
+          <p className="text-muted-foreground text-sm">Deep dive into your spending trends and subscription habits.</p>
+        </div>
 
-        {/* HEAVY WEEK WIDGET */}
+        <div className="relative">
+          {/* Feature Lock Overlay for Free Tier */}
+          {isFreeUser && (
+            <div className="absolute inset-x-0 bottom-0 top-0 z-50 flex items-start justify-center pt-24 bg-background/5 backdrop-blur-[1px] rounded-3xl">
+              <div className="text-center p-8 max-w-md bg-card rounded-3xl border border-border shadow-2xl pointer-events-auto mt-8">
+                <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/20">
+                  <BarChart2 className="h-8 w-8 text-blue-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-foreground mb-2">Unlock Your Spending Analytics</h2>
+                <p className="text-muted-foreground mb-6">
+                  See spending trends, bill forecasts, category breakdowns and payment timelines. Available on Pro.
+                </p>
+                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" size="lg" asChild>
+                  <Link href="/pricing">Upgrade to Pro</Link>
+                </Button>
+              </div>
+            </div>
+          )}
+
+          <div className={`space-y-8 transition-all duration-500 ${isFreeUser ? "blur-sm pointer-events-none select-none opacity-60" : ""}`}>
+            {/* HEAVY WEEK WIDGET */}
         {analytics.upcoming7DaysTotal > 0 && (
           <div className="sticky top-4 z-20 bg-red-500/10 border border-red-400 rounded-3xl p-6 mb-6 overflow-hidden">
             <div className="flex items-center gap-3 mb-4">
@@ -394,6 +403,8 @@ export default function AnalyticsPage() {
 
         </div>
 
+        </div>
+
         {/* Feature 3: Drill Down Modal */}
         <CategoryDrillDownModal
           isOpen={!!drillDownCategory}
@@ -405,5 +416,6 @@ export default function AnalyticsPage() {
         />
       </div>
     </div>
+  </div>
   )
 }

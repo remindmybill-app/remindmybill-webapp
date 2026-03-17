@@ -16,7 +16,13 @@ function startOfMonth(date: Date): string {
 }
 
 // This route should be called by Vercel Cron
-export async function GET() {
+export async function GET(request: Request) {
+    const authHeader = request.headers.get('authorization');
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        console.error('[Cron] Unauthorized call blocked');
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     try {
         // 0. Configuration check & Logging
         const hasResendKey = !!process.env.RESEND_API_KEY;

@@ -6,7 +6,7 @@ import { Resend } from "resend";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export async function GET(req: Request) {
+export async function GET(request: Request) {
     console.log('[Cron Cancellations] Starting cancellation processing...');
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
         apiVersion: "2025-01-27.acacia" as any,
@@ -14,9 +14,10 @@ export async function GET(req: Request) {
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     // Verify Cron Secret  
-    const authHeader = req.headers.get("authorization");
+    const authHeader = request.headers.get("authorization");
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        console.error('[Cron] Unauthorized call blocked');
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const supabase = await getSupabaseServerClient();
