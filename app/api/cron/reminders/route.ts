@@ -47,11 +47,23 @@ export async function GET(request: Request) {
 
         console.log(`[Cron] Reminders job started. Target date: ${formattedDate}`);
 
-        // 2. Query Subscriptions
+        // DEBUG: Log a known test subscription to inspect renewal_date storage format
+        const debug = await supabaseAdmin
+            .from('subscriptions')
+            .select('id, name, renewal_date, status, is_enabled, is_locked')
+            .limit(5);
+        console.log('[Cron DEBUG] formattedDate:', formattedDate);
+        console.log('[Cron DEBUG] Sample subscription rows:', JSON.stringify(debug.data, null, 2));
+
+        // 2. Query Subscriptions (range-based to handle date vs timestamptz)
+        const dayStart = `${formattedDate}T00:00:00.000Z`;
+        const dayEnd   = `${formattedDate}T23:59:59.999Z`;
+
         const { data: subs, error: subsError } = await supabaseAdmin
             .from('subscriptions')
             .select('*, user_id')
-            .eq('renewal_date', formattedDate)
+            .gte('renewal_date', dayStart)
+            .lte('renewal_date', dayEnd)
             .eq('status', 'active')
             .eq('is_enabled', true)
             .eq('is_locked', false);
