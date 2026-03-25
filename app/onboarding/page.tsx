@@ -7,6 +7,7 @@ import { Progress } from "@/components/ui/progress"
 import { Bell, Mail, Sparkles, CheckCircle2, Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
+import { GmailTeaserTooltip } from "@/components/gmail-teaser-tooltip"
 
 const steps = [
   {
@@ -219,19 +220,21 @@ export default function OnboardingPage() {
                   </li>
                 </ul>
               </div>
-              <Button className="w-full" size="lg" onClick={handleConnectGmail} disabled={isConnecting}>
-                {isConnecting ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Connecting to Gmail...
-                  </>
-                ) : (
-                  <>
-                    <Mail className="mr-2 h-5 w-5" />
-                    Connect Gmail
-                  </>
-                )}
-              </Button>
+              <GmailTeaserTooltip>
+                <Button className="w-full" size="lg" onClick={handleConnectGmail} disabled={isConnecting}>
+                  {isConnecting ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Connecting to Gmail...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="mr-2 h-5 w-5" />
+                      Connect Gmail
+                    </>
+                  )}
+                </Button>
+              </GmailTeaserTooltip>
             </CardContent>
           </Card>
         )}

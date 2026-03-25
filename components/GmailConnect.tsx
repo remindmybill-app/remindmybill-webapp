@@ -5,6 +5,7 @@ import { connectGmailAccount } from '@/app/actions/gmail'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
+import { GmailTeaserTooltip } from '@/components/gmail-teaser-tooltip'
 
 export default function GmailConnect() {
     const [isLoading, setIsLoading] = useState(false)
@@ -22,15 +23,17 @@ export default function GmailConnect() {
     }
 
     return (
-        <Button onClick={handleConnectGmail} disabled={isLoading}>
-            {isLoading ? (
-                <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Connecting...
-                </>
-            ) : (
-                'Connect Gmail'
-            )}
-        </Button>
+        <GmailTeaserTooltip>
+            <Button onClick={handleConnectGmail} disabled={isLoading}>
+                {isLoading ? (
+                    <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Connecting...
+                    </>
+                ) : (
+                    'Connect Gmail'
+                )}
+            </Button>
+        </GmailTeaserTooltip>
     )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { BarChart3, BarChart2, ArrowRight, Info, AlertTriangle, AlertCircle, Lock } from "lucide-react"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
@@ -271,6 +271,18 @@ export default function AnalyticsPage() {
   }
 
   const isFreeUser = !isPro(profile?.user_tier || profile?.subscription_tier, profile?.is_pro)
+  const isProUser = !isFreeUser
+
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(false)
+  useEffect(() => {
+     if (isProUser && !isLoading) {
+         const hasVisited = localStorage.getItem('rmb_analytics_first_visit') === 'true'
+         if (!hasVisited) {
+             setShowWelcomeBanner(true)
+             localStorage.setItem('rmb_analytics_first_visit', 'true')
+         }
+     }
+  }, [isProUser, isLoading])
 
   return (
     <div className="min-h-screen bg-background py-6 sm:py-10">
@@ -281,6 +293,24 @@ export default function AnalyticsPage() {
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Analytics</h1>
           <p className="text-muted-foreground text-sm">Deep dive into your spending trends and subscription habits.</p>
         </div>
+
+        {/* Welcome Banner */}
+        {showWelcomeBanner && (
+          <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 text-white p-6 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
+             <div className="flex items-center gap-4">
+                <div className="h-12 w-12 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
+                   <BarChart3 className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                   <h2 className="text-xl font-bold mb-1">Welcome to Analytics!</h2>
+                   <p className="text-indigo-100 text-sm">💡 <strong>Pro tip:</strong> Add 3+ subscriptions to unlock full trend insights.<br/>📈 Your category breakdown updates monthly.</p>
+                </div>
+             </div>
+             <Button variant="outline" className="shrink-0 bg-white/10 hover:bg-white/20 text-white border-none" onClick={() => setShowWelcomeBanner(false)}>
+                Dismiss
+             </Button>
+          </div>
+        )}
 
         <div className="relative">
           {/* Feature Lock Overlay for Free Tier */}

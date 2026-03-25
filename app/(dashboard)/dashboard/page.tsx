@@ -91,6 +91,10 @@ function DashboardContent() {
     // Upgrade prompt modal state
     const [showLimitModal, setShowLimitModal] = useState(false)
 
+    // Flow states
+    const [showMiniCelebration, setShowMiniCelebration] = useState(false)
+    const [showNudgeBanner, setShowNudgeBanner] = useState(false)
+
     // Tier info
     const userTier: UserTier = (profile?.user_tier as UserTier) || 'free'
     const isProUser = isPro(profile?.subscription_tier, profile?.is_pro)
@@ -148,19 +152,43 @@ function DashboardContent() {
         }
     }, [profile?.id, subscriptions.length, profile?.subscription_tier, profile?.is_pro]);
 
-    // ─── First Subscription Toast ─────────────────────────────────────────
+    // ─── First Subscription Toast & Post-Onboarding Nudges ─────────────
     useEffect(() => {
+        // Nudge banner logic
+        const firstSubDate = localStorage.getItem('rmb_first_sub_date')
+        if (firstSubDate && subscriptions.length > 0) {
+            const timeDiff = Date.now() - parseInt(firstSubDate)
+            const daysSinceFirstSub = timeDiff / (1000 * 60 * 60 * 24)
+            if (daysSinceFirstSub <= 7) {
+                setShowNudgeBanner(true)
+            }
+        }
+
+        // First Subscription Toast logic
         if (!subsLoading && subscriptions.length === 1 && prevSubCount === 0) {
-            const alreadyShown = localStorage.getItem('first_sub_toast_shown') === 'true'
+            const alreadyShown = localStorage.getItem('rmb_first_sub_added') === 'true'
             if (!alreadyShown) {
-                toast.success("✅ First subscription added! We'll remind you 3 days before it renews.")
-                localStorage.setItem('first_sub_toast_shown', 'true')
+                const sub = subscriptions[0]
+                const nextDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
+                const dateStr = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(nextDate)
+
+                toast.success(`✅ Perfect! "${sub.name}" added successfully.`, {
+                    description: `You'll get a reminder 3 days before it renews on ${dateStr}.`,
+                    duration: 6000
+                })
+                
+                localStorage.setItem('rmb_first_sub_added', 'true')
+                localStorage.setItem('rmb_first_sub_date', Date.now().toString())
+                
+                setTimeout(() => {
+                    setShowMiniCelebration(true)
+                }, 3000)
             }
         }
         if (!subsLoading) {
             setPrevSubCount(subscriptions.length)
         }
-    }, [subscriptions.length, prevSubCount, subsLoading]);
+    }, [subscriptions, prevSubCount, subsLoading]);
 
 
     // Handle Post-Sync Success & Error Reporting
@@ -296,6 +324,20 @@ function DashboardContent() {
 
                 {/* ─── Welcome Banner (new users only) ────────────── */}
                 <WelcomeBanner profile={profile} subscriptionCount={subscriptions.length} />
+
+                {/* ─── Nudge Banner ────────────────────────────────────── */}
+                {showNudgeBanner && (
+                    <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 dark:from-indigo-900/10 dark:to-blue-900/10 dark:border-indigo-900/30 rounded-xl p-5 mb-6 animate-in fade-in">
+                        <h3 className="font-bold text-indigo-900 dark:text-indigo-300 mb-2 flex items-center gap-2">
+                           <Sparkles className="h-4 w-4 text-indigo-500" /> New! Your first subscription is tracking perfectly.
+                        </h3>
+                        <div className="flex flex-col sm:flex-row gap-4 text-sm text-indigo-800 dark:text-indigo-200">
+                           <Link href="/analytics" className="flex items-center gap-1.5 hover:underline"><span className="text-lg">👉</span> Check Analytics to see your spending patterns (Pro)</Link>
+                           <Link href="/trust-center" className="flex items-center gap-1.5 hover:underline"><span className="text-lg">🛡️</span> Visit Trust Center to understand cancellation difficulty</Link>
+                           <Link href="/settings" className="flex items-center gap-1.5 hover:underline"><span className="text-lg">📧</span> Verify your email reminders are working (check spam)</Link>
+                        </div>
+                    </div>
+                )}
 
                 {/* ─── Slim Cancellation Banner ───────────────────── */}
                 {profile?.cancellation_scheduled && profile?.cancellation_date && (
@@ -473,6 +515,46 @@ function DashboardContent() {
                     </DialogContent>
                 </Dialog>
 
+                {/* Celebration Mini-Modal */}
+                <Dialog open={showMiniCelebration} onOpenChange={setShowMiniCelebration}>
+                    <DialogContent className="max-w-md text-center">
+                        <DialogHeader>
+                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                                <span className="text-3xl">🎉</span>
+                            </div>
+                            <DialogTitle className="text-xl font-bold">First subscription tracking started!</DialogTitle>
+                            <DialogDescription className="text-left mt-4 text-foreground text-sm">
+                                <p className="font-semibold mb-2 text-base">What's next:</p>
+                                <ul className="space-y-4">
+                                    <li className="flex items-start gap-3">
+                                        <span className="text-emerald-500 text-lg">✅</span> 
+                                        <span>Check your Dashboard — see your spend updated live</span>
+                                    </li>
+                                    <li className="flex items-start gap-3">
+                                        <span className="text-blue-500 text-lg">📊</span> 
+                                        <span>View Analytics (Pro) — spending trends + forecasts</span>
+                                    </li>
+                                    <li className="flex items-start gap-3">
+                                        <span className="text-indigo-500 text-lg">🛡️</span> 
+                                        <span>Trust Center — see cancellation difficulty for all services</span>
+                                    </li>
+                                </ul>
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="flex flex-col gap-2 mt-2">
+                            <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setShowMiniCelebration(false)}>
+                                Take me to Dashboard
+                            </Button>
+                            <Button variant="outline" className="w-full" asChild>
+                                <Link href="/analytics">View Analytics (Pro)</Link>
+                            </Button>
+                            <Button variant="outline" className="w-full" asChild>
+                                <Link href="/trust-center">Explore Trust Center</Link>
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
                 {/* ─── Stats Row ──────────────────────────────────── */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                     <Card className="border-2 shadow-sm h-full">
@@ -517,6 +599,32 @@ function DashboardContent() {
                         {isProUser && <DashboardAIWidget subscriptions={subscriptions} />}
                     </div>
                 </div>
+
+                {/* ─── Smart Next Actions Bar ─────────────────────── */}
+                {!isProUser && activeSubCount >= 1 && activeSubCount < 5 && (
+                    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-t border-border shadow-[0_-10px_40px_rgba(0,0,0,0.1)] p-4 animate-in slide-in-from-bottom">
+                        <div className="max-w-[1280px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="h-10 w-10 flex items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                                    <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                                </div>
+                                <div>
+                                    <p className="font-bold text-sm tracking-tight">✅ {activeSubCount}/5 subscriptions added</p>
+                                    <p className="text-xs text-muted-foreground">Keep going! Add all your recurring expenses.</p>
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap flex-1 justify-end items-center gap-2 shrink-0 max-w-full overflow-hidden">
+                                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground mr-2 hidden md:inline-block">Next:</span>
+                                <ManualSubscriptionModal 
+                                    onSubscriptionAdded={refreshSubscriptions} 
+                                    trigger={<Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 h-9 rounded-full whitespace-nowrap">Add another subscription</Button>}
+                                />
+                                <Button size="sm" variant="secondary" className="h-9 rounded-full hidden sm:inline-flex whitespace-nowrap" asChild><Link href="/analytics">View Analytics (Pro)</Link></Button>
+                                <Button size="sm" variant="secondary" className="h-9 rounded-full hidden sm:inline-flex whitespace-nowrap" asChild><Link href="/trust-center">Trust Center</Link></Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div >
     )

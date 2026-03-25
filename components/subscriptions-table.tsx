@@ -45,6 +45,8 @@ import { Subscription } from "@/lib/types"
 import { getNextRenewalDate, getRenewalDisplay } from "@/lib/utils/date-utils"
 import { daysUntil } from "@/lib/dates"
 import { CalendarExportButton } from "@/components/calendar-export-button"
+import { OnboardingCarousel } from "@/components/dashboard/onboarding-carousel"
+import { GmailTeaserTooltip } from "@/components/gmail-teaser-tooltip"
 
 const categoryIcons: Record<string, any> = {
   Entertainment: Tv,
@@ -161,64 +163,11 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
 
   if (!isLoading && subscriptions.length === 0) {
     return (
-      <Card className="rounded-3xl border-border bg-card shadow-sm">
-        <CardHeader className="p-6 border-b border-border flex flex-row items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-primary/10">
-              <TrendingUp className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-xl font-bold leading-none">Portfolio</CardTitle>
-              <p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest font-bold">Management Panel</p>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-8">
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="mb-6 rounded-2xl bg-muted/50 p-6">
-              <Receipt className="h-12 w-12 text-muted-foreground" />
-            </div>
-            <h3 className="mb-2 text-lg font-semibold text-foreground">No subscriptions yet</h3>
-            <p className="mb-8 max-w-sm text-sm text-muted-foreground">
-              Add your first subscription to start tracking your spending and get renewal reminders.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <ManualSubscriptionModal
-                onSubscriptionAdded={refreshSubscriptions}
-                trigger={
-                  <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 h-11 rounded-xl">
-                    <Plus className="h-4 w-4" />
-                    Add Subscription
-                  </Button>
-                }
-              />
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span tabIndex={0}>
-                      <Button
-                        variant="outline"
-                        className="gap-2 h-11 rounded-xl font-semibold"
-                        disabled={!isProStatus}
-                        onClick={onScanGmail}
-                      >
-                        <Mail className="h-4 w-4" />
-                        Connect Gmail
-                        {!isProStatus && <Lock className="h-3 w-3 ml-1 text-muted-foreground" />}
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  {!isProStatus && (
-                    <TooltipContent>
-                      <p>Available on Pro</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <OnboardingCarousel 
+        onManualAdd={refreshSubscriptions} 
+        onScanGmail={onScanGmail} 
+        isProStatus={isProStatus} 
+      />
     )
   }
 
