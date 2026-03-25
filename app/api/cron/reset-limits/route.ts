@@ -37,11 +37,13 @@ export async function GET(request: Request) {
 
         if (error) {
             console.error('[Cron Reset] Error:', error);
+            await supabaseAdmin.from('cron_logs').insert({ job_name: 'reset-limits', status: 'error', message: error.message, ran_at: new Date().toISOString() });
             return NextResponse.json({ success: false, error: error.message }, { status: 200 });
         }
 
         console.log('[Cron Reset] Reset complete for free tier users.');
 
+        await supabaseAdmin.from('cron_logs').insert({ job_name: 'reset-limits', status: 'success', message: 'Reset limits for free users', ran_at: new Date().toISOString() });
         console.log('[Cron Reset] Reset finished successfully.');
         return NextResponse.json({
             success: true,
@@ -49,6 +51,10 @@ export async function GET(request: Request) {
         });
     } catch (err: any) {
         console.error('[Cron Reset] Unexpected error:', err);
+        if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+            const tempAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+            await tempAdmin.from('cron_logs').insert({ job_name: 'reset-limits', status: 'error', message: err.message, ran_at: new Date().toISOString() });
+        }
         return NextResponse.json({ success: false, error: err.message }, { status: 200 });
     }
 }

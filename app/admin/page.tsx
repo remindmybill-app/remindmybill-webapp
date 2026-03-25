@@ -26,7 +26,7 @@ export default async function AdminOverviewPage() {
         supabase.from('profiles').select('id').gte('created_at', thirtyDaysAgo),
         supabase.from('subscriptions').select('*', { count: 'exact', head: true }).eq('status', 'active'),
         supabase.from('subscriptions').select('category'),
-        supabase.from('cron_logs').select('*').order('last_run', { ascending: false }),
+        supabase.from('cron_logs').select('*').order('ran_at', { ascending: false }),
         supabase
             .from('profiles')
             .select('id')
@@ -128,8 +128,8 @@ export default async function AdminOverviewPage() {
                                         {log.job_name}
                                     </td>
                                     <td className="px-5 py-3 text-muted-foreground">
-                                        {log.last_run
-                                            ? format(new Date(log.last_run), 'MMM d, HH:mm')
+                                        {log.ran_at
+                                            ? format(new Date(log.ran_at), 'MMM d, HH:mm')
                                             : 'Never'}
                                     </td>
                                     <td className="px-5 py-3">
@@ -145,7 +145,7 @@ export default async function AdminOverviewPage() {
                                         </span>
                                     </td>
                                     <td className="px-5 py-3 text-gray-500 text-xs">
-                                        {log.result || '—'}
+                                        {log.message || '—'}
                                     </td>
                                 </tr>
                             ))}

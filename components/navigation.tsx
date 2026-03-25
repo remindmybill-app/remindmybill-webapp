@@ -27,6 +27,7 @@ import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 export function Navigation() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const { profile } = useProfile()
+  const isAdmin = profile?.is_admin === true;
   const { notifications } = useNotifications()
   const { refreshSubscriptions } = useSubscriptions()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
@@ -94,7 +95,7 @@ export function Navigation() {
               </Button>
 
 
-              {profile?.role === 'admin' && (
+              {isAdmin && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -272,7 +273,7 @@ export function Navigation() {
                         >
                           <Link href="/pricing">Pricing</Link>
                         </Button>
-                        {profile?.role === 'admin' && (
+                        {isAdmin && (
                           <Button
                             variant={isActive("/admin") ? "secondary" : "ghost"}
                             className={`justify-start gap-2 ${isActive("/admin") ? "bg-primary/10 text-primary" : "text-muted-foreground"}`}

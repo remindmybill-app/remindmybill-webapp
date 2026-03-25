@@ -43,6 +43,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Subscription } from "@/lib/types"
 import { getNextRenewalDate, getRenewalDisplay } from "@/lib/utils/date-utils"
+import { daysUntil } from "@/lib/dates"
 import { CalendarExportButton } from "@/components/calendar-export-button"
 
 const categoryIcons: Record<string, any> = {
@@ -297,6 +298,11 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
                       const Icon = categoryIcons[sub.category] || Package
                       const nextDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
                       const { label, statusColor } = getRenewalDisplay(nextDate)
+
+                      // DEV DEBUG: log countdown for each row
+                      if (process.env.NODE_ENV === 'development') {
+                        console.log(`[Countdown DEBUG] ${sub.name}: renewal_date=${sub.renewal_date}, daysUntil=${daysUntil(nextDate)}, label=${label}`);
+                      }
                       const logoUrl = `https://logo.clearbit.com/${sub.name.toLowerCase().replace(/\s+/g, '')}.com`
 
                       const isPaused = sub.is_enabled === false

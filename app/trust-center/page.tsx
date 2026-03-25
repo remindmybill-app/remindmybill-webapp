@@ -71,14 +71,14 @@ export default function TrustCenterPage() {
       try {
         const { data: trusted } = await supabase
           .from('service_benchmarks')
-          .select('*')
+          .select('id, name, difficulty_level, cancellation_method, trust_score, category, website_url, cancellation_steps, cancellation_url')
           .gte('trust_score', 80)
           .order('trust_score', { ascending: false })
           .limit(20)
 
         const { data: risky } = await supabase
           .from('service_benchmarks')
-          .select('*')
+          .select('id, name, difficulty_level, cancellation_method, trust_score, category, website_url, cancellation_steps, cancellation_url')
           .lte('trust_score', 50)
           .order('trust_score', { ascending: true })
           .limit(20)
@@ -103,7 +103,7 @@ export default function TrustCenterPage() {
         try {
           const { data } = await supabase
             .from('service_benchmarks')
-            .select('*')
+            .select('id, name, difficulty_level, cancellation_method, trust_score, category, website_url, cancellation_steps, cancellation_url')
             .ilike('name', serviceParam)
             .single()
             
@@ -136,7 +136,7 @@ export default function TrustCenterPage() {
       try {
         const { data, error } = await supabase
           .from('service_benchmarks')
-          .select('*')
+          .select('id, name, difficulty_level, cancellation_method, trust_score, category, website_url, cancellation_steps, cancellation_url')
           .ilike('name', `%${query}%`)
           .limit(5)
 
@@ -198,7 +198,7 @@ export default function TrustCenterPage() {
       // First check DB for exact match
       const { data: dbMatch } = await supabase
         .from('service_benchmarks')
-        .select('*')
+        .select('id, name, difficulty_level, cancellation_method, trust_score, category, website_url, cancellation_steps, cancellation_url')
         .ilike('name', searchQuery)
         .single()
 

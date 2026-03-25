@@ -1,4 +1,5 @@
-import { parseISO, addMonths, addYears, differenceInDays } from 'date-fns';
+import { parseISO, addMonths, addYears } from 'date-fns';
+import { daysUntil } from '@/lib/dates';
 
 /**
  * Calculates the next renewal date based on a start date and frequency.
@@ -32,23 +33,29 @@ export function getNextRenewalDate(dateStr: string, frequency: string): Date {
 
 /**
  * Formats the number of days until a date into a human-readable label and color class.
+ * Uses the shared `daysUntil` helper which normalises both dates to start-of-day,
+ * eliminating off-by-one bugs caused by time-of-day differences.
  */
 export function getRenewalDisplay(date: Date) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const daysLeft = Math.ceil((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const daysLeft = daysUntil(date);
 
     let statusColor = ""; // Default
-    if (daysLeft === 0) {
+    if (daysLeft <= 0) {
         statusColor = "text-amber-500 font-bold";
     } else if (daysLeft <= 3) {
         statusColor = "text-amber-500 font-bold";
     }
 
-    let label = `In ${daysLeft} days`;
-    if (daysLeft === 0) label = "Due Today";
-    if (daysLeft === 1) label = "Tomorrow";
+    let label: string;
+    if (daysLeft < 0) {
+        label = `${Math.abs(daysLeft)} days ago`;
+    } else if (daysLeft === 0) {
+        label = "Due Today";
+    } else if (daysLeft === 1) {
+        label = "Tomorrow";
+    } else {
+        label = `In ${daysLeft} days`;
+    }
 
     return { label, daysLeft, statusColor };
 }

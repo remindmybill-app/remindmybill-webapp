@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { sendBillReminderEmail } from '@/lib/email';
+import { getReminderTargetDate } from '@/lib/dates';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -39,11 +40,8 @@ export async function GET(request: Request) {
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         );
 
-        // 1. Calculate target date: Today + 3 Days
-        const today = new Date();
-        const targetDate = new Date(today);
-        targetDate.setDate(today.getDate() + 3);
-        const formattedDate = targetDate.toISOString().split('T')[0]; // YYYY-MM-DD
+        // 1. Calculate target date using shared helper
+        const formattedDate = getReminderTargetDate(3);
 
         console.log(`[Cron] Reminders job started. Target date: ${formattedDate}`);
 
@@ -192,6 +190,13 @@ export async function GET(request: Request) {
 
         console.log(`[Cron] Complete. Sent: ${sentCount}, Skipped: ${skippedCount}, Failed: ${failedCount}`);
 
+        await supabaseAdmin.from('cron_logs').insert({
+            job_name: 'reminders',
+            status: 'success',
+            message: `Sent ${sentCount} emails`,
+            ran_at: new Date().toISOString()
+        });
+
         return NextResponse.json({
             success: true,
             total_found: totalFound,
@@ -204,6 +209,15 @@ export async function GET(request: Request) {
 
     } catch (err: any) {
         console.error('[Cron] Unexpected crash in route:', err);
+        if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+            const tempAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+            await tempAdmin.from('cron_logs').insert({
+                job_name: 'reminders',
+                status: 'error',
+                message: err.message || 'Unknown error',
+                ran_at: new Date().toISOString()
+            });
+        }
         return NextResponse.json({
             success: false,
             error: err.message

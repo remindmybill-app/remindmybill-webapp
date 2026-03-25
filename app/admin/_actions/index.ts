@@ -209,29 +209,31 @@ export async function triggerCronJob(jobName: string) {
            }
         }
 
-        // Log to cron_logs
-        await supabase
-            .from('cron_logs')
-            .insert({
-                job_name: jobName,
-                last_run: new Date().toISOString(),
-                status,
-                result: resultMessage,
-            });
+        // If the fetch failed, log the error.
+        if (!response.ok) {
+            await supabase
+                .from('cron_logs')
+                .insert({
+                    job_name: jobName,
+                    ran_at: new Date().toISOString(),
+                    status: 'error',
+                    message: resultMessage,
+                });
+        }
 
         return { success: response.ok, message: resultMessage };
     } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
+        const errMessage = err instanceof Error ? err.message : 'Unknown error';
 
         await supabase
             .from('cron_logs')
             .insert({
                 job_name: jobName,
-                last_run: new Date().toISOString(),
+                ran_at: new Date().toISOString(),
                 status: 'error',
-                result: message,
+                message: errMessage,
             });
 
-        return { success: false, message };
+        return { success: false, message: errMessage };
     }
 }

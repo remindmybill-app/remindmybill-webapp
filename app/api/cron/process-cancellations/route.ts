@@ -31,6 +31,12 @@ export async function GET(request: Request) {
 
     if (error) {
         console.error("Cron fetch error:", error);
+        await supabase.from('cron_logs').insert({
+            job_name: 'process-cancellations',
+            status: 'error',
+            message: error.message,
+            ran_at: new Date().toISOString()
+        });
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
@@ -93,5 +99,11 @@ export async function GET(request: Request) {
     }
 
     console.log('[Cron Cancellations] Processing complete.', results);
+    await supabase.from('cron_logs').insert({
+        job_name: 'process-cancellations',
+        status: 'success',
+        message: `Processed ${results.processed} cancellations`,
+        ran_at: new Date().toISOString()
+    });
     return NextResponse.json(results);
 }

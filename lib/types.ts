@@ -39,6 +39,7 @@ export interface Profile {
   full_name: string | null
   avatar_url: string | null
   role?: string | null
+  is_admin?: boolean
   default_currency?: string
   // Legacy fields (kept for backward compat)
   subscription_tier?: 'free' | 'pro' | 'premium'

@@ -13,7 +13,7 @@ export default async function AdminCronPage() {
         .from('cron_logs')
         .select('*')
         .in('job_name', JOBS)
-        .order('last_run', { ascending: false });
+        .order('ran_at', { ascending: false });
 
     // Build latest per job
     const latestMap: Record<string, (typeof cronLogs extends (infer T)[] | null ? T : never)> = {};
@@ -25,9 +25,9 @@ export default async function AdminCronPage() {
 
     const jobData = JOBS.map((name) => ({
         name,
-        lastRun: latestMap[name]?.last_run || null,
+        lastRun: latestMap[name]?.ran_at || null,
         status: latestMap[name]?.status || 'success',
-        result: latestMap[name]?.result || 'No prior run',
+        result: latestMap[name]?.message || 'No prior run',
     }));
 
     return (
