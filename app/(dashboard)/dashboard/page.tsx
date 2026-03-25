@@ -327,14 +327,33 @@ function DashboardContent() {
 
                 {/* ─── Nudge Banner ────────────────────────────────────── */}
                 {showNudgeBanner && (
-                    <div className="bg-gradient-to-r from-indigo-50 to-blue-50 border border-indigo-100 dark:from-indigo-900/10 dark:to-blue-900/10 dark:border-indigo-900/30 rounded-xl p-5 mb-6 animate-in fade-in">
-                        <h3 className="font-bold text-indigo-900 dark:text-indigo-300 mb-2 flex items-center gap-2">
-                           <Sparkles className="h-4 w-4 text-indigo-500" /> New! Your first subscription is tracking perfectly.
+                    <div className="relative overflow-hidden bg-gradient-to-r from-indigo-500/10 via-blue-500/10 to-indigo-50 border-2 border-indigo-200 dark:from-indigo-900/20 dark:via-blue-900/20 dark:to-indigo-950/20 dark:border-indigo-900/50 rounded-2xl p-6 mb-8 animate-in fade-in zoom-in-95 duration-500 shadow-sm">
+                        <div className="absolute -right-10 -top-10 h-32 w-32 bg-indigo-500/10 blur-3xl rounded-full" />
+                        <h3 className="font-bold text-lg text-indigo-950 dark:text-indigo-200 mb-4 flex items-center gap-2 tracking-tight">
+                           <Sparkles className="h-5 w-5 text-indigo-600 dark:text-indigo-400" /> Great start! Your first subscription is tracking perfectly.
                         </h3>
-                        <div className="flex flex-col sm:flex-row gap-4 text-sm text-indigo-800 dark:text-indigo-200">
-                           <Link href="/analytics" className="flex items-center gap-1.5 hover:underline"><span className="text-lg">👉</span> Check Analytics to see your spending patterns (Pro)</Link>
-                           <Link href="/trust-center" className="flex items-center gap-1.5 hover:underline"><span className="text-lg">🛡️</span> Visit Trust Center to understand cancellation difficulty</Link>
-                           <Link href="/settings" className="flex items-center gap-1.5 hover:underline"><span className="text-lg">📧</span> Verify your email reminders are working (check spam)</Link>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                           <Link href="/analytics" className="flex items-start gap-3 p-3 rounded-xl bg-white/60 dark:bg-black/20 hover:bg-white dark:hover:bg-black/40 transition-colors border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-sm">
+                               <div className="text-xl">📊</div>
+                               <div>
+                                   <p className="font-bold text-sm text-indigo-900 dark:text-indigo-100">Check Analytics</p>
+                                   <p className="text-xs text-indigo-700/80 dark:text-indigo-300/80 mt-0.5 leading-snug">See spending patterns (Pro)</p>
+                               </div>
+                           </Link>
+                           <Link href="/trust-center" className="flex items-start gap-3 p-3 rounded-xl bg-white/60 dark:bg-black/20 hover:bg-white dark:hover:bg-black/40 transition-colors border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-sm">
+                               <div className="text-xl">🛡️</div>
+                               <div>
+                                   <p className="font-bold text-sm text-indigo-900 dark:text-indigo-100">Trust Center</p>
+                                   <p className="text-xs text-indigo-700/80 dark:text-indigo-300/80 mt-0.5 leading-snug">Cancellation difficulty</p>
+                               </div>
+                           </Link>
+                           <Link href="/settings" className="flex items-start gap-3 p-3 rounded-xl bg-white/60 dark:bg-black/20 hover:bg-white dark:hover:bg-black/40 transition-colors border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 hover:shadow-sm">
+                               <div className="text-xl">📧</div>
+                               <div>
+                                   <p className="font-bold text-sm text-indigo-900 dark:text-indigo-100">Verify Emails</p>
+                                   <p className="text-xs text-indigo-700/80 dark:text-indigo-300/80 mt-0.5 leading-snug">Check spam for reminders</p>
+                               </div>
+                           </Link>
                         </div>
                     </div>
                 )}
@@ -517,39 +536,46 @@ function DashboardContent() {
 
                 {/* Celebration Mini-Modal */}
                 <Dialog open={showMiniCelebration} onOpenChange={setShowMiniCelebration}>
-                    <DialogContent className="max-w-md text-center">
-                        <DialogHeader>
-                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
-                                <span className="text-3xl">🎉</span>
+                    <DialogContent className="max-w-md p-0 overflow-hidden border-2 border-emerald-500/20 shadow-2xl shadow-emerald-500/10">
+                        <div className="bg-gradient-to-b from-emerald-500/10 to-transparent pt-8 pb-6 px-6 text-center">
+                            <DialogHeader>
+                                <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40 shadow-xl shadow-emerald-500/20 ring-4 ring-emerald-500/10">
+                                    <span className="text-4xl">🎉</span>
+                                </div>
+                                <DialogTitle className="text-2xl font-bold tracking-tight text-center">Tracking Started!</DialogTitle>
+                                <DialogDescription className="text-center text-emerald-700 dark:text-emerald-400 font-medium">
+                                    Your first subscription is now fully monitored.
+                                </DialogDescription>
+                            </DialogHeader>
+                        </div>
+                        
+                        <div className="px-6 pb-6 text-left">
+                            <p className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-3 px-1">Your Next Actions</p>
+                            <div className="space-y-3 mb-6">
+                                <Link href="/dashboard" onClick={() => setShowMiniCelebration(false)} className="group flex items-center gap-4 p-3.5 rounded-xl border border-border hover:border-emerald-500/50 hover:bg-emerald-50/50 dark:hover:bg-emerald-500/5 transition-all outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
+                                    <div className="h-10 w-10 shrink-0 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 text-lg">✅</div>
+                                    <div>
+                                        <p className="font-bold text-sm group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">Review Dashboard</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">See your spend update live</p>
+                                    </div>
+                                </Link>
+                                <Link href="/analytics" className="group flex items-center gap-4 p-3.5 rounded-xl border border-border hover:border-blue-500/50 hover:bg-blue-50/50 dark:hover:bg-blue-500/5 transition-all outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+                                    <div className="h-10 w-10 shrink-0 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 text-lg">📊</div>
+                                    <div>
+                                        <p className="font-bold text-sm group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">Unlock Analytics (Pro)</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">View spending trends & forecasts</p>
+                                    </div>
+                                </Link>
+                                <Link href="/trust-center" className="group flex items-center gap-4 p-3.5 rounded-xl border border-border hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/5 transition-all outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
+                                    <div className="h-10 w-10 shrink-0 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 text-lg">🛡️</div>
+                                    <div>
+                                        <p className="font-bold text-sm group-hover:text-indigo-700 dark:group-hover:text-indigo-400 transition-colors">Explore Trust Center</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">Check cancellation difficulty logs</p>
+                                    </div>
+                                </Link>
                             </div>
-                            <DialogTitle className="text-xl font-bold">First subscription tracking started!</DialogTitle>
-                            <DialogDescription className="text-left mt-4 text-foreground text-sm">
-                                <p className="font-semibold mb-2 text-base">What's next:</p>
-                                <ul className="space-y-4">
-                                    <li className="flex items-start gap-3">
-                                        <span className="text-emerald-500 text-lg">✅</span> 
-                                        <span>Check your Dashboard — see your spend updated live</span>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <span className="text-blue-500 text-lg">📊</span> 
-                                        <span>View Analytics (Pro) — spending trends + forecasts</span>
-                                    </li>
-                                    <li className="flex items-start gap-3">
-                                        <span className="text-indigo-500 text-lg">🛡️</span> 
-                                        <span>Trust Center — see cancellation difficulty for all services</span>
-                                    </li>
-                                </ul>
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="flex flex-col gap-2 mt-2">
-                            <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setShowMiniCelebration(false)}>
-                                Take me to Dashboard
-                            </Button>
-                            <Button variant="outline" className="w-full" asChild>
-                                <Link href="/analytics">View Analytics (Pro)</Link>
-                            </Button>
-                            <Button variant="outline" className="w-full" asChild>
-                                <Link href="/trust-center">Explore Trust Center</Link>
+                            <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 rounded-xl text-base shadow-md shadow-emerald-500/20" onClick={() => setShowMiniCelebration(false)}>
+                                Let's Go
                             </Button>
                         </div>
                     </DialogContent>

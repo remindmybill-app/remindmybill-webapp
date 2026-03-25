@@ -296,17 +296,18 @@ export default function AnalyticsPage() {
 
         {/* Welcome Banner */}
         {showWelcomeBanner && (
-          <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 text-white p-6 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
-             <div className="flex items-center gap-4">
-                <div className="h-12 w-12 bg-white/20 rounded-2xl flex items-center justify-center shrink-0">
-                   <BarChart3 className="h-6 w-6 text-white" />
+          <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 to-indigo-800 text-white p-6 sm:p-8 rounded-[2rem] flex flex-col sm:flex-row items-center justify-between gap-6 animate-in fade-in slide-in-from-top-4 shadow-2xl shadow-indigo-900/20 border-4 border-white/5 mb-8">
+             <div className="absolute -right-20 -top-20 h-64 w-64 bg-white/10 blur-3xl rounded-full pointer-events-none" />
+             <div className="flex items-center gap-5 relative z-10 w-full sm:w-auto">
+                <div className="h-14 w-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+                   <BarChart3 className="h-7 w-7 text-white" />
                 </div>
                 <div>
-                   <h2 className="text-xl font-bold mb-1">Welcome to Analytics!</h2>
-                   <p className="text-indigo-100 text-sm">💡 <strong>Pro tip:</strong> Add 3+ subscriptions to unlock full trend insights.<br/>📈 Your category breakdown updates monthly.</p>
+                   <h2 className="text-2xl font-bold mb-1.5 tracking-tight">Welcome to Analytics!</h2>
+                   <p className="text-indigo-100/90 text-sm leading-relaxed max-w-lg">💡 <strong className="text-white">Pro tip:</strong> Add 3+ subscriptions to unlock full trend forecasting.<br/>📈 Your category breakdown updates monthly based on active renewals.</p>
                 </div>
              </div>
-             <Button variant="outline" className="shrink-0 bg-white/10 hover:bg-white/20 text-white border-none" onClick={() => setShowWelcomeBanner(false)}>
+             <Button variant="outline" className="shrink-0 bg-white/10 hover:bg-white/20 text-white border-white/20 hover:border-white/30 h-11 px-6 rounded-xl relative z-10 w-full sm:w-auto font-semibold backdrop-blur-md transition-all" onClick={() => setShowWelcomeBanner(false)}>
                 Dismiss
              </Button>
           </div>
