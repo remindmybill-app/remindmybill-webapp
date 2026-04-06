@@ -53,19 +53,36 @@ function SettingsContent() {
   const [isDisconnectingGmail, setIsDisconnectingGmail] = useState(false)
 
   useEffect(() => {
-    setIsStandalone(window.matchMedia("(display-mode: standalone)").matches)
-
-    const handler = (e: Event) => {
-        e.preventDefault()
-        setDeferredPrompt(e as BeforeInstallPromptEvent)
+    // Check both standalone and fullscreen display modes
+    const standaloneQuery = window.matchMedia('(display-mode: standalone)')
+    const fullscreenQuery = window.matchMedia('(display-mode: fullscreen)')
+    
+    // Also check iOS Safari PWA via navigator.standalone
+    const isIOSStandalone = (navigator as any).standalone === true
+    
+    const checkStandalone = () => {
+      setIsStandalone(
+        standaloneQuery.matches || 
+        fullscreenQuery.matches || 
+        isIOSStandalone
+      )
     }
-
-    window.addEventListener("beforeinstallprompt", handler)
-
-    return () => {
-        window.removeEventListener("beforeinstallprompt", handler)
+    
+    checkStandalone()
+    
+    // Listen for changes (handles edge cases on some Android devices)
+    if (standaloneQuery.addEventListener) {
+      standaloneQuery.addEventListener('change', checkStandalone)
+      return () => standaloneQuery.removeEventListener('change', checkStandalone)
+    } else {
+      // Fallback for older browsers
+      (standaloneQuery as any).addListener(checkStandalone)
+      return () => (standaloneQuery as any).removeListener(checkStandalone)
     }
   }, [])
+
+  const canUsePush = isStandalone || 
+    (typeof Notification !== 'undefined' && Notification.permission === 'granted')
 
   useEffect(() => {
     if (profile) {
@@ -85,6 +102,17 @@ function SettingsContent() {
       }
       setDeferredPrompt(null)
   }
+
+  // Handle beforeinstallprompt separately to avoid reset on re-render
+  useEffect(() => {
+    const handler = (e: Event) => {
+        e.preventDefault()
+        setDeferredPrompt(e as BeforeInstallPromptEvent)
+    }
+
+    window.addEventListener("beforeinstallprompt", handler)
+    return () => window.removeEventListener("beforeinstallprompt", handler)
+  }, [])
 
   const handlePushToggle = async (checked: boolean) => {
     const supabase = createClient()
@@ -584,17 +612,17 @@ function SettingsContent() {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label htmlFor="push-alerts" className={"text-base " + (!isStandalone ? "opacity-50" : "")}>
+                    <Label htmlFor="push-alerts" className={"text-base " + (!canUsePush ? "opacity-50" : "")}>
                       Push Notifications
                     </Label>
-                    <p className={"text-sm " + (!isStandalone ? "opacity-50 text-muted-foreground" : "text-muted-foreground")}>
+                    <p className={"text-sm " + (!canUsePush ? "opacity-50 text-muted-foreground" : "text-muted-foreground")}>
                       Browser notifications for real-time alerts
                     </p>
-                    {!isStandalone && (
+                    {!canUsePush && (
                         <div className="mt-3 space-y-3">
                            <p className="text-xs text-amber-600 dark:text-amber-500 font-medium">Install the app to enable push notifications</p>
                            <Button variant="outline" size="sm" onClick={handleInstallApp}>
-                              Install App
+                               Install App
                            </Button>
                         </div>
                     )}
@@ -603,8 +631,8 @@ function SettingsContent() {
                      id="push-alerts" 
                      checked={pushAlerts} 
                      onCheckedChange={handlePushToggle}
-                     disabled={!isStandalone}
-                     className={!isStandalone ? "opacity-50 cursor-not-allowed" : ""}
+                     disabled={!canUsePush}
+                     className={!canUsePush ? "opacity-50 cursor-not-allowed" : ""}
                   />
                 </div>
               </CardContent>
