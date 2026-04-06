@@ -17,6 +17,7 @@ import { ForecastArcWidget } from "@/components/analytics/ForecastArcWidget"
 import { InflationWatchWidget } from "@/components/analytics/InflationWatchWidget"
 import { SmartInsightsCarousel } from "@/components/analytics/SmartInsightsCarousel"
 import { PaymentTimeline } from "@/components/analytics/PaymentTimeline"
+import { ProGateOverlay } from "@/components/analytics/ProGateOverlay"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { isPro } from "@/lib/subscription-utils"
@@ -24,7 +25,7 @@ import Link from "next/link"
 
 // Helper to get last 6 months
 const getLast6Months = () => {
-  const months = []
+  const months: string[] = []
   const date = new Date()
   for (let i = 5; i >= 0; i--) {
     const d = new Date(date.getFullYear(), date.getMonth() - i, 1)
@@ -72,27 +73,17 @@ export default function AnalyticsPage() {
     // Calculate Spending Trends (Last 6 Months)
     const last6Months = getLast6Months()
     const spendingTrendData = last6Months.map((month, i) => {
-      // Create a date object for this month (using the 1st of the month)
       const date = new Date()
-      // Adjust year/month based on the index (0 = 5 months ago, 5 = current month)
-      // getLast6Months returns [Month-5, Month-4, ..., Current] order? 
-      // Wait, getLast6Months implementation at line 22 loops i=5 down to 0 pushing to array.
-      // So index 0 is 5 months ago. Correct.
       const targetDate = new Date(date.getFullYear(), date.getMonth() - (5 - i), 1)
       const monthEnd = new Date(date.getFullYear(), date.getMonth() - (5 - i) + 1, 0)
 
       const monthlyTotal = validSubscriptions.reduce((sum, sub) => {
-        // 1. Filter by creation date
         if (new Date(sub.created_at) > monthEnd) return sum
-
-        // 2. Filter by status (optimistic: assume active subs were active back then)
-        // If we had cancelled_at, we would use it here.
         if (sub.is_enabled === false || sub.status !== 'active') return sum
 
         const converted = convertCurrency(sub.cost, sub.currency, userCurrency)
         const cost = converted / (sub.shared_with_count || 1)
 
-        // 3. Check frequency
         const freq = sub.frequency?.toLowerCase() || 'monthly'
 
         if (freq === 'monthly') {
@@ -100,14 +91,12 @@ export default function AnalyticsPage() {
         }
 
         if (freq === 'yearly' || freq === 'annual') {
-          // Check if the renewal month matches the target month
           const renewalDate = new Date(sub.renewal_date)
           if (renewalDate.getMonth() === targetDate.getMonth()) {
             return sum + cost
           }
         }
 
-        // Default fallthrough for weekly/etc (simplified to monthly for now as per "monthly spend" convention)
         return sum + cost
       }, 0)
 
@@ -122,25 +111,14 @@ export default function AnalyticsPage() {
     validSubscriptions.forEach((sub) => {
       if (sub.is_enabled === false || sub.status !== 'active') return
 
-      // Feature 1: Filter by selected month
       if (filterMonth) {
         const nextDate = getNextRenewalDate(sub.renewal_date, sub.frequency)
         const monthLabel = nextDate.toLocaleString("default", { month: "short" })
         const freq = sub.frequency?.toLowerCase() || 'monthly'
 
-        // If it's a annual sub, strictly check if it falls in the filtered month
         if (freq === 'yearly' || freq === 'annual') {
           if (monthLabel !== filterMonth) return
         }
-        // If it's monthly, it falls in every month, but we need to verify if the sub existed then?
-        // For simplicity and "interactive" feel: 
-        // If viewing a past month, we SHOULD check created_at.
-        // Let's reuse the date checking logic from spendingTrendData if we want perfection.
-        // But `filterMonth` is just a string "Jan", "Feb". 
-        // We need to map "Jan" back to a year to check created_at properly.
-        // `spendingTrendData` has the correct month order.
-        // Let's assume for Category Breakdown we just show "what would you pay in this month" logic.
-        // So for monthly subs, we include them. For yearly, only if match.
       }
 
       const converted = convertCurrency(sub.cost, sub.currency, userCurrency)
@@ -169,7 +147,6 @@ export default function AnalyticsPage() {
     const startOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
     const sameDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, currentDayOfMonth)
 
-    // Calculate Velocity: Comparison of current month's realized spend vs last month's same-day realized spend
     let currentVelocitySpend = 0
     let lastVelocitySpend = 0
 
@@ -273,28 +250,67 @@ export default function AnalyticsPage() {
   const isFreeUser = !isPro(profile?.user_tier || profile?.subscription_tier, profile?.is_pro)
   const isProUser = !isFreeUser
 
+  return <AnalyticsContent
+    analytics={analytics}
+    subscriptions={subscriptions}
+    userCurrency={userCurrency}
+    filterMonth={filterMonth}
+    setFilterMonth={setFilterMonth}
+    drillDownCategory={drillDownCategory}
+    setDrillDownCategory={setDrillDownCategory}
+    isFreeUser={isFreeUser}
+    isProUser={isProUser}
+    isLoading={isLoading}
+  />
+}
+
+// Extracted to a separate component so hooks are unconditional at top level
+function AnalyticsContent({
+  analytics,
+  subscriptions,
+  userCurrency,
+  filterMonth,
+  setFilterMonth,
+  drillDownCategory,
+  setDrillDownCategory,
+  isFreeUser,
+  isProUser,
+  isLoading,
+}: {
+  analytics: any
+  subscriptions: any[]
+  userCurrency: string
+  filterMonth: string | null
+  setFilterMonth: (v: string | null) => void
+  drillDownCategory: string | null
+  setDrillDownCategory: (v: string | null) => void
+  isFreeUser: boolean
+  isProUser: boolean
+  isLoading: boolean
+}) {
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(false)
+
   useEffect(() => {
-     if (isProUser && !isLoading) {
-         const hasVisited = localStorage.getItem('rmb_analytics_first_visit') === 'true'
-         if (!hasVisited) {
-             setShowWelcomeBanner(true)
-             localStorage.setItem('rmb_analytics_first_visit', 'true')
-         }
-     }
+    if (isProUser && !isLoading) {
+      const hasVisited = localStorage.getItem('rmb_analytics_first_visit') === 'true'
+      if (!hasVisited) {
+        setShowWelcomeBanner(true)
+        localStorage.setItem('rmb_analytics_first_visit', 'true')
+      }
+    }
   }, [isProUser, isLoading])
 
   return (
     <div className="min-h-screen bg-background py-6 sm:py-10">
       <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 space-y-8">
-        
-        {/* Page Title - Not blurred or covered by overlay */}
+
+        {/* Page Title */}
         <div className="flex flex-col gap-1.5 px-2">
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Analytics</h1>
           <p className="text-muted-foreground text-sm">Deep dive into your spending trends and subscription habits.</p>
         </div>
 
-        {/* Welcome Banner */}
+        {/* Welcome Banner (Pro users only, first visit) */}
         {showWelcomeBanner && (
           <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 to-indigo-800 text-white p-6 sm:p-8 rounded-[2rem] flex flex-col sm:flex-row items-center justify-between gap-6 animate-in fade-in slide-in-from-top-4 shadow-2xl shadow-indigo-900/20 border-4 border-white/5 mb-8">
              <div className="absolute -right-20 -top-20 h-64 w-64 bg-white/10 blur-3xl rounded-full pointer-events-none" />
@@ -313,27 +329,12 @@ export default function AnalyticsPage() {
           </div>
         )}
 
-        <div className="relative">
-          {/* Feature Lock Overlay for Free Tier */}
-          {isFreeUser && (
-            <div className="absolute inset-x-0 bottom-0 top-0 z-50 flex items-start justify-center pt-24 bg-background/5 backdrop-blur-[1px] rounded-3xl">
-              <div className="text-center p-8 max-w-md bg-card rounded-3xl border border-border shadow-2xl pointer-events-auto mt-8">
-                <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/20">
-                  <BarChart2 className="h-8 w-8 text-blue-400" />
-                </div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">Unlock Your Spending Analytics</h2>
-                <p className="text-muted-foreground mb-6">
-                  See spending trends, bill forecasts, category breakdowns and payment timelines. Available on Pro.
-                </p>
-                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" size="lg" asChild>
-                  <Link href="/pricing">Upgrade to Pro</Link>
-                </Button>
-              </div>
-            </div>
-          )}
+        {/* ================================================================
+            FREE TIER: Monthly Spend Total (via the Heavy Week widget + header widgets)
+            These sections are visible to ALL users
+           ================================================================ */}
 
-          <div className={`space-y-8 transition-all duration-500 ${isFreeUser ? "blur-sm pointer-events-none select-none opacity-60" : ""}`}>
-            {/* HEAVY WEEK WIDGET */}
+        {/* HEAVY WEEK WIDGET - Free for all */}
         {analytics.upcoming7DaysTotal > 0 && (
           <div className="sticky top-4 z-20 bg-red-500/10 border border-red-400 rounded-3xl p-6 mb-6 overflow-hidden">
             <div className="flex items-center gap-3 mb-4">
@@ -357,21 +358,48 @@ export default function AnalyticsPage() {
           </div>
         )}
 
-        {/* Header Widgets */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <SpendingVelocityWidget
-            currentSpend={analytics.velocity.current}
-            lastMonthSameDaySpend={analytics.velocity.last}
-            currency={userCurrency}
-          />
-          <ForecastArcWidget
-            paid={analytics.forecast.paid}
-            total={analytics.forecast.total}
-            currency={userCurrency}
-          />
-        </div>
+        {/* ================================================================
+            PRO-GATED: Spending Velocity + Bill Forecast (header widgets)
+            ================================================================ */}
+        {isFreeUser ? (
+          <div className="grid gap-6 md:grid-cols-2">
+            <ProGateOverlay
+              sectionName="Spending Velocity"
+              description="Track your month-over-month spending pace and spot trends early."
+            >
+              <SpendingVelocityWidget
+                currentSpend={analytics.velocity.current}
+                lastMonthSameDaySpend={analytics.velocity.last}
+                currency={userCurrency}
+              />
+            </ProGateOverlay>
+            <ProGateOverlay
+              sectionName="Bill Forecast"
+              description="See projected spending for the next 3 months based on your active bills."
+            >
+              <ForecastArcWidget
+                paid={analytics.forecast.paid}
+                total={analytics.forecast.total}
+                currency={userCurrency}
+              />
+            </ProGateOverlay>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2">
+            <SpendingVelocityWidget
+              currentSpend={analytics.velocity.current}
+              lastMonthSameDaySpend={analytics.velocity.last}
+              currency={userCurrency}
+            />
+            <ForecastArcWidget
+              paid={analytics.forecast.paid}
+              total={analytics.forecast.total}
+              currency={userCurrency}
+            />
+          </div>
+        )}
 
-        {/* Feature 2: Smart Insights Carousel */}
+        {/* Smart Insights Carousel - Free for all */}
         <SmartInsightsCarousel
           subscriptions={subscriptions}
           velocity={analytics.velocity}
@@ -379,24 +407,41 @@ export default function AnalyticsPage() {
           userCurrency={userCurrency}
         />
 
-        {/* Inflation Alert Feed */}
+        {/* Inflation Alert Feed - Free for all */}
         <InflationWatchWidget
           alerts={analytics.inflationAlerts}
           currency={userCurrency}
         />
 
-        {/* Trends Chart - 30% Height Concept in layout */}
+        {/* Main Content Grid */}
         <div className="grid gap-8 grid-cols-1 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-8">
+
+            {/* ================================================================
+                PRO-GATED: Spending Trends Chart (6-month historical)
+                ================================================================ */}
             <div id="spending-trends">
-              <SpendingTrendsChart
-                data={analytics.spendingTrendData}
-                selectedMonth={filterMonth}
-                onBarClick={(payload: any) => setFilterMonth(payload.month === filterMonth ? null : payload.month)}
-              />
+              {isFreeUser ? (
+                <ProGateOverlay
+                  sectionName="Spending Trends"
+                  description="Visualize 6 months of spending history with month-over-month comparisons."
+                >
+                  <SpendingTrendsChart
+                    data={analytics.spendingTrendData}
+                    selectedMonth={filterMonth}
+                    onBarClick={() => {}}
+                  />
+                </ProGateOverlay>
+              ) : (
+                <SpendingTrendsChart
+                  data={analytics.spendingTrendData}
+                  selectedMonth={filterMonth}
+                  onBarClick={(payload: any) => setFilterMonth(payload.month === filterMonth ? null : payload.month)}
+                />
+              )}
             </div>
 
-            {/* Payment Timeline */}
+            {/* Payment Timeline - Free for all (upcoming payments list) */}
             <div id="payment-timeline">
               <PaymentTimeline
                 subscriptions={subscriptions}
@@ -409,16 +454,16 @@ export default function AnalyticsPage() {
 
           {/* Right Column: Activity Feed + Categories */}
           <div className="space-y-8">
-            {/* Feature 4: Live Activity Feed */}
+            {/* Activity Feed - Free for all */}
             <ActivityFeed
               subscriptions={subscriptions}
               userCurrency={userCurrency}
             />
 
-            {/* Category Breakdown */}
+            {/* Category Breakdown - Free for all */}
             <div id="category-breakdown" className="space-y-6">
               <h3 className="text-lg font-bold px-2">Category Breakdown</h3>
-              {analytics.categoryData.map((category, index) => (
+              {analytics.categoryData.map((category: any, index: number) => (
                 <CategoryCard
                   key={index}
                   name={category.name}
@@ -434,19 +479,16 @@ export default function AnalyticsPage() {
 
         </div>
 
-        </div>
-
-        {/* Feature 3: Drill Down Modal */}
+        {/* Category Drill Down Modal */}
         <CategoryDrillDownModal
           isOpen={!!drillDownCategory}
           onClose={() => setDrillDownCategory(null)}
           categoryName={drillDownCategory || ""}
           subscriptions={subscriptions}
-          color={analytics.categoryData.find(c => c.name === drillDownCategory)?.color || "#6366f1"}
+          color={analytics.categoryData.find((c: any) => c.name === drillDownCategory)?.color || "#6366f1"}
           userCurrency={userCurrency}
         />
       </div>
     </div>
-  </div>
   )
 }

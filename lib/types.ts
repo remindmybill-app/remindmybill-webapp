@@ -47,6 +47,7 @@ export interface Profile {
   subscription_limit: number
   current_usage: number
   is_pro: boolean
+  google_refresh_token?: string | null
   // New tier fields
   user_tier: UserTier
   subscription_interval?: 'monthly' | 'annual' | null

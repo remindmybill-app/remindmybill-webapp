@@ -94,6 +94,7 @@ function DashboardContent() {
     // Flow states
     const [showMiniCelebration, setShowMiniCelebration] = useState(false)
     const [showNudgeBanner, setShowNudgeBanner] = useState(false)
+    const [showGmailNudge, setShowGmailNudge] = useState(false)
 
     // Tier info
     const userTier: UserTier = (profile?.user_tier as UserTier) || 'free'
@@ -190,6 +191,37 @@ function DashboardContent() {
         }
     }, [subscriptions, prevSubCount, subsLoading]);
 
+    // ─── One-Time Gmail Sync Nudge ─────────────────────────────────────
+    useEffect(() => {
+        if (subsLoading || !profile) return
+        
+        const hasGmailConnected = isGmailConnected || !!profile.google_refresh_token
+        
+        if (
+            subscriptions.length <= 1 && 
+            !hasGmailConnected && 
+            localStorage.getItem('rmb_gmail_nudge_shown') !== 'true'
+        ) {
+            setShowGmailNudge(true)
+            
+            const timer = setTimeout(() => {
+                setShowGmailNudge(false)
+                localStorage.setItem('rmb_gmail_nudge_shown', 'true')
+            }, 10000)
+            
+            return () => clearTimeout(timer)
+        }
+    }, [subscriptions.length, profile, subsLoading, isGmailConnected])
+
+    const dismissGmailNudge = () => {
+        setShowGmailNudge(false)
+        localStorage.setItem('rmb_gmail_nudge_shown', 'true')
+    }
+
+    const handleConnectGmailFromNudge = () => {
+        dismissGmailNudge()
+        handleScanInbox()
+    }
 
     // Handle Post-Sync Success & Error Reporting
     useEffect(() => {
@@ -473,23 +505,49 @@ function DashboardContent() {
                             <ManualSubscriptionModal onSubscriptionAdded={refreshSubscriptions} />
                         )}
 
-                        <ScanSettingsDialog
-                            onScan={handleScanInbox}
-                            isScanning={isScanning}
-                            trigger={
-                                <Button
-                                    disabled={isScanning || isLimitReached}
-                                    variant="outline"
-                                    className={`gap-2 h-10 px-4 ${isGmailConnected ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400" : "bg-card shadow-sm"} ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
-                                    {isLimitReached ? <Lock className="h-4 w-4 text-muted-foreground" /> : (isGmailConnected ? <CheckCircle2 className="h-4 w-4" /> : (isProUser ? <Inbox className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-500" />))}
-                                    {isScanning ? "Scanning..." :
-                                        isLimitReached ? <span className="text-muted-foreground">Gmail Locked</span> :
-                                            isGmailConnected ? "Re-scan Gmail" :
-                                                isProUser ? "Sync Gmail" : "Sync Gmail (Pro)"}
-                                </Button>
-                            }
-                        />
+                        <div className="relative flex items-center">
+                            <ScanSettingsDialog
+                                onScan={handleScanInbox}
+                                isScanning={isScanning}
+                                trigger={
+                                    <Button
+                                        disabled={isScanning || isLimitReached}
+                                        variant="outline"
+                                        onClick={showGmailNudge ? dismissGmailNudge : undefined}
+                                        className={`gap-2 h-10 px-4 ${isGmailConnected ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400" : "bg-card shadow-sm"} ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''} ${showGmailNudge ? 'ring-2 ring-emerald-400 animate-pulse rounded-lg' : ''}`}
+                                    >
+                                        {isLimitReached ? <Lock className="h-4 w-4 text-muted-foreground" /> : (isGmailConnected ? <CheckCircle2 className="h-4 w-4" /> : (isProUser ? <Inbox className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-500" />))}
+                                        {isScanning ? "Scanning..." :
+                                            isLimitReached ? <span className="text-muted-foreground">Gmail Locked</span> :
+                                                isGmailConnected ? "Re-scan Gmail" :
+                                                    isProUser ? "Sync Gmail" : "Sync Gmail (Pro)"}
+                                    </Button>
+                                }
+                            />
+                            {showGmailNudge && (
+                                <div className="absolute top-[calc(100%+12px)] right-0 w-72 z-50 glass-panel bg-zinc-950 border border-emerald-500/50 shadow-[0_10px_40px_-10px_rgba(16,185,129,0.3)] rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
+                                    <div className="absolute -top-[5px] right-6 w-2.5 h-2.5 bg-zinc-950 border-t border-l border-emerald-500/50 rotate-45 transform origin-center rounded-[1px]" />
+                                    
+                                    <div className="relative z-10 flex flex-col gap-2">
+                                        <h4 className="font-bold text-emerald-400 flex items-center gap-2">
+                                            💡 Save time — sync Gmail
+                                        </h4>
+                                        <p className="text-sm text-zinc-300 leading-snug">
+                                            Auto-import subscriptions from your email receipts.
+                                            No manual entry needed. Takes 10 seconds.
+                                        </p>
+                                        <div className="flex items-center justify-end gap-2 mt-2 transition-colors">
+                                            <Button variant="ghost" size="sm" onClick={dismissGmailNudge} className="h-8 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800">
+                                                Maybe later
+                                            </Button>
+                                            <Button size="sm" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleConnectGmailFromNudge}>
+                                                Connect Gmail
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
 

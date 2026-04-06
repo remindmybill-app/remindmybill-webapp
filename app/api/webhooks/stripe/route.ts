@@ -66,7 +66,7 @@ async function findUserByCustomer(customerId: string) {
     return null;
 }
 
-// ─── Helper: Send Consolidated Downgrade Email ──────────────────────────
+// ─── Helper: Send Consolidated Downgrade Email (with idempotency guard) ─────
 async function sendConsolidatedDowngrade({
     user,
     previousTier
@@ -75,6 +75,21 @@ async function sendConsolidatedDowngrade({
     previousTier: string
 }) {
     try {
+        // ── Idempotency guard: skip if downgrade email was sent within 48 hours ──
+        const { data: profile } = await supabaseAdmin
+            .from('profiles')
+            .select('downgrade_email_sent_at')
+            .eq('id', user.id)
+            .single();
+
+        if (profile?.downgrade_email_sent_at) {
+            const hoursSince = (Date.now() - new Date(profile.downgrade_email_sent_at).getTime()) / 3600000;
+            if (hoursSince < 48) {
+                console.log(`[Webhook] Downgrade email already sent ${Math.round(hoursSince)}h ago for ${user.id} — skipping`);
+                return;
+            }
+        }
+
         const { getRemainingEmailQuota, sendEmail } = await import('@/lib/email');
         const { default: ConsolidatedDowngrade } = await import('@/lib/emails/ConsolidatedDowngrade');
         const React = await import('react');
@@ -99,6 +114,14 @@ async function sendConsolidatedDowngrade({
             userId: user.id,
             emailType: 'downgrade'
         });
+
+        // ── Record the send timestamp for idempotency ──
+        await supabaseAdmin
+            .from('profiles')
+            .update({ downgrade_email_sent_at: new Date().toISOString() })
+            .eq('id', user.id);
+
+        console.log(`[Webhook] Downgrade email sent and recorded for ${user.id}`);
     } catch (err) {
         console.error('[Webhook] Failed to send consolidated downgrade email:', err);
     }
@@ -459,8 +482,10 @@ export async function POST(req: Request) {
                             { reason: 'payment_failed_final' }
                         );
 
-                        // Send consolidated email instead of separate ones
-                        await sendConsolidatedDowngrade({ user, previousTier: getTierDisplayName(previousTier) });
+                        // NOTE: No downgrade email here — customer.subscription.deleted
+                        // fires separately and is the single source for the downgrade email.
+                        // This avoids duplicate emails when Stripe cancels a subscription
+                        // after exhausting payment retries.
                     }
                 }
                 break;
