@@ -407,7 +407,7 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
                   return (
                     <div key={sub.id} className="relative space-y-2">
                       <div
-                        className={`rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 active:scale-[0.97] active:bg-gray-50 dark:active:bg-gray-800/50 transition-all duration-200 \${isPaused ? 'opacity-50 grayscale' : ''}`}
+                        className={`rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:shadow-none dark:border-gray-800 dark:bg-gray-900 active:scale-[0.97] active:bg-gray-50 dark:active:bg-gray-800/50 transition-all duration-200 ${isPaused ? 'opacity-50 grayscale' : ''}`}
                         onClick={() => setSelectedMobileSub(sub)}
                       >
                       <div className="mb-4 flex items-center justify-between">
