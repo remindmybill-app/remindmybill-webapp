@@ -1,6 +1,6 @@
 "use client"
 
-import { Lock, Sparkles } from "lucide-react"
+import { Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
@@ -20,36 +20,32 @@ interface ProGateOverlayProps {
  */
 export function ProGateOverlay({ sectionName, description, children }: ProGateOverlayProps) {
   return (
-    <div className="relative overflow-hidden rounded-2xl">
+    <div className="relative overflow-hidden rounded-2xl w-full h-full min-h-[200px]">
       {/* Real UI rendered behind the overlay */}
-      <div className="pointer-events-none select-none" aria-hidden="true">
+      <div className="pointer-events-none select-none w-full h-full" aria-hidden="true">
         {children}
       </div>
 
       {/* Frosted overlay */}
-      <div className="backdrop-blur-sm bg-black/60 absolute inset-0 rounded-2xl z-10 flex items-center justify-center">
-        <div className="text-center p-6 max-w-xs">
-          <div className="inline-flex items-center justify-center h-12 w-12 rounded-xl bg-indigo-500/20 mb-4">
-            <Lock className="h-6 w-6 text-indigo-400" />
-          </div>
+      <div className="backdrop-blur-sm bg-black/60 absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 p-6">
+        <Lock className="text-emerald-400" size={28} />
+        
+        <h3 className="text-white font-semibold text-base">{sectionName}</h3>
+        
+        <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
+          Pro Feature
+        </Badge>
+        
+        <p className="text-gray-400 text-sm text-center max-w-[180px]">
+          {description}
+        </p>
 
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <h3 className="text-lg font-bold text-white">{sectionName}</h3>
-            <Badge className="bg-indigo-500/30 text-indigo-200 border-indigo-400/30 text-[10px] font-bold uppercase tracking-wider">
-              <Sparkles className="h-3 w-3 mr-1" />
-              Pro Feature
-            </Badge>
-          </div>
-
-          <p className="text-sm text-zinc-300 mb-5 leading-relaxed">{description}</p>
-
-          <Button
-            asChild
-            className="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-6 rounded-xl shadow-lg shadow-indigo-600/25 transition-all hover:shadow-indigo-500/40"
-          >
-            <Link href="/pricing">Upgrade to Pro</Link>
-          </Button>
-        </div>
+        <Button
+          asChild
+          className="bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-5 py-2 rounded-xl mt-1"
+        >
+          <Link href="/pricing">Upgrade to Pro</Link>
+        </Button>
       </div>
     </div>
   )

@@ -329,99 +329,129 @@ function AnalyticsContent({
           </div>
         )}
 
-        {/* ================================================================
-            FREE TIER: Monthly Spend Total (via the Heavy Week widget + header widgets)
-            These sections are visible to ALL users
-           ================================================================ */}
+        {isFreeUser ? (
+          <>
+            {/* ================================================================
+                FREE USER LAYOUT
+               ================================================================ */}
+            {/* HEAVY WEEK WIDGET */}
+            {analytics.upcoming7DaysTotal > 0 && (
+              <div className="sticky top-4 z-20 bg-red-500/10 border border-red-400 rounded-3xl p-6 mb-6 overflow-hidden">
+                <div className="flex items-center gap-3 mb-4">
+                  <AlertTriangle className="h-6 w-6 text-red-500" />
+                  <div>
+                    <h3 className="font-bold text-lg text-red-900 dark:text-red-100">Heavy Week Ahead</h3>
+                    <p className="text-sm text-red-800 dark:text-red-200">
+                      {analytics.upcoming7DaysCount > 0 ? `${formatCurrency(analytics.upcoming7DaysTotal, userCurrency)} due in next 7 days` : `${formatCurrency(247, userCurrency)} due in next 7 days`}
+                    </p>
+                  </div>
+                </div>
+                <Button asChild className="w-full bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl">
+                  <Link href="/analytics#payment-timeline" onClick={(e) => {
+                    const el = document.getElementById('payment-timeline');
+                    if (el) {
+                      e.preventDefault();
+                      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }}>More Information</Link>
+                </Button>
+              </div>
+            )}
 
-        {/* HEAVY WEEK WIDGET - Free for all */}
-        {analytics.upcoming7DaysTotal > 0 && (
-          <div className="sticky top-4 z-20 bg-red-500/10 border border-red-400 rounded-3xl p-6 mb-6 overflow-hidden">
-            <div className="flex items-center gap-3 mb-4">
-              <AlertTriangle className="h-6 w-6 text-red-500" />
-              <div>
-                <h3 className="font-bold text-lg text-red-900 dark:text-red-100">Heavy Week Ahead</h3>
-                <p className="text-sm text-red-800 dark:text-red-200">
-                  {analytics.upcoming7DaysCount > 0 ? `${formatCurrency(analytics.upcoming7DaysTotal, userCurrency)} due in next 7 days` : `${formatCurrency(247, userCurrency)} due in next 7 days`}
-                </p>
+            {/* Smart Insights Carousel */}
+            <SmartInsightsCarousel
+              subscriptions={subscriptions}
+              velocity={analytics.velocity}
+              categoryData={analytics.categoryData}
+              userCurrency={userCurrency}
+            />
+
+            {/* Inflation Alert Feed */}
+            <InflationWatchWidget
+              alerts={analytics.inflationAlerts}
+              currency={userCurrency}
+            />
+
+            {/* Main Content Grid - Free */}
+            <div className="grid gap-8 grid-cols-1 lg:grid-cols-3">
+              <div className="lg:col-span-2 space-y-8">
+                {/* Payment Timeline */}
+                <div id="payment-timeline">
+                  <PaymentTimeline
+                    subscriptions={subscriptions}
+                    selectedMonth={filterMonth}
+                    userCurrency={userCurrency}
+                    onReset={() => setFilterMonth(null)}
+                  />
+                </div>
+              </div>
+
+              {/* Right Column: Activity Feed + Categories */}
+              <div className="space-y-8">
+                {/* Activity Feed */}
+                <ActivityFeed
+                  subscriptions={subscriptions}
+                  userCurrency={userCurrency}
+                />
+
+                {/* Category Breakdown */}
+                <div id="category-breakdown" className="space-y-6">
+                  <h3 className="text-lg font-bold px-2">Category Breakdown</h3>
+                  {analytics.categoryData.map((category: any, index: number) => (
+                    <CategoryCard
+                      key={index}
+                      name={category.name}
+                      value={category.value}
+                      previousValue={category.previousValue}
+                      color={category.color}
+                      currency={userCurrency}
+                      onClick={() => setDrillDownCategory(category.name)}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
-            <Button asChild className="w-full bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl">
-              <Link href="/analytics#payment-timeline" onClick={(e) => {
-                const el = document.getElementById('payment-timeline');
-                if (el) {
-                  e.preventDefault();
-                  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-              }}>More Information</Link>
-            </Button>
-          </div>
-        )}
 
-        {/* ================================================================
-            PRO-GATED: Spending Velocity + Bill Forecast (header widgets)
-            ================================================================ */}
-        {isFreeUser ? (
-          <div className="grid gap-6 md:grid-cols-2">
-            <ProGateOverlay
-              sectionName="Spending Velocity"
-              description="Track your month-over-month spending pace and spot trends early."
-            >
-              <SpendingVelocityWidget
-                currentSpend={analytics.velocity.current}
-                lastMonthSameDaySpend={analytics.velocity.last}
-                currency={userCurrency}
-              />
-            </ProGateOverlay>
-            <ProGateOverlay
-              sectionName="Bill Forecast"
-              description="See projected spending for the next 3 months based on your active bills."
-            >
-              <ForecastArcWidget
-                paid={analytics.forecast.paid}
-                total={analytics.forecast.total}
-                currency={userCurrency}
-              />
-            </ProGateOverlay>
-          </div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2">
-            <SpendingVelocityWidget
-              currentSpend={analytics.velocity.current}
-              lastMonthSameDaySpend={analytics.velocity.last}
-              currency={userCurrency}
-            />
-            <ForecastArcWidget
-              paid={analytics.forecast.paid}
-              total={analytics.forecast.total}
-              currency={userCurrency}
-            />
-          </div>
-        )}
+            {/* PRO UPGRADE SECTION */}
+            <div className="mt-12 space-y-6">
+              <div className="bg-gradient-to-r from-emerald-950/60 to-teal-950/60 border border-emerald-800/40 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xl">🔒</span>
+                    <h3 className="text-white font-semibold text-lg">Unlock Pro Analytics</h3>
+                  </div>
+                  <p className="text-gray-400 text-sm">
+                    Get deeper insights into your spending habits. Trends, forecasts, and velocity tracking.
+                  </p>
+                </div>
+                <Button asChild className="bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-2 rounded-xl shrink-0">
+                  <Link href="/pricing">Upgrade to Pro &rarr;</Link>
+                </Button>
+              </div>
 
-        {/* Smart Insights Carousel - Free for all */}
-        <SmartInsightsCarousel
-          subscriptions={subscriptions}
-          velocity={analytics.velocity}
-          categoryData={analytics.categoryData}
-          userCurrency={userCurrency}
-        />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <ProGateOverlay
+                  sectionName="Spending Velocity"
+                  description="Track your month-over-month spending pace and spot trends early."
+                >
+                  <SpendingVelocityWidget
+                    currentSpend={analytics.velocity.current}
+                    lastMonthSameDaySpend={analytics.velocity.last}
+                    currency={userCurrency}
+                  />
+                </ProGateOverlay>
 
-        {/* Inflation Alert Feed - Free for all */}
-        <InflationWatchWidget
-          alerts={analytics.inflationAlerts}
-          currency={userCurrency}
-        />
+                <ProGateOverlay
+                  sectionName="Bill Forecast"
+                  description="See projected spending for the next 3 months based on your active bills."
+                >
+                  <ForecastArcWidget
+                    paid={analytics.forecast.paid}
+                    total={analytics.forecast.total}
+                    currency={userCurrency}
+                  />
+                </ProGateOverlay>
 
-        {/* Main Content Grid */}
-        <div className="grid gap-8 grid-cols-1 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-8">
-
-            {/* ================================================================
-                PRO-GATED: Spending Trends Chart (6-month historical)
-                ================================================================ */}
-            <div id="spending-trends">
-              {isFreeUser ? (
                 <ProGateOverlay
                   sectionName="Spending Trends"
                   description="Visualize 6 months of spending history with month-over-month comparisons."
@@ -432,52 +462,112 @@ function AnalyticsContent({
                     onBarClick={() => {}}
                   />
                 </ProGateOverlay>
-              ) : (
-                <SpendingTrendsChart
-                  data={analytics.spendingTrendData}
-                  selectedMonth={filterMonth}
-                  onBarClick={(payload: any) => setFilterMonth(payload.month === filterMonth ? null : payload.month)}
-                />
-              )}
+              </div>
             </div>
+          </>
+        ) : (
+          <>
+            {/* ================================================================
+                PRO USER LAYOUT (Unchanged)
+               ================================================================ */}
+            {/* HEAVY WEEK WIDGET */}
+            {analytics.upcoming7DaysTotal > 0 && (
+              <div className="sticky top-4 z-20 bg-red-500/10 border border-red-400 rounded-3xl p-6 mb-6 overflow-hidden">
+                <div className="flex items-center gap-3 mb-4">
+                  <AlertTriangle className="h-6 w-6 text-red-500" />
+                  <div>
+                    <h3 className="font-bold text-lg text-red-900 dark:text-red-100">Heavy Week Ahead</h3>
+                    <p className="text-sm text-red-800 dark:text-red-200">
+                      {analytics.upcoming7DaysCount > 0 ? `${formatCurrency(analytics.upcoming7DaysTotal, userCurrency)} due in next 7 days` : `${formatCurrency(247, userCurrency)} due in next 7 days`}
+                    </p>
+                  </div>
+                </div>
+                <Button asChild className="w-full bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl">
+                  <Link href="/analytics#payment-timeline" onClick={(e) => {
+                    const el = document.getElementById('payment-timeline');
+                    if (el) {
+                      e.preventDefault();
+                      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }}>More Information</Link>
+                </Button>
+              </div>
+            )}
 
-            {/* Payment Timeline - Free for all (upcoming payments list) */}
-            <div id="payment-timeline">
-              <PaymentTimeline
-                subscriptions={subscriptions}
-                selectedMonth={filterMonth}
-                userCurrency={userCurrency}
-                onReset={() => setFilterMonth(null)}
+            {/* Velocity + Forecast */}
+            <div className="grid gap-6 md:grid-cols-2">
+              <SpendingVelocityWidget
+                currentSpend={analytics.velocity.current}
+                lastMonthSameDaySpend={analytics.velocity.last}
+                currency={userCurrency}
+              />
+              <ForecastArcWidget
+                paid={analytics.forecast.paid}
+                total={analytics.forecast.total}
+                currency={userCurrency}
               />
             </div>
-          </div>
 
-          {/* Right Column: Activity Feed + Categories */}
-          <div className="space-y-8">
-            {/* Activity Feed - Free for all */}
-            <ActivityFeed
+            {/* Smart Insights Carousel */}
+            <SmartInsightsCarousel
               subscriptions={subscriptions}
+              velocity={analytics.velocity}
+              categoryData={analytics.categoryData}
               userCurrency={userCurrency}
             />
 
-            {/* Category Breakdown - Free for all */}
-            <div id="category-breakdown" className="space-y-6">
-              <h3 className="text-lg font-bold px-2">Category Breakdown</h3>
-              {analytics.categoryData.map((category: any, index: number) => (
-                <CategoryCard
-                  key={index}
-                  name={category.name}
-                  value={category.value}
-                  previousValue={category.previousValue}
-                  color={category.color}
-                  currency={userCurrency}
-                  onClick={() => setDrillDownCategory(category.name)}
-                />
-              ))}
-            </div>
-          </div>
+            {/* Inflation Alert Feed */}
+            <InflationWatchWidget
+              alerts={analytics.inflationAlerts}
+              currency={userCurrency}
+            />
 
-        </div>
+            {/* Main Content Grid */}
+            <div className="grid gap-8 grid-cols-1 lg:grid-cols-3">
+              <div className="lg:col-span-2 space-y-8">
+                <div id="spending-trends">
+                  <SpendingTrendsChart
+                    data={analytics.spendingTrendData}
+                    selectedMonth={filterMonth}
+                    onBarClick={(payload: any) => setFilterMonth(payload.month === filterMonth ? null : payload.month)}
+                  />
+                </div>
+
+                <div id="payment-timeline">
+                  <PaymentTimeline
+                    subscriptions={subscriptions}
+                    selectedMonth={filterMonth}
+                    userCurrency={userCurrency}
+                    onReset={() => setFilterMonth(null)}
+                  />
+                </div>
+              </div>
+
+              {/* Right Column: Activity Feed + Categories */}
+              <div className="space-y-8">
+                <ActivityFeed
+                  subscriptions={subscriptions}
+                  userCurrency={userCurrency}
+                />
+
+                <div id="category-breakdown" className="space-y-6">
+                  <h3 className="text-lg font-bold px-2">Category Breakdown</h3>
+                  {analytics.categoryData.map((category: any, index: number) => (
+                    <CategoryCard
+                      key={index}
+                      name={category.name}
+                      value={category.value}
+                      previousValue={category.previousValue}
+                      color={category.color}
+                      currency={userCurrency}
+                      onClick={() => setDrillDownCategory(category.name)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Category Drill Down Modal */}
         <CategoryDrillDownModal
