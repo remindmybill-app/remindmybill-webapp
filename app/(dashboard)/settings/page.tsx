@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, Suspense } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,6 +20,14 @@ import { toast } from "sonner"
 import { createClient } from "@/lib/supabase"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useTheme } from "next-themes"
+import { disconnectGmailAccount } from "@/app/actions/gmail"
+import { subscribeToPushNotifications } from "@/lib/notifications"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+
+interface BeforeInstallPromptEvent extends Event {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
 
 function SettingsContent() {
   const [emailNotifications, setEmailNotifications] = useState(true)
@@ -38,6 +46,77 @@ function SettingsContent() {
   const searchParams = useSearchParams()
 
   const activeTab = searchParams.get('tab') || 'account'
+
+  const [isStandalone, setIsStandalone] = useState(false)
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const [showDisconnectGmailModal, setShowDisconnectGmailModal] = useState(false)
+  const [isDisconnectingGmail, setIsDisconnectingGmail] = useState(false)
+
+  useEffect(() => {
+    setIsStandalone(window.matchMedia("(display-mode: standalone)").matches)
+
+    const handler = (e: Event) => {
+        e.preventDefault()
+        setDeferredPrompt(e as BeforeInstallPromptEvent)
+    }
+
+    window.addEventListener("beforeinstallprompt", handler)
+
+    return () => {
+        window.removeEventListener("beforeinstallprompt", handler)
+    }
+  }, [])
+
+  const handleInstallApp = async () => {
+      if (!deferredPrompt) {
+          toast.info("Installation is not supported or the prompt is unavailable in your browser");
+          return;
+      }
+      await deferredPrompt.prompt()
+      const { outcome } = await deferredPrompt.userChoice
+      if (outcome === "accepted") {
+          setIsStandalone(true) // assume installed
+      }
+      setDeferredPrompt(null)
+  }
+
+  const handlePushToggle = async (checked: boolean) => {
+    if (!checked) {
+       setPushAlerts(false)
+       return
+    }
+    
+    if ("Notification" in window) {
+       const permission = await Notification.requestPermission()
+       if (permission === "granted") {
+           try {
+               await subscribeToPushNotifications(profile?.id || "")
+               setPushAlerts(true)
+           } catch (error) {
+               console.error("Failed to subscribe:", error)
+               toast.error("Failed to enable push notifications", { description: "You may need to check your device settings." })
+               setPushAlerts(false)
+           }
+       } else {
+           toast.error("Enable notifications in your device settings to use this feature")
+           setPushAlerts(false)
+       }
+    }
+  }
+
+  const handleDisconnectGmail = async () => {
+     setIsDisconnectingGmail(true)
+     try {
+        await disconnectGmailAccount()
+        await mutate()
+        toast.success("Gmail disconnected — your subscriptions have been kept")
+        setShowDisconnectGmailModal(false)
+     } catch (e) {
+        toast.error("Failed to disconnect Gmail")
+     } finally {
+        setIsDisconnectingGmail(false)
+     }
+  }
 
   const handleCurrencyChange = async (newCurrency: string) => {
     setCurrency(newCurrency)
@@ -228,33 +307,47 @@ function SettingsContent() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  Gmail Integration
+                  <Mail className="h-5 w-5 text-primary" />
+                  Connected Accounts
                   {!isPro(profile?.subscription_tier) && <Badge variant="secondary" className="bg-gradient-to-r from-amber-400 to-orange-500 text-white border-0">PRO</Badge>}
                 </CardTitle>
-                <CardDescription>Connect your Gmail account for AI Inbox Hunter</CardDescription>
+                <CardDescription>Manage your connected integrations</CardDescription>
               </CardHeader>
-              <CardContent>
-                <Button
-                  variant="outline"
-                  className="w-full bg-transparent"
-                  onClick={isPro(profile?.subscription_tier) ? handleConnectGmail : () => router.push('/pricing')}
-                >
-                  {isPro(profile?.subscription_tier) ? (
-                    <>
-                      <Mail className="mr-2 h-4 w-4" />
-                      Link Gmail Account
-                    </>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-lg border bg-card/50">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-lg">
+                      <Mail className="w-5 h-5 text-red-500" />
+                    </div>
+                    <div>
+                      <h4 className="font-medium flex items-center gap-2">
+                        Gmail Inbox Hunter
+                        {profile?.gmail_linked ? (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">Connected</Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700">Not connected</Badge>
+                        )}
+                      </h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {profile?.gmail_linked 
+                          ? `Scanning enabled for ${profile?.email}`
+                          : "Connect to automatically discover subscriptions in your inbox"}
+                      </p>
+                    </div>
+                  </div>
+                  {profile?.gmail_linked ? (
+                    <Button variant="outline" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => setShowDisconnectGmailModal(true)}>
+                      Disconnect
+                    </Button>
                   ) : (
-                    <>
-                      <Lock className="mr-2 h-4 w-4 text-amber-500" />
-                      Upgrade to Link Gmail
-                    </>
+                    <Button
+                      variant="outline"
+                      onClick={isPro(profile?.subscription_tier) ? handleConnectGmail : () => router.push('/pricing')}
+                    >
+                      {isPro(profile?.subscription_tier) ? "Connect Gmail" : <><Lock className="mr-2 h-4 w-4 text-amber-500" />Upgrade</>}
+                    </Button>
                   )}
-                </Button>
-                <p className="mt-3 text-xs text-muted-foreground">
-                  We'll scan your inbox for subscription confirmations and hidden charges. Your emails remain private
-                  and encrypted.
-                </p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -411,12 +504,28 @@ function SettingsContent() {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label htmlFor="push-alerts" className="text-base">
+                    <Label htmlFor="push-alerts" className={"text-base " + (!isStandalone ? "opacity-50" : "")}>
                       Push Notifications
                     </Label>
-                    <p className="text-sm text-muted-foreground">Browser notifications for real-time alerts</p>
+                    <p className={"text-sm " + (!isStandalone ? "opacity-50 text-muted-foreground" : "text-muted-foreground")}>
+                      Browser notifications for real-time alerts
+                    </p>
+                    {!isStandalone && (
+                        <div className="mt-3 space-y-3">
+                           <p className="text-xs text-amber-600 dark:text-amber-500 font-medium">Install the app to enable push notifications</p>
+                           <Button variant="outline" size="sm" onClick={handleInstallApp}>
+                              Install App
+                           </Button>
+                        </div>
+                    )}
                   </div>
-                  <Switch id="push-alerts" checked={pushAlerts} onCheckedChange={setPushAlerts} />
+                  <Switch 
+                     id="push-alerts" 
+                     checked={pushAlerts} 
+                     onCheckedChange={handlePushToggle}
+                     disabled={!isStandalone}
+                     className={!isStandalone ? "opacity-50 cursor-not-allowed" : ""}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -441,6 +550,25 @@ function SettingsContent() {
         userTier={profile?.user_tier || 'free'}
         userEmail={profile?.email || ''}
       />
+
+      <Dialog open={showDisconnectGmailModal} onOpenChange={setShowDisconnectGmailModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Disconnect Gmail?</DialogTitle>
+            <DialogDescription>
+              We'll stop scanning your inbox for new subscriptions. Your existing subscriptions will not be deleted.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setShowDisconnectGmailModal(false)} disabled={isDisconnectingGmail}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDisconnectGmail} disabled={isDisconnectingGmail}>
+              {isDisconnectingGmail ? "Disconnecting..." : "Disconnect"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
 
   )

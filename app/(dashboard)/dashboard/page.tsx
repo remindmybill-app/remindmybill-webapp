@@ -12,7 +12,8 @@ import { getNextRenewalDate, getRenewalDisplay } from "@/lib/utils/date-utils"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Inbox, Bell, Sparkles, Plus, Lock, TrendingUp, AlertTriangle, CheckCircle2, Crown, Shield, Smartphone, DollarSign, Layers, Clock, X } from "lucide-react"
@@ -21,7 +22,7 @@ import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
 import { useProfile } from "@/lib/hooks/use-profile"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { connectGmailAccount, getGmailToken } from "@/lib/utils/gmail-auth"
-import { scanGmailReceipts } from "@/app/actions/gmail"
+import { scanGmailReceipts, disconnectGmailAccount } from "@/app/actions/gmail"
 import { debugFetchLast5Emails } from "@/app/actions/debug-gmail"
 import { GmailImportModal } from "@/components/GmailImportModal"
 import { ManualSubscriptionModal } from "@/components/manual-subscription-modal"
@@ -75,7 +76,7 @@ function DashboardContent() {
     const { isAuthenticated, signIn, isLoading: authLoading } = useAuth()
     const router = useRouter()
     const { subscriptions, refreshSubscriptions, isLoading: subsLoading } = useSubscriptions()
-    const { profile, refreshProfile } = useProfile()
+    const { profile, refreshProfile, updateProfile } = useProfile()
     const [isScanning, setIsScanning] = useState(false)
     const [scanRange, setScanRange] = useState(45)
     const [lastSynced, setLastSynced] = useState<Date | null>(null)
@@ -83,6 +84,8 @@ function DashboardContent() {
     const [isGmailConnected, setIsGmailConnected] = useState(false)
     const [remainingEmails, setRemainingEmails] = useState<number | null>(null)
     const [prevSubCount, setPrevSubCount] = useState<number | null>(null)
+    const [showDisconnectDialog, setShowDisconnectDialog] = useState(false)
+    const [isDisconnectingGmail, setIsDisconnectingGmail] = useState(false)
 
     // Review/Import modal state
     const [foundSubscriptions, setFoundSubscriptions] = useState<any[]>([])
@@ -135,6 +138,45 @@ function DashboardContent() {
             }
         }
     }, [isAuthenticated, refreshProfile, userTier, profile?.id])
+
+    // Background Auto-Scan logic
+    useEffect(() => {
+        if (!isAuthenticated || !profile || subsLoading) return;
+
+        if (profile.gmail_linked && !isScanning) {
+            const lastScanStr = profile.last_gmail_scan_at;
+            let shouldScan = false;
+            
+            if (!lastScanStr) {
+                 shouldScan = true;
+            } else {
+                 const lastScan = new Date(lastScanStr);
+                 const hoursSinceLastScan = (Date.now() - lastScan.getTime()) / (1000 * 60 * 60);
+                 if (hoursSinceLastScan >= 24) shouldScan = true;
+            }
+
+            if (shouldScan) {
+                // Instantly update DB to prevent trigger loop
+                updateProfile({ last_gmail_scan_at: new Date().toISOString() });
+
+                // Silent background scan
+                getGmailToken().then(token => {
+                     if (token) {
+                          scanGmailReceipts(token, 45, true).then(result => {
+                               if (result.success && result.found && result.found > 0) {
+                                    setFoundSubscriptions(result.subs || []);
+                                    setIsReviewOpen(true);
+                                    toast.success(`Gmail scanned — ${result.found} new subscriptions found`, {
+                                         description: "Reviewing your recent inbox activity."
+                                    });
+                                    setLastSynced(new Date());
+                               }
+                          }).catch(err => console.error("Auto scan background error:", err));
+                     }
+                }).catch(err => console.error("Failed getting gmail token for background scan:", err));
+            }
+        }
+    }, [profile?.id, profile?.gmail_linked, profile?.last_gmail_scan_at, isAuthenticated, subsLoading]);
 
     // Sync Lock Status
     useEffect(() => {
@@ -263,6 +305,21 @@ function DashboardContent() {
             router.replace('/dashboard')
         }
     }, [searchParams, router, refreshProfile])
+
+    const handleDisconnectGmail = async () => {
+        setIsDisconnectingGmail(true)
+        try {
+            await disconnectGmailAccount()
+            await refreshProfile()
+            toast.success("Gmail disconnected — your subscriptions have been kept")
+            setShowDisconnectDialog(false)
+            setIsGmailConnected(false)
+        } catch (e) {
+            toast.error("Failed to disconnect Gmail")
+        } finally {
+            setIsDisconnectingGmail(false)
+        }
+    }
 
     const handleScanInbox = async (days: number = 45) => {
         if (!isPro(profile?.subscription_tier, profile?.is_pro)) {
@@ -516,26 +573,62 @@ function DashboardContent() {
                             <ManualSubscriptionModal onSubscriptionAdded={refreshSubscriptions} />
                         )}
 
-                        <div className="relative flex items-center">
-                            <ScanSettingsDialog
-                                onScan={handleScanInbox}
-                                isScanning={isScanning}
-                                trigger={
-                                    <Button
-                                        disabled={isScanning || isLimitReached}
-                                        variant="outline"
-                                        onClick={showGmailNudge ? dismissGmailNudge : undefined}
-                                        className={`gap-2 h-10 px-4 ${isGmailConnected ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400" : "bg-card shadow-sm"} ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''} ${showGmailNudge ? 'ring-2 ring-emerald-400 animate-pulse rounded-lg' : ''}`}
-                                    >
-                                        {isLimitReached ? <Lock className="h-4 w-4 text-muted-foreground" /> : (isGmailConnected ? <CheckCircle2 className="h-4 w-4" /> : (isProUser ? <Inbox className="h-4 w-4" /> : <Lock className="h-4 w-4 text-amber-500" />))}
-                                        {isScanning ? "Scanning..." :
-                                            isLimitReached ? <span className="text-muted-foreground">Gmail Locked</span> :
-                                                isGmailConnected ? "Re-scan Gmail" :
-                                                    isProUser ? "Sync Gmail" : "Sync Gmail (Pro)"}
-                                    </Button>
-                                }
-                            />
-                            {showGmailNudge && (
+                        <div className="relative flex flex-col items-end">
+                            {isGmailConnected ? (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button
+                                            disabled={isScanning || isLimitReached}
+                                            variant="outline"
+                                            className={`gap-2 h-10 px-4 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-400 ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        >
+                                            <CheckCircle2 className="h-4 w-4" />
+                                            {isScanning ? "Scanning..." : "Gmail Connected"}
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        {isProUser ? (
+                                            <DropdownMenuItem onClick={() => handleScanInbox()} className="cursor-pointer">
+                                                <Inbox className="mr-2 h-4 w-4" />
+                                                <span>Re-scan Gmail</span>
+                                            </DropdownMenuItem>
+                                        ) : (
+                                            <DropdownMenuItem disabled className="opacity-50 cursor-not-allowed" title="Manual re-scan is a Pro feature — upgrade to use it">
+                                                <Lock className="mr-2 h-4 w-4 text-amber-500" />
+                                                <span>Re-scan Gmail (Pro)</span>
+                                            </DropdownMenuItem>
+                                        )}
+                                        <DropdownMenuItem onClick={() => setShowDisconnectDialog(true)} className="text-destructive cursor-pointer">
+                                            <X className="mr-2 h-4 w-4" />
+                                            <span>Disconnect Gmail</span>
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            ) : (
+                                <ScanSettingsDialog
+                                    onScan={handleScanInbox}
+                                    isScanning={isScanning}
+                                    trigger={
+                                        <Button
+                                            disabled={isScanning || isLimitReached}
+                                            variant="outline"
+                                            onClick={showGmailNudge ? dismissGmailNudge : undefined}
+                                            className={`gap-2 h-10 px-4 bg-card shadow-sm ${isLimitReached ? 'opacity-50 cursor-not-allowed' : ''} ${showGmailNudge ? 'ring-2 ring-emerald-400 animate-pulse rounded-lg' : ''}`}
+                                        >
+                                            <Inbox className="h-4 w-4" />
+                                            {isScanning ? "Scanning..." : (isLimitReached ? "Gmail Locked" : (isProUser ? "Sync Gmail" : "Sync Gmail (Pro)"))}
+                                        </Button>
+                                    }
+                                />
+                            )}
+                            
+                            {isGmailConnected && (
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mr-1">
+                                    Last scanned: {profile?.last_gmail_scan_at ? `${Math.floor((Date.now() - new Date(profile.last_gmail_scan_at).getTime()) / (1000 * 60 * 60))} hours ago` : "Never scanned"}
+                                </p>
+                            )}
+                            
+                            {showGmailNudge && !isGmailConnected && (
                                 <div className="absolute top-[calc(100%+12px)] right-0 w-72 z-50 glass-panel bg-white dark:bg-zinc-950 border border-emerald-500/50 shadow-[0_10px_40px_-10px_rgba(16,185,129,0.3)] rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
                                     <div className="absolute -top-[5px] right-6 w-2.5 h-2.5 bg-white dark:bg-zinc-950 border-t border-l border-emerald-500/50 rotate-45 transform origin-center rounded-[1px]" />
                                     
@@ -599,6 +692,26 @@ function DashboardContent() {
                                 Maybe Later
                             </Button>
                         </div>
+                    </DialogContent>
+                </Dialog>
+
+                {/* Disconnect Gmail Modal */}
+                <Dialog open={showDisconnectDialog} onOpenChange={setShowDisconnectDialog}>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Disconnect Gmail?</DialogTitle>
+                            <DialogDescription>
+                                We'll stop scanning your inbox for new subscriptions. Your existing subscriptions will not be deleted.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter className="mt-4">
+                            <Button variant="outline" onClick={() => setShowDisconnectDialog(false)} disabled={isDisconnectingGmail}>
+                                Cancel
+                            </Button>
+                            <Button variant="destructive" onClick={handleDisconnectGmail} disabled={isDisconnectingGmail}>
+                                {isDisconnectingGmail ? "Disconnecting..." : "Disconnect"}
+                            </Button>
+                        </DialogFooter>
                     </DialogContent>
                 </Dialog>
 

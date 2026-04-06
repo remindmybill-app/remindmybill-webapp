@@ -50,6 +50,7 @@ export interface Profile {
   google_refresh_token?: string | null
   google_access_token?: string | null
   gmail_linked?: boolean
+  last_gmail_scan_at: string | null
   // New tier fields
   user_tier: UserTier
   subscription_interval?: 'monthly' | 'annual' | null

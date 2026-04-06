@@ -343,3 +343,42 @@ export async function fetchNewAccessToken(refreshToken: string): Promise<string 
         return null;
     }
 }
+
+export async function disconnectGmailAccount() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error("No authenticated user")
+
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('google_refresh_token, google_access_token')
+        .eq('id', user.id)
+        .single()
+
+    const token = profile?.google_refresh_token || profile?.google_access_token
+    
+    if (token) {
+        try {
+            await fetch(`https://oauth2.googleapis.com/revoke?token=${token}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            })
+        } catch (e) {
+            console.error("Failed to revoke Google token:", e)
+        }
+    }
+
+    const { error } = await supabase
+        .from('profiles')
+        .update({
+            google_refresh_token: null,
+            google_access_token: null,
+            gmail_linked: false,
+            last_gmail_scan_at: null
+        })
+        .eq('id', user.id)
+
+    if (error) throw error
+
+    return { success: true }
+}
