@@ -320,9 +320,9 @@ export function Navigation() {
             priority
           />
         </Link>
-        <span className="md:hidden text-sm font-semibold text-gray-900 dark:text-white tracking-tight">
+        <Link href="/" className="md:hidden text-sm font-semibold text-gray-900 dark:text-white tracking-tight hover:opacity-80 transition-opacity">
           RemindMyBill
-        </span>
+        </Link>
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" className="relative p-0 h-8 w-8">
             <Bell className="h-5 w-5" />

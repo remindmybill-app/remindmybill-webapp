@@ -29,6 +29,13 @@ interface BeforeInstallPromptEvent extends Event {
     userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = window.atob(base64)
+  return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)))
+}
+
 function SettingsContent() {
   const [emailNotifications, setEmailNotifications] = useState(true)
 
@@ -85,9 +92,10 @@ function SettingsContent() {
         setPushAlerts(false)
         await mutate()
         toast.success("Push notifications disabled")
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to unsubscribe:", error)
         toast.error("Failed to disable push notifications")
+        setPushAlerts(true) // revert
       }
       return
     }
@@ -98,24 +106,28 @@ function SettingsContent() {
       return
     }
 
-    let permission = Notification.permission
-    if (permission === 'default') {
-      permission = await Notification.requestPermission()
-    }
+    try {
+      let permission = Notification.permission
+      console.log('Step 1: permission =', permission)
+      
+      if (permission === 'default') {
+        permission = await Notification.requestPermission()
+        console.log('Step 1 (after request): permission =', permission)
+      }
 
-    if (permission === 'granted') {
-      try {
+      if (permission === 'granted') {
         const registration = await navigator.serviceWorker.ready
-        const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY 
-            ? urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY)
-            : undefined
-        } as any)
+        console.log('Step 2: SW registration =', registration)
 
         if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
-          console.warn("NEXT_PUBLIC_VAPID_PUBLIC_KEY is missing")
+          throw new Error("VAPID public key is missing from environment variables")
         }
+
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!) as any
+        })
+        console.log('Step 3: subscription =', subscription)
 
         await supabase.from('profiles').update({
           push_notifications_enabled: true,
@@ -125,33 +137,25 @@ function SettingsContent() {
         setPushAlerts(true)
         await mutate()
         toast.success("Push notifications enabled")
-      } catch (error) {
-        console.error("Failed to subscribe:", error)
-        toast.error("Failed to enable push notifications", { 
-          description: "Check your device settings or VAPID key configuration." 
+      } else if (permission === 'denied') {
+        toast.error("Notifications blocked — tap here to open settings", {
+          action: {
+            label: "Open Settings",
+            onClick: () => window.open('app-settings:', '_blank') // iOS
+          }
         })
         setPushAlerts(false)
+      } else {
+        toast.error("Enable notifications in your device settings")
+        setPushAlerts(false)
       }
-    } else if (permission === 'denied') {
-      toast.error("Notifications are blocked — enable them in your device settings")
-      setPushAlerts(false)
-    } else {
-      toast.error("Enable notifications in your device settings")
-      setPushAlerts(false)
+    } catch (error: any) {
+      console.error('Push subscription failed:', error)
+      toast.error(`Push setup failed: ${error.message}`)
+      setPushAlerts(false) // Revert toggle to OFF
     }
   }
 
-  // Helper for VAPID key conversion
-  function urlBase64ToUint8Array(base64String: string): Uint8Array {
-    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-    const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-  }
 
   const handleDisconnectGmail = async () => {
      setIsDisconnectingGmail(true)
