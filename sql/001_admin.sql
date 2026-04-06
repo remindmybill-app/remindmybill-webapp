@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS cron_logs (
 );
 
 -- Seed initial cron job rows
-INSERT INTO cron_logs (job_name, status, result)
+INSERT INTO cron_logs (job_name, status, result) 
 VALUES
   ('reminders',            'success', 'No prior run'),
   ('process-cancellations','success', 'No prior run'),
