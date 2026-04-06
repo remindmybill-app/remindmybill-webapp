@@ -7,6 +7,7 @@ const pwaConfig = withPWA({
   register: true,
   skipWaiting: true,
   disable: isDev, // Disable PWA in development
+  customWorkerDir: 'worker',
   runtimeCaching: [
     {
       urlPattern: /^https:\/\/fonts\.(?:gstatic)\.com\/.*/i,

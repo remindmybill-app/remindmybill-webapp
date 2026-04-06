@@ -32,7 +32,7 @@ interface BeforeInstallPromptEvent extends Event {
 function SettingsContent() {
   const [emailNotifications, setEmailNotifications] = useState(true)
 
-  const [pushAlerts, setPushAlerts] = useState(true)
+  const [pushAlerts, setPushAlerts] = useState(false)
   const { profile, updateProfile, mutate } = useProfile()
   const { subscriptions, refreshSubscriptions } = useSubscriptions()
   const [currency, setCurrency] = useState(profile?.default_currency || "USD")
@@ -67,6 +67,12 @@ function SettingsContent() {
     }
   }, [])
 
+  useEffect(() => {
+    if (profile) {
+      setPushAlerts(profile.push_notifications_enabled ?? false)
+    }
+  }, [profile])
+
   const handleInstallApp = async () => {
       if (!deferredPrompt) {
           toast.info("Installation is not supported or the prompt is unavailable in your browser");
@@ -81,27 +87,97 @@ function SettingsContent() {
   }
 
   const handlePushToggle = async (checked: boolean) => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (!user) {
+      toast.error("You must be logged in")
+      return
+    }
+
     if (!checked) {
-       setPushAlerts(false)
-       return
+      // PART 3 — Fix toggle OFF flow
+      try {
+        const registration = await navigator.serviceWorker.ready
+        const sub = await registration.pushManager.getSubscription()
+        if (sub) {
+          await sub.unsubscribe()
+        }
+
+        await supabase.from('profiles').update({
+          push_notifications_enabled: false,
+          push_subscription: null
+        }).eq('id', user.id)
+
+        setPushAlerts(false)
+        await mutate()
+        toast.success("Push notifications disabled")
+      } catch (error) {
+        console.error("Failed to unsubscribe:", error)
+        toast.error("Failed to disable push notifications")
+      }
+      return
     }
     
-    if ("Notification" in window) {
-       const permission = await Notification.requestPermission()
-       if (permission === "granted") {
-           try {
-               await subscribeToPushNotifications(profile?.id || "")
-               setPushAlerts(true)
-           } catch (error) {
-               console.error("Failed to subscribe:", error)
-               toast.error("Failed to enable push notifications", { description: "You may need to check your device settings." })
-               setPushAlerts(false)
-           }
-       } else {
-           toast.error("Enable notifications in your device settings to use this feature")
-           setPushAlerts(false)
-       }
+    // PART 2 — Fix toggle ON flow
+    if (!("Notification" in window)) {
+      toast.error("Push notifications are not supported in this browser")
+      return
     }
+
+    let permission = Notification.permission
+    if (permission === 'default') {
+      permission = await Notification.requestPermission()
+    }
+
+    if (permission === 'granted') {
+      try {
+        const registration = await navigator.serviceWorker.ready
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY 
+            ? urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY)
+            : undefined
+        } as any)
+
+        if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
+          console.warn("NEXT_PUBLIC_VAPID_PUBLIC_KEY is missing")
+        }
+
+        await supabase.from('profiles').update({
+          push_notifications_enabled: true,
+          push_subscription: JSON.stringify(subscription.toJSON())
+        }).eq('id', user.id)
+
+        setPushAlerts(true)
+        await mutate()
+        toast.success("Push notifications enabled")
+      } catch (error) {
+        console.error("Failed to subscribe:", error)
+        toast.error("Failed to enable push notifications", { 
+          description: "Check your device settings or VAPID key configuration." 
+        })
+        setPushAlerts(false)
+      }
+    } else if (permission === 'denied') {
+      toast.error("Notifications are blocked — enable them in your device settings")
+      setPushAlerts(false)
+    } else {
+      toast.error("Enable notifications in your device settings")
+      setPushAlerts(false)
+    }
+  }
+
+  // Helper for VAPID key conversion
+  function urlBase64ToUint8Array(base64String: string): Uint8Array {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, "+").replace(/_/g, "/");
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
   }
 
   const handleDisconnectGmail = async () => {
