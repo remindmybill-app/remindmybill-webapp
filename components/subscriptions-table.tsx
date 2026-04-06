@@ -313,7 +313,7 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
                           </td>
                           <td className={`p-4 text-right ${pausedClass}`}>
                             {sub.status === 'cancelled' ? (
-                              <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/25 border border-red-500 text-red-200 tracking-wide uppercase cancelled-status ml-auto flex items-center w-fit">
+                              <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase ml-auto flex items-center w-fit bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-700">
                                 Cancelled
                               </span>
                             ) : (

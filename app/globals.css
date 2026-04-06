@@ -18,8 +18,7 @@
   color: hsl(0 0% 95%) !important;
 }
 
-.dark .high-risk-item,
-.dark .cancelled-status {
+.dark .high-risk-item {
   color: #fecaca !important; /* text-red-200 */
   background: rgba(239, 68, 68, 0.25) !important; /* bg-red-500/25 */
   border: 1px solid #ef4444 !important; /* border-red-500 */
