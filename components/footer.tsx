@@ -2,7 +2,7 @@ import { Bell, Twitter, Github, Linkedin } from "lucide-react"
 
 export function Footer() {
   return (
-    <footer className="mt-20 border-t border-border/40 bg-card/50">
+    <footer className="mt-20 border-t border-border/40 bg-card/50 hidden md:block">
       <div className="mx-auto max-w-[1600px] px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* Product */}

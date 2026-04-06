@@ -25,9 +25,16 @@ import {
     Trash2,
     Check,
     Clock,
-    Filter
+    Filter,
+    HelpCircle
 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -474,28 +481,36 @@ export function GmailImportModal({
 
                                         <div className="flex items-center gap-4 sm:gap-8 flex-1 justify-end">
                                             <div className="text-right shrink-0">
-                                                <div className="text-2xl sm:text-3xl font-black text-foreground tracking-tighter drop-shadow-sm">
-                                                    {formatCurrency(getCost(sub), getCurrency(sub))}
-                                                </div>
-                                                <div className="text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest mt-0.5">
-                                                    {getFrequency(sub) || 'Monthly'} Bill
-                                                </div>
-                                            </div>                                            {/* Row Actions */}
-                                            <div className="flex items-center gap-2 ml-4 shrink-0 bg-muted/50 p-2 rounded-2xl border border-border shadow-sm">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation()
-                                                        setEditingId(editingId === sub.id ? null : sub.id)
-                                                    }}
-                                                    className={cn(
-                                                        "h-10 w-10 rounded-xl transition-all duration-300",
-                                                        editingId === sub.id ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30" : "text-muted-foreground hover:bg-background hover:text-foreground"
+                                                    {(getCost(sub) === 0 || getCost(sub) === null || getCost(sub) === undefined) ? (
+                                                        <div className="flex items-center gap-2 text-amber-500 font-medium">
+                                                            <span className="text-sm sm:text-base">Price unknown</span>
+                                                            <AlertTriangle className="h-4 w-4" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-2xl sm:text-3xl font-black text-foreground tracking-tighter drop-shadow-sm">
+                                                            {formatCurrency(getCost(sub), getCurrency(sub))}
+                                                        </div>
                                                     )}
-                                                >
-                                                    <Pencil className="h-5 w-5" />
-                                                </Button>
+                                                    <div className="text-[10px] font-black text-emerald-600 dark:text-emerald-500 uppercase tracking-widest mt-0.5">
+                                                        {getFrequency(sub) || 'Monthly'} Bill
+                                                    </div>
+                                                </div>                                            {/* Row Actions */}
+                                                <div className="flex items-center gap-2 ml-4 shrink-0 bg-muted/50 p-2 rounded-2xl border border-border shadow-sm">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            setEditingId(editingId === sub.id ? null : sub.id)
+                                                        }}
+                                                        className={cn(
+                                                            "h-10 w-10 rounded-xl transition-all duration-300",
+                                                            editingId === sub.id ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/30" : "text-muted-foreground hover:bg-background hover:text-foreground",
+                                                            (getCost(sub) === 0 || getCost(sub) === null || getCost(sub) === undefined) && "border-2 border-amber-500/50"
+                                                        )}
+                                                    >
+                                                        <Pencil className="h-5 w-5" />
+                                                    </Button>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
@@ -639,23 +654,36 @@ export function GmailImportModal({
                         >
                             Cancel
                         </Button>
-                        <Button
-                            onClick={handleImport}
-                            disabled={isImporting || isScanning || selectedIds.size === 0}
-                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest h-16 px-16 rounded-[2rem] sm:min-w-[280px] shadow-[0_10px_40px_rgba(79,70,229,0.25)] dark:shadow-[0_0_50px_rgba(99,102,241,0.3)] transition-all hover:scale-[1.04] active:scale-[0.96] w-full sm:w-auto"
-                        >
-                            {isImporting ? (
-                                <div className="flex items-center justify-center">
-                                    <Loader2 className="w-6 h-6 mr-4 animate-spin" />
-                                    Processing...
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-center">
-                                    Sync {selectedIds.size > 0 && selectedIds.size}
-                                    <ArrowRight className="w-6 h-6 sm:w-7 sm:h-7 ml-4" />
-                                </div>
-                            )}
-                        </Button>
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div className="w-full sm:w-auto">
+                                        <Button
+                                            onClick={handleImport}
+                                            disabled={isImporting || isScanning || selectedIds.size === 0}
+                                            className="bg-indigo-600 hover:bg-indigo-500 text-white font-black uppercase tracking-widest h-16 px-16 rounded-[2rem] sm:min-w-[280px] shadow-[0_10px_40px_rgba(79,70,229,0.25)] dark:shadow-[0_0_50px_rgba(99,102,241,0.3)] transition-all hover:scale-[1.04] active:scale-[0.96] w-full sm:w-auto"
+                                        >
+                                            {isImporting ? (
+                                                <div className="flex items-center justify-center">
+                                                    <Loader2 className="w-6 h-6 mr-4 animate-spin" />
+                                                    Processing...
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center justify-center">
+                                                    Sync {selectedIds.size > 0 && selectedIds.size}
+                                                    <ArrowRight className="w-6 h-6 sm:w-7 sm:h-7 ml-4" />
+                                                </div>
+                                            )}
+                                        </Button>
+                                    </div>
+                                </TooltipTrigger>
+                                {visibleSubscriptions.some(s => selectedIds.has(s.id) && (getCost(s) === 0 || getCost(s) === null || getCost(s) === undefined)) && (
+                                    <TooltipContent className="bg-amber-500 text-amber-950 font-bold border-amber-600">
+                                        <p>Price unknown — you can edit this after syncing</p>
+                                    </TooltipContent>
+                                )}
+                            </Tooltip>
+                        </TooltipProvider>
                     </div>
                 </div>
             </DialogContent>

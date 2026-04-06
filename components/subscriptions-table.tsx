@@ -2,7 +2,7 @@
 import React, { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Tv, Music, Code, Dumbbell, Cloud, Mail, Package, Gamepad2, Inbox, Sparkles, TrendingUp, Calendar, MoreHorizontal, Pencil, Trash2, Loader2, Zap, XCircle, ChevronRight, Lock, Pause, Receipt, Plus, LogOut } from "lucide-react"
+import { Tv, Music, Code, Dumbbell, Cloud, Mail, Package, Gamepad2, Inbox, Sparkles, TrendingUp, Calendar, MoreHorizontal, Pencil, Trash2, Loader2, Zap, XCircle, ChevronRight, Lock, Pause, Receipt, Plus, LogOut, RefreshCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
@@ -177,14 +177,14 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
   return (
     <>
       <Card className="rounded-3xl border-border bg-card shadow-sm overflow-hidden">
-        <CardHeader className="p-6 border-b border-border flex flex-row items-center justify-between">
+        <CardHeader className="p-4 sm:p-6 border-b border-border flex flex-row items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-primary/10">
               <TrendingUp className="h-5 w-5 text-primary" />
             </div>
-            <div>
+            <div className="min-w-0">
               <CardTitle className="text-xl font-bold leading-none">Portfolio</CardTitle>
-              <p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest font-bold">Management Panel</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground mt-1 uppercase tracking-widest font-bold truncate">Management Panel</p>
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
@@ -196,10 +196,12 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
                 className="h-8 rounded-full text-xs font-semibold"
               >
                 <Pause className="mr-2 h-3.5 w-3.5" />
-                Show Paused
+                <span className="hidden sm:inline">Show Paused</span>
+                <span className="sm:hidden">Paused</span>
               </Button>
-              <Button variant="ghost" size="sm" className="text-xs font-bold uppercase tracking-widest text-indigo-600 h-8" onClick={refreshSubscriptions}>
-                Refresh
+              <Button variant="ghost" size="sm" className="text-xs font-bold uppercase tracking-widest text-indigo-600 h-8 gap-2" onClick={refreshSubscriptions}>
+                <RefreshCcw className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Refresh</span>
               </Button>
             </div>
             {mounted && !showPaused && pausedCount > 0 && (
@@ -405,7 +407,7 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
                   return (
                     <div key={sub.id} className="relative space-y-2">
                       <div
-                        className={`rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 active:scale-[0.97] active:bg-zinc-50 dark:active:bg-zinc-800/50 transition-all duration-200 ${isPaused ? 'opacity-50 grayscale' : ''}`}
+                        className={`rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 active:scale-[0.97] active:bg-zinc-50 dark:active:bg-zinc-800/50 transition-all duration-200 \${isPaused ? 'opacity-50 grayscale' : ''}`}
                         onClick={() => setSelectedMobileSub(sub)}
                       >
                       <div className="mb-4 flex items-center justify-between">
@@ -418,7 +420,9 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
                               <span className="truncate">{sub.name}</span>
                               {sub.shared_with_count > 1 && <span className="text-[9px] bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 px-1 rounded shrink-0">👥</span>}
                             </p>
-                            <p className={`text-xs font-medium ${statusColor}`}>Renews in {label}</p>
+                            <p className={`text-xs font-medium ${statusColor}`}>
+                              Renews {label.toLowerCase() === 'due today' ? 'Today' : (label.charAt(0).toLowerCase() + label.slice(1))}
+                            </p>
                           </div>
                         </div>
                         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-100/50 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50">

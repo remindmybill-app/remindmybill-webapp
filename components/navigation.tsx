@@ -311,7 +311,7 @@ export function Navigation() {
 
       {/* Mobile-Only Header (Just Logo) */}
       <div className="md:hidden flex h-14 items-center justify-between px-6 border-b bg-background/95 backdrop-blur sticky top-0 z-40">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="hidden md:block items-center gap-2">
           <Image
             src="/rmmb-logo.png"
             alt="RemindMyBill"

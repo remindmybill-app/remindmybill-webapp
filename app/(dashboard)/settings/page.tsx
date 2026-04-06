@@ -314,39 +314,43 @@ function SettingsContent() {
                 <CardDescription>Manage your connected integrations</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between p-4 rounded-lg border bg-card/50">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border bg-muted/30 gap-4 flex-wrap">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-lg">
+                    <div className="p-2.5 bg-red-100 dark:bg-red-900/20 rounded-xl shrink-0">
                       <Mail className="w-5 h-5 text-red-500" />
                     </div>
-                    <div>
-                      <h4 className="font-medium flex items-center gap-2">
-                        Gmail Inbox Hunter
-                        {profile?.gmail_linked ? (
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800">Connected</Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700">Not connected</Badge>
-                        )}
+                    <div className="flex flex-col">
+                      <h4 className="font-bold flex items-center gap-2 text-foreground">
+                        Gmail
                       </h4>
-                      <p className="text-sm text-muted-foreground mt-1">
+                      <p className="text-sm text-muted-foreground">
                         {profile?.gmail_linked 
                           ? `Scanning enabled for ${profile?.email}`
                           : "Connect to automatically discover subscriptions in your inbox"}
                       </p>
                     </div>
                   </div>
-                  {profile?.gmail_linked ? (
-                    <Button variant="outline" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => setShowDisconnectGmailModal(true)}>
-                      Disconnect
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      onClick={isPro(profile?.subscription_tier) ? handleConnectGmail : () => router.push('/pricing')}
-                    >
-                      {isPro(profile?.subscription_tier) ? "Connect Gmail" : <><Lock className="mr-2 h-4 w-4 text-amber-500" />Upgrade</>}
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-2 ml-auto sm:ml-0 flex-shrink-0">
+                    {profile?.gmail_linked ? (
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 text-xs px-2 py-0.5 rounded-full">Connected</Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-gray-100 text-gray-500 border border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 text-xs px-2 py-0.5 rounded-full">Not connected</Badge>
+                    )}
+                    {profile?.gmail_linked ? (
+                      <Button variant="outline" size="sm" className="h-9 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => setShowDisconnectGmailModal(true)}>
+                        Disconnect
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 rounded-xl"
+                        onClick={isPro(profile?.subscription_tier) ? handleConnectGmail : () => router.push('/pricing')}
+                      >
+                        {isPro(profile?.subscription_tier) ? "Connect" : <><Lock className="mr-2 h-4 w-4 text-amber-500" />Upgrade</>}
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>

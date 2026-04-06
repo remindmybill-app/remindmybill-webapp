@@ -312,18 +312,18 @@ function AnalyticsContent({
 
         {/* Welcome Banner (Pro users only, first visit) */}
         {showWelcomeBanner && (
-          <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 to-indigo-800 text-white p-6 sm:p-8 rounded-[2rem] flex flex-col sm:flex-row items-center justify-between gap-6 animate-in fade-in slide-in-from-top-4 shadow-2xl shadow-indigo-900/20 border-4 border-white/5 mb-8">
-             <div className="absolute -right-20 -top-20 h-64 w-64 bg-white/10 blur-3xl rounded-full pointer-events-none" />
+          <div className="relative overflow-hidden bg-gradient-to-r from-emerald-950/60 to-teal-950/60 border border-emerald-800/40 p-6 sm:p-8 rounded-[2.5rem] flex flex-col sm:flex-row items-center justify-between gap-6 animate-in fade-in slide-in-from-top-4 shadow-2xl shadow-emerald-900/20 mb-8">
+             <div className="absolute -right-20 -top-20 h-64 w-64 bg-emerald-500/10 blur-3xl rounded-full pointer-events-none" />
              <div className="flex items-center gap-5 relative z-10 w-full sm:w-auto">
-                <div className="h-14 w-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
-                   <BarChart3 className="h-7 w-7 text-white" />
+                <div className="h-14 w-14 bg-emerald-500/10 backdrop-blur-md rounded-2xl flex items-center justify-center shrink-0 shadow-inner border border-emerald-500/20">
+                   <BarChart3 className="h-7 w-7 text-emerald-400" />
                 </div>
                 <div>
-                   <h2 className="text-2xl font-bold mb-1.5 tracking-tight">Welcome to Analytics!</h2>
-                   <p className="text-indigo-100/90 text-sm leading-relaxed max-w-lg">💡 <strong className="text-white">Pro tip:</strong> Add 3+ subscriptions to unlock full trend forecasting.<br/>📈 Your category breakdown updates monthly based on active renewals.</p>
+                   <h2 className="text-2xl font-bold mb-1.5 tracking-tight text-white">Welcome to Analytics!</h2>
+                   <p className="text-gray-300 text-sm leading-relaxed max-w-lg">💡 <strong className="text-emerald-400">Pro tip:</strong> Add 3+ subscriptions to unlock full trend forecasting.<br/>📈 Your category breakdown updates monthly based on active renewals.</p>
                 </div>
              </div>
-             <Button variant="outline" className="shrink-0 bg-white/10 hover:bg-white/20 text-white border-white/20 hover:border-white/30 h-11 px-6 rounded-xl relative z-10 w-full sm:w-auto font-semibold backdrop-blur-md transition-all" onClick={() => setShowWelcomeBanner(false)}>
+             <Button variant="outline" className="shrink-0 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20 hover:border-emerald-500/30 h-11 px-6 rounded-xl relative z-10 w-full sm:w-auto font-semibold backdrop-blur-md transition-all" onClick={() => setShowWelcomeBanner(false)}>
                 Dismiss
              </Button>
           </div>
