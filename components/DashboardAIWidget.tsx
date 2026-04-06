@@ -44,7 +44,7 @@ export function DashboardAIWidget({ subscriptions }: DashboardAIWidgetProps) {
     if (subscriptions.length === 0 || error || (!isLoading && !insights)) return null
 
     return (
-        <Card className="rounded-3xl border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900 overflow-hidden">
+        <Card className="rounded-3xl border-zinc-200 bg-white shadow-xl dark:border-zinc-800 dark:bg-gray-900 overflow-hidden">
             <CardHeader className="bg-zinc-50/50 dark:bg-zinc-900/50 border-b border-zinc-100 dark:border-zinc-800">
                 <div className="flex items-center gap-2">
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">

@@ -432,7 +432,7 @@ export function GmailImportModal({
                                             </div>
 
                                             <div className="flex items-center gap-5 flex-1 min-w-0">
-                                                <div className="h-16 w-16 shrink-0 flex items-center justify-center rounded-[1.25rem] bg-white shadow-2xl ring-1 ring-white/10 overflow-hidden group-hover:scale-110 transition-transform duration-500">
+                                                <div className="h-16 w-16 shrink-0 flex items-center justify-center rounded-[1.25rem] bg-white dark:bg-gray-900 shadow-2xl ring-1 ring-white/10 dark:ring-white/5 overflow-hidden group-hover:scale-110 transition-transform duration-500">
                                                     <img
                                                         src={`https://logo.clearbit.com/${getName(sub).toLowerCase().replace(/\s+/g, '')}.com`}
                                                         alt={getName(sub)}

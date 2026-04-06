@@ -28,4 +28,5 @@ VALUES
   ('reminders',            'success', 'No prior run'),
   ('process-cancellations','success', 'No prior run'),
   ('reset-limits',         'success', 'No prior run')
-ON CONFLICT DO NOTHING;
+ON CONFLICT DO NOTHING; 
+
