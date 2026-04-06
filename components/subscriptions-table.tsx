@@ -407,7 +407,7 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
                   return (
                     <div key={sub.id} className="relative space-y-2">
                       <div
-                        className={`rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 active:scale-[0.97] active:bg-zinc-50 dark:active:bg-zinc-800/50 transition-all duration-200 \${isPaused ? 'opacity-50 grayscale' : ''}`}
+                        className={`rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 active:scale-[0.97] active:bg-gray-50 dark:active:bg-gray-800/50 transition-all duration-200 \${isPaused ? 'opacity-50 grayscale' : ''}`}
                         onClick={() => setSelectedMobileSub(sub)}
                       >
                       <div className="mb-4 flex items-center justify-between">
@@ -416,9 +416,9 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
                             <Icon className="h-6 w-6 text-zinc-600 dark:text-zinc-400" />
                           </div>
                           <div>
-                            <p className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2 truncate min-w-0">
+                            <p className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2 truncate min-w-0">
                               <span className="truncate">{sub.name}</span>
-                              {sub.shared_with_count > 1 && <span className="text-[9px] bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 px-1 rounded shrink-0">👥</span>}
+                              {sub.shared_with_count > 1 && <span className="text-[9px] bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400 px-1 rounded shrink-0">👥</span>}
                             </p>
                             <p className={`text-xs font-medium ${statusColor}`}>
                               Renews {label.toLowerCase() === 'due today' ? 'Today' : (label.charAt(0).toLowerCase() + label.slice(1))}
@@ -429,15 +429,15 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
                           <MoreHorizontal className="h-6 w-6 text-muted-foreground" />
                         </div>
                       </div>
-                      <div className="flex items-center justify-between pt-4 border-t border-zinc-50 dark:border-zinc-800/50">
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-50 dark:border-gray-800/50">
                         <div>
-                          <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Cost</p>
-                          <p className="text-xl font-black tracking-tighter text-zinc-900 dark:text-white">
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Cost</p>
+                          <p className="text-xl font-black tracking-tighter text-gray-900 dark:text-white">
                             {formatCurrency(sub.cost / sub.shared_with_count, sub.currency)}
-                            <span className="text-xs font-normal text-muted-foreground ml-1 uppercase">/{sub.frequency === 'yearly' ? 'yr' : 'mo'}</span>
+                            <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1 uppercase">/{sub.frequency === 'yearly' ? 'yr' : 'mo'}</span>
                           </p>
                           {sub.shared_with_count > 1 && (
-                            <p className="text-[9px] text-muted-foreground font-medium">Full: {formatCurrency(sub.cost, sub.currency)}</p>
+                            <p className="text-[9px] text-gray-500 dark:text-gray-400 font-medium">Full: {formatCurrency(sub.cost, sub.currency)}</p>
                           )}
                         </div>
                         <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase ${

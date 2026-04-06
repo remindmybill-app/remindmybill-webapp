@@ -336,7 +336,7 @@ function AnalyticsContent({
                ================================================================ */}
             {/* HEAVY WEEK WIDGET */}
             {analytics.upcoming7DaysTotal > 0 && (
-              <div className="sticky top-4 z-20 bg-red-500/10 border border-red-400 rounded-3xl p-6 mb-6 overflow-hidden">
+              <div className="bg-red-500/10 border border-red-400 rounded-3xl p-6 mb-6 overflow-hidden">
                 <div className="flex items-center gap-3 mb-4">
                   <AlertTriangle className="h-6 w-6 text-red-500" />
                   <div>
@@ -472,7 +472,7 @@ function AnalyticsContent({
                ================================================================ */}
             {/* HEAVY WEEK WIDGET */}
             {analytics.upcoming7DaysTotal > 0 && (
-              <div className="sticky top-4 z-20 bg-red-500/10 border border-red-400 rounded-3xl p-6 mb-6 overflow-hidden">
+              <div className="bg-red-500/10 border border-red-400 rounded-3xl p-6 mb-6 overflow-hidden">
                 <div className="flex items-center gap-3 mb-4">
                   <AlertTriangle className="h-6 w-6 text-red-500" />
                   <div>

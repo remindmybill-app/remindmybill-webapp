@@ -591,22 +591,22 @@ export default function TrustCenterPage() {
                   riskyServices
                     .filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
                     .map((service) => (
-                      <div key={service.id} className="group flex items-center justify-between rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50/50 dark:bg-rose-950/20 p-4 transition-all hover:bg-rose-100/50 dark:hover:bg-rose-900/30 cursor-pointer" onClick={() => handleSelectService(service)}>
+                      <div key={service.id} className="group flex items-center justify-between rounded-xl border border-red-100 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 p-4 transition-all hover:bg-rose-100/50 dark:hover:bg-red-900/20 cursor-pointer" onClick={() => handleSelectService(service)}>
                         <div className="flex items-center gap-3">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold text-sm">
                             {service.name.substring(0, 1)}
                           </div>
                           <div>
-                            <p className="font-bold text-zinc-900 dark:text-zinc-50">{service.name}</p>
-                            <p className="text-xs text-rose-800 dark:text-rose-300/90 line-clamp-1">{service.cancellation_method || 'Phone Call Required'}</p>
+                            <p className="font-bold text-gray-900 dark:text-white">{service.name}</p>
+                            <p className="text-xs text-red-600 dark:text-red-400 font-medium line-clamp-1">{service.cancellation_method || 'Phone Call Required'}</p>
                           </div>
                         </div>
                         <div className="text-right flex flex-col items-end gap-1">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-sm font-bold text-rose-600 dark:text-rose-400">{service.trust_score}</span>
+                            <span className="text-sm font-bold text-red-600 dark:text-red-400">{service.trust_score}</span>
                             <span className="text-[10px] text-zinc-400 font-medium">/100</span>
                           </div>
-                          <Badge variant="outline" className="h-5 px-1.5 text-[10px] uppercase font-bold tracking-wider border-rose-200 text-rose-600 dark:border-rose-800 dark:text-rose-400">
+                          <Badge variant="outline" className="h-5 px-1.5 text-[10px] uppercase font-bold tracking-wider bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-700">
                             {service.difficulty_level}
                           </Badge>
                         </div>
