@@ -7,6 +7,7 @@ import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/components/theme-provider"
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration"
 
 const _geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" })
 const _geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" })
@@ -68,6 +69,7 @@ export default function RootLayout({
       </head>
       <body className={`min-h-screen flex flex-col font-sans antialiased ${_geist.variable} ${_geistMono.variable}`}>
         <ThemeProvider>
+          <ServiceWorkerRegistration />
           <Navigation />
           <main className="flex-1">
             {children}
