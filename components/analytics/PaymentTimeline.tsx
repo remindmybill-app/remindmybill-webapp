@@ -84,16 +84,16 @@ export function PaymentTimeline({ subscriptions, selectedMonth, userCurrency, on
                                 <div key={group.dateKey} className="relative pl-6 border-l-2 border-border">
                                     <div className={`absolute left-[-5px] top-2 h-2 w-2 rounded-full ${isHighSpend ? 'bg-orange-500' : 'bg-primary'}`} />
                                     <div className="flex items-center justify-between mb-4">
-                                        <h4 className="text-sm font-bold text-muted-foreground">
+                                        <h4 className="text-sm font-bold text-muted-foreground truncate mr-2">
                                             {group.date.toLocaleDateString("en-US", { weekday: 'short', month: 'short', day: 'numeric' })}
                                         </h4>
-                                        <span className="text-xs font-bold text-muted-foreground">{formatCurrency(Number(group.totalDayCost.toFixed(2)), userCurrency)}</span>
+                                        <span className="text-xs font-bold text-muted-foreground shrink-0">{formatCurrency(Number(group.totalDayCost.toFixed(2)), userCurrency)}</span>
                                     </div>
                                     <div className="grid gap-3">
                                         {group.subs.map((sub: any) => (
                                             <div key={sub.id} className="flex items-center justify-between p-4 rounded-xl bg-muted/50 border border-border">
-                                                <span className="text-sm font-medium">{sub.name}</span>
-                                                <span className="text-sm font-bold">{formatCurrency(Number(sub.costInUserCurrency.toFixed(2)), userCurrency)}</span>
+                                                <span className="text-sm font-medium truncate min-w-0 mr-2 flex-1">{sub.name}</span>
+                                                <span className="text-sm font-bold shrink-0">{formatCurrency(Number(sub.costInUserCurrency.toFixed(2)), userCurrency)}</span>
                                             </div>
                                         ))}
                                     </div>

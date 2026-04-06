@@ -112,7 +112,7 @@ function DashboardContent() {
     useEffect(() => {
         const checkGmailStatus = async () => {
             const token = await getGmailToken()
-            setIsGmailConnected(!!token)
+            setIsGmailConnected(!!token || !!profile?.gmail_linked)
         }
         checkGmailStatus()
     }, [isAuthenticated, profile])
@@ -278,6 +278,17 @@ function DashboardContent() {
             let token = await getGmailToken()
 
             if (!token) {
+                if (profile?.gmail_linked) {
+                    toast.error("Gmail connection expired — please reconnect", {
+                        action: {
+                            label: "Reconnect",
+                            onClick: () => connectGmailAccount()
+                        }
+                    })
+                    setIsScanning(false)
+                    return
+                }
+
                 console.log("[v0] No Gmail token found, initiating OAuth...")
                 toast.info("Connecting to Gmail...", { description: "Please approve read-only access to scan for receipts." })
                 await connectGmailAccount()
@@ -300,11 +311,11 @@ function DashboardContent() {
             setFoundSubscriptions(result.subs || [])
 
             if (result.found && result.found > 0) {
-                toast.success(`Found ${result.found} emails!`, {
+                toast.success(`Gmail scanned — ${result.found} new subscriptions found`, {
                     description: "Reviewing your recent inbox activity."
                 })
             } else {
-                toast.info("Scan Complete", { description: "No emails found for the selected time range." })
+                toast.success("Gmail scanned — nothing new found", { description: "No emails found for the selected time range." })
             }
 
             setLastSynced(new Date())
@@ -525,19 +536,19 @@ function DashboardContent() {
                                 }
                             />
                             {showGmailNudge && (
-                                <div className="absolute top-[calc(100%+12px)] right-0 w-72 z-50 glass-panel bg-zinc-950 border border-emerald-500/50 shadow-[0_10px_40px_-10px_rgba(16,185,129,0.3)] rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
-                                    <div className="absolute -top-[5px] right-6 w-2.5 h-2.5 bg-zinc-950 border-t border-l border-emerald-500/50 rotate-45 transform origin-center rounded-[1px]" />
+                                <div className="absolute top-[calc(100%+12px)] right-0 w-72 z-50 glass-panel bg-white dark:bg-zinc-950 border border-emerald-500/50 shadow-[0_10px_40px_-10px_rgba(16,185,129,0.3)] rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
+                                    <div className="absolute -top-[5px] right-6 w-2.5 h-2.5 bg-white dark:bg-zinc-950 border-t border-l border-emerald-500/50 rotate-45 transform origin-center rounded-[1px]" />
                                     
                                     <div className="relative z-10 flex flex-col gap-2">
-                                        <h4 className="font-bold text-emerald-400 flex items-center gap-2">
+                                        <h4 className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                                             💡 Save time — sync Gmail
                                         </h4>
-                                        <p className="text-sm text-zinc-300 leading-snug">
+                                        <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-snug">
                                             Auto-import subscriptions from your email receipts.
                                             No manual entry needed. Takes 10 seconds.
                                         </p>
                                         <div className="flex items-center justify-end gap-2 mt-2 transition-colors">
-                                            <Button variant="ghost" size="sm" onClick={dismissGmailNudge} className="h-8 text-xs text-zinc-400 hover:text-white hover:bg-zinc-800">
+                                            <Button variant="ghost" size="sm" onClick={dismissGmailNudge} className="h-8 text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800">
                                                 Maybe later
                                             </Button>
                                             <Button size="sm" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleConnectGmailFromNudge}>
@@ -565,28 +576,27 @@ function DashboardContent() {
                     range={scanRange}
                 />
 
-                {/* Subscription Limit Modal */}
+                {/* Limit Hit Upgrade Prompt */}
                 <Dialog open={showLimitModal} onOpenChange={setShowLimitModal}>
-                    <DialogContent className="max-w-md">
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <Lock className="h-5 w-5 text-amber-500" />
-                                Subscription Limit Reached
-                            </DialogTitle>
-                            <DialogDescription>
-                                You're tracking {activeSubCount} subscriptions (Free tier limit).
-                                You're managing more subscriptions than 68% of users!
-                            </DialogDescription>
-                        </DialogHeader>
-                        <p className="text-sm text-muted-foreground">
-                            Upgrade to Pro to track unlimited subscriptions and unlock advanced analytics.
-                        </p>
-                        <div className="flex gap-3 justify-end mt-2">
-                            <Button variant="ghost" onClick={() => setShowLimitModal(false)}>
-                                Maybe Later
+                    <DialogContent className="max-w-md bg-background border-border text-foreground p-0 overflow-hidden rounded-t-[2.5rem] sm:rounded-3xl shadow-2xl">
+                        <div className="bg-gradient-to-b from-blue-500/10 to-transparent p-8 text-center">
+                            <DialogHeader>
+                                <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400">
+                                    <Sparkles className="h-8 w-8" />
+                                </div>
+                                <DialogTitle className="text-2xl font-black tracking-tight text-foreground">Track more, save more!</DialogTitle>
+                                <DialogDescription className="text-muted-foreground font-bold text-sm mt-1 text-center">
+                                    You&apos;ve reached the <span className="text-blue-600 dark:text-blue-400">5 subscription limit</span> on the Free plan. Upgrade to Pro for unlimited tracking and advanced analytics.
+                                </DialogDescription>
+                            </DialogHeader>
+                        </div>
+                        
+                        <div className="px-8 pb-8 flex flex-col gap-3">
+                            <Button className="bg-blue-600 hover:bg-blue-700 text-white font-black uppercase tracking-widest h-14 rounded-2xl shadow-lg shadow-blue-500/20 transition-all hover:scale-[1.02]" asChild>
+                                <Link href="/pricing">Upgrade to Pro &mdash; $4.99/mo</Link>
                             </Button>
-                            <Button className="bg-blue-600 hover:bg-blue-700" asChild>
-                                <Link href="/pricing">Upgrade to Pro — $4.99/mo</Link>
+                            <Button variant="ghost" onClick={() => setShowLimitModal(false)} className="text-muted-foreground font-heavy h-12 hover:text-foreground">
+                                Maybe Later
                             </Button>
                         </div>
                     </DialogContent>
@@ -594,46 +604,46 @@ function DashboardContent() {
 
                 {/* Celebration Mini-Modal */}
                 <Dialog open={showMiniCelebration} onOpenChange={setShowMiniCelebration}>
-                    <DialogContent className="max-w-md p-0 overflow-hidden border-2 border-emerald-500/20 shadow-2xl shadow-emerald-500/10">
-                        <div className="bg-gradient-to-b from-emerald-500/10 to-transparent pt-8 pb-6 px-6 text-center">
+                    <DialogContent className="max-w-md bg-background border-border text-foreground p-0 overflow-hidden rounded-t-[2.5rem] sm:rounded-3xl shadow-2xl flex flex-col max-h-[90vh]">
+                        <div className="bg-gradient-to-b from-emerald-500/10 to-transparent pt-10 pb-6 px-8 text-center shrink-0">
                             <DialogHeader>
-                                <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40 shadow-xl shadow-emerald-500/20 ring-4 ring-emerald-500/10">
+                                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-emerald-500/10 border border-emerald-500/20 shadow-xl shadow-emerald-500/10">
                                     <span className="text-4xl">🎉</span>
                                 </div>
-                                <DialogTitle className="text-2xl font-bold tracking-tight text-center">Tracking Started!</DialogTitle>
-                                <DialogDescription className="text-center text-emerald-700 dark:text-emerald-400 font-medium">
+                                <DialogTitle className="text-2xl font-black tracking-tight text-center text-foreground">Tracking Started!</DialogTitle>
+                                <DialogDescription className="text-center text-emerald-600 dark:text-emerald-400 font-bold text-sm mt-1">
                                     Your first subscription is now fully monitored.
                                 </DialogDescription>
                             </DialogHeader>
                         </div>
                         
-                        <div className="px-6 pb-6 text-left">
-                            <p className="font-bold text-xs text-muted-foreground uppercase tracking-wider mb-3 px-1">Your Next Actions</p>
-                            <div className="space-y-3 mb-6">
-                                <Link href="/dashboard" onClick={() => setShowMiniCelebration(false)} className="group flex items-center gap-4 p-3.5 rounded-xl border border-border hover:border-emerald-500/50 hover:bg-emerald-50/50 dark:hover:bg-emerald-500/5 transition-all outline-none focus-visible:ring-2 focus-visible:ring-emerald-500">
-                                    <div className="h-10 w-10 shrink-0 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 text-lg">✅</div>
+                        <div className="px-8 pb-8 text-left overflow-y-auto">
+                            <p className="font-black text-[10px] text-muted-foreground uppercase tracking-[0.2em] mb-4">Your Next Actions</p>
+                            <div className="space-y-3 mb-8">
+                                <Link href="/dashboard" onClick={() => setShowMiniCelebration(false)} className="group flex items-center gap-4 p-4 rounded-2xl border border-border hover:border-emerald-500/40 hover:bg-emerald-500/5 transition-all">
+                                    <div className="h-10 w-10 shrink-0 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 text-lg">✅</div>
                                     <div>
-                                        <p className="font-bold text-sm group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors">Review Dashboard</p>
-                                        <p className="text-xs text-muted-foreground mt-0.5">See your spend update live</p>
+                                        <p className="font-bold text-sm group-hover:text-emerald-600 transition-colors">Review Dashboard</p>
+                                        <p className="text-[11px] text-muted-foreground font-medium mt-0.5">See your spend update live</p>
                                     </div>
                                 </Link>
-                                <Link href="/analytics" className="group flex items-center gap-4 p-3.5 rounded-xl border border-border hover:border-blue-500/50 hover:bg-blue-50/50 dark:hover:bg-blue-500/5 transition-all outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-                                    <div className="h-10 w-10 shrink-0 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 text-lg">📊</div>
+                                <Link href="/analytics" className="group flex items-center gap-4 p-4 rounded-2xl border border-border hover:border-blue-500/40 hover:bg-blue-500/5 transition-all">
+                                    <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 text-lg">📊</div>
                                     <div>
-                                        <p className="font-bold text-sm group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">Unlock Analytics (Pro)</p>
-                                        <p className="text-xs text-muted-foreground mt-0.5">View spending trends & forecasts</p>
+                                        <p className="font-bold text-sm group-hover:text-blue-600 transition-colors">Unlock Analytics (Pro)</p>
+                                        <p className="text-[11px] text-muted-foreground font-medium mt-0.5">View spending trends & forecasts</p>
                                     </div>
                                 </Link>
-                                <Link href="/trust-center" className="group flex items-center gap-4 p-3.5 rounded-xl border border-border hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-500/5 transition-all outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
-                                    <div className="h-10 w-10 shrink-0 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 text-lg">🛡️</div>
+                                <Link href="/trust-center" className="group flex items-center gap-4 p-4 rounded-2xl border border-border hover:border-indigo-500/40 hover:bg-indigo-500/5 transition-all">
+                                    <div className="h-10 w-10 shrink-0 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600 text-lg">🛡️</div>
                                     <div>
-                                        <p className="font-bold text-sm group-hover:text-indigo-700 dark:group-hover:text-indigo-400 transition-colors">Explore Trust Center</p>
-                                        <p className="text-xs text-muted-foreground mt-0.5">Check cancellation difficulty logs</p>
+                                        <p className="font-bold text-sm group-hover:text-indigo-600 transition-colors">Explore Trust Center</p>
+                                        <p className="text-[11px] text-muted-foreground font-medium mt-0.5">Check cancellation guides</p>
                                     </div>
                                 </Link>
                             </div>
-                            <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 rounded-xl text-base shadow-md shadow-emerald-500/20" onClick={() => setShowMiniCelebration(false)}>
-                                Let's Go
+                            <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black uppercase tracking-widest h-14 rounded-2xl text-base shadow-lg shadow-emerald-500/20 transition-all hover:scale-[1.02]" onClick={() => setShowMiniCelebration(false)}>
+                                Let&apos;s Go
                             </Button>
                         </div>
                     </DialogContent>
@@ -670,11 +680,11 @@ function DashboardContent() {
 
                         {/* Premium Feature Teaser - Only for Free Users */}
                         {!isProUser && (
-                            <div className="rounded-xl bg-indigo-600 p-6 text-white shadow-lg">
+                            <div className="rounded-xl bg-indigo-600 dark:bg-indigo-900/40 p-6 text-white shadow-lg border border-indigo-500/20">
                                 <Shield className="h-8 w-8 mb-4 opacity-50" />
                                 <h3 className="font-bold text-lg leading-tight mb-2">Upgrade to Pro</h3>
                                 <p className="text-indigo-100 text-sm mb-4">Unlock unlimited tracking, advanced insights, and instant alerts.</p>
-                                <Button className="w-full bg-white text-indigo-600 hover:bg-white/90" asChild>
+                                <Button className="w-full bg-white text-indigo-600 hover:bg-white/90 dark:bg-indigo-500 dark:text-white dark:hover:bg-indigo-400" asChild>
                                     <Link href="/pricing">View Plans</Link>
                                 </Button>
                             </div>
@@ -710,7 +720,7 @@ function DashboardContent() {
                     </div>
                 )}
             </div>
-        </div >
+        </div>
     )
 }
 

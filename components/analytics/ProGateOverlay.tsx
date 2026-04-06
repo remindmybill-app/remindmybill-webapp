@@ -27,16 +27,16 @@ export function ProGateOverlay({ sectionName, description, children }: ProGateOv
       </div>
 
       {/* Frosted overlay */}
-      <div className="backdrop-blur-sm bg-black/60 absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 p-6">
-        <Lock className="text-emerald-400" size={28} />
+      <div className="backdrop-blur-sm bg-white/80 dark:bg-black/80 absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 p-6 text-center">
+        <Lock className="text-emerald-600 dark:text-emerald-400" size={28} />
         
-        <h3 className="text-white font-semibold text-base">{sectionName}</h3>
+        <h3 className="text-zinc-900 dark:text-white font-semibold text-base">{sectionName}</h3>
         
-        <Badge className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
+        <Badge className="bg-emerald-100/80 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 text-xs font-semibold px-2 py-0.5 rounded-full uppercase tracking-wider">
           Pro Feature
         </Badge>
         
-        <p className="text-gray-400 text-sm text-center max-w-[180px]">
+        <p className="text-gray-600 dark:text-gray-400 text-sm max-w-[180px]">
           {description}
         </p>
 

@@ -440,7 +440,7 @@ export default function TrustCenterPage() {
                         <div className={`mb-4 inline-flex px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider ${getScoreBg(analysis.trust_score)} ${getScoreColor(analysis.trust_score)}`}>
                           {analysis.trust_score >= 80 ? "Trustworthy" : analysis.trust_score >= 50 ? "Be Cautious" : "High Risk"}
                         </div>
-                        <p className="text-sm font-medium leading-relaxed text-zinc-400 px-4">
+                        <p className="text-sm font-medium leading-relaxed text-zinc-600 dark:text-zinc-400 px-4">
                           {analysis.trust_score >= 80 ? "Top-tier transparency. No dark patterns detected." : analysis.trust_score >= 50 ? "Noticeable friction in cancellation." : "Significant deceptive patterns detected."}
                         </p>
                       </div>
@@ -573,7 +573,7 @@ export default function TrustCenterPage() {
             </div>
 
             {/* Hall of Shame */}
-            <div className="rounded-3xl border border-border bg-card shadow-sm p-6 text-zinc-50">
+            <div className="rounded-3xl border border-border bg-card shadow-sm p-6 text-foreground">
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
                   <span className="text-2xl">⚠️</span> High Risk Services
@@ -591,14 +591,14 @@ export default function TrustCenterPage() {
                   riskyServices
                     .filter(s => s.name.toLowerCase().includes(searchQuery.toLowerCase()))
                     .map((service) => (
-                      <div key={service.id} className="group flex items-center justify-between rounded-xl border border-rose-900/40 bg-rose-950/20 p-4 transition-all hover:bg-rose-900/30 cursor-pointer" onClick={() => handleSelectService(service)}>
+                      <div key={service.id} className="group flex items-center justify-between rounded-xl border border-rose-200 dark:border-rose-900/40 bg-rose-50/50 dark:bg-rose-950/20 p-4 transition-all hover:bg-rose-100/50 dark:hover:bg-rose-900/30 cursor-pointer" onClick={() => handleSelectService(service)}>
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-500/20 text-rose-300 font-bold text-sm">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-500/20 text-rose-700 dark:text-rose-300 font-bold text-sm">
                             {service.name.substring(0, 1)}
                           </div>
                           <div>
-                            <p className="font-bold text-zinc-50">{service.name}</p>
-                            <p className="text-xs text-rose-300/90 line-clamp-1">{service.cancellation_method || 'Phone Call Required'}</p>
+                            <p className="font-bold text-zinc-900 dark:text-zinc-50">{service.name}</p>
+                            <p className="text-xs text-rose-800 dark:text-rose-300/90 line-clamp-1">{service.cancellation_method || 'Phone Call Required'}</p>
                           </div>
                         </div>
                         <div className="text-right flex flex-col items-end gap-1">

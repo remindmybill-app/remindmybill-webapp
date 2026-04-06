@@ -60,17 +60,17 @@ export function OnboardingCarousel({
           
           {/* Panel 1 */}
           <div className={`absolute inset-0 p-6 sm:p-8 flex flex-col items-center justify-center text-center transition-opacity duration-500 ${activeIndex === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-            <h2 className="text-2xl font-bold mb-2 tracking-tight">👋 Welcome to RemindMyBill!</h2>
-            <p className="text-muted-foreground mb-6 max-w-sm text-sm">Track all your subscriptions in one place and never miss a renewal.</p>
+            <h2 className="text-xl sm:text-2xl font-bold mb-2 tracking-tight text-foreground">👋 Welcome to RemindMyBill!</h2>
+            <p className="text-muted-foreground mb-6 max-w-xs sm:max-w-sm text-xs sm:text-sm">Track all your subscriptions in one place and never miss a renewal.</p>
             
             <div className="mb-6 rounded-2xl bg-primary/10 p-5 shadow-inner ring-1 ring-primary/5">
               <Receipt className="h-10 w-10 text-primary" />
             </div>
 
-            <div className="text-sm text-left w-full max-w-sm space-y-3 mb-8 bg-background/50 backdrop-blur-sm p-5 rounded-2xl border border-border/50 shadow-sm">
-              <p className="flex items-center gap-3"><span className="flex items-center justify-center bg-primary/20 text-primary font-bold rounded-full w-6 h-6 text-xs shrink-0">1</span> Add your first subscription below</p>
-              <p className="flex items-center gap-3"><span className="flex items-center justify-center bg-primary/20 text-primary font-bold rounded-full w-6 h-6 text-xs shrink-0">2</span> Get reminders 3 days before billing</p>
-              <p className="flex items-center gap-3"><span className="flex items-center justify-center bg-primary/20 text-primary font-bold rounded-full w-6 h-6 text-xs shrink-0">3</span> View your spending analytics</p>
+            <div className="text-[12px] sm:text-sm text-left w-full max-w-sm space-y-3 mb-8 bg-background/50 dark:bg-background/20 backdrop-blur-sm p-5 rounded-2xl border border-border shadow-sm">
+              <p className="flex items-center gap-3"><span className="flex items-center justify-center bg-primary/20 text-primary font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 text-[10px] sm:text-xs shrink-0">1</span> Add your first subscription below</p>
+              <p className="flex items-center gap-3"><span className="flex items-center justify-center bg-primary/20 text-primary font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 text-[10px] sm:text-xs shrink-0">2</span> Get reminders 3 days before billing</p>
+              <p className="flex items-center gap-3"><span className="flex items-center justify-center bg-primary/20 text-primary font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 text-[10px] sm:text-xs shrink-0">3</span> View your spending analytics</p>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mt-auto sm:mt-0 mb-8 sm:mb-0">
@@ -92,13 +92,13 @@ export function OnboardingCarousel({
 
           {/* Panel 2 */}
           <div className={`absolute inset-0 p-6 sm:p-8 flex flex-col items-center justify-center text-center transition-opacity duration-500 ${activeIndex === 1 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-             <h2 className="text-2xl font-bold mb-6 tracking-tight">✅ How RemindMyBill Works</h2>
+             <h2 className="text-xl sm:text-2xl font-bold mb-6 tracking-tight text-foreground">✅ How it works</h2>
              
-             <div className="text-sm text-left w-full max-w-sm space-y-4 mb-8 bg-background/50 backdrop-blur-sm p-6 rounded-2xl border border-border/50 shadow-sm">
-              <p className="flex items-start gap-3"><span className="text-lg leading-none mt-0.5">1️⃣</span> <span>Add Netflix → Set renewal date → Done</span></p>
-              <p className="flex items-start gap-3"><span className="text-lg leading-none mt-0.5">2️⃣</span> <span>Get email 3 days before it bills</span></p>
-              <p className="flex items-start gap-3"><span className="text-lg leading-none mt-0.5">3️⃣</span> <span>See spending trends & analytics (Pro)</span></p>
-              <p className="flex items-start gap-3"><span className="text-lg leading-none mt-0.5">4️⃣</span> <span>Cancel easily with Trust Center guides</span></p>
+             <div className="text-[12px] sm:text-sm text-left w-full max-w-sm space-y-4 mb-8 bg-background/50 dark:bg-background/20 backdrop-blur-sm p-6 rounded-2xl border border-border shadow-sm">
+              <p className="flex items-start gap-3"><span className="text-lg leading-none mt-0.5">1️⃣</span> <span className="text-muted-foreground">Add Netflix → Set renewal date → Done</span></p>
+              <p className="flex items-start gap-3"><span className="text-lg leading-none mt-0.5">2️⃣</span> <span className="text-muted-foreground">Get email 3 days before it bills</span></p>
+              <p className="flex items-start gap-3"><span className="text-lg leading-none mt-0.5">3️⃣</span> <span className="text-muted-foreground">See spending trends & analytics (Pro)</span></p>
+              <p className="flex items-start gap-3"><span className="text-lg leading-none mt-0.5">4️⃣</span> <span className="text-muted-foreground">Cancel easily with Trust Center guides</span></p>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mt-auto sm:mt-0 mb-8 sm:mb-0">
@@ -117,14 +117,14 @@ export function OnboardingCarousel({
 
           {/* Panel 3 */}
           <div className={`absolute inset-0 p-6 sm:p-8 flex flex-col items-center justify-center text-center transition-opacity duration-500 ${activeIndex === 2 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`}>
-             <div className="mb-4 inline-block px-3 py-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold text-xs rounded-full tracking-widest uppercase ring-1 ring-indigo-500/20">Premium</div>
-             <h2 className="text-2xl font-bold mb-6 tracking-tight">🚀 Go Pro for $4.99/month</h2>
+             <div className="mb-4 inline-block px-3 py-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold text-[10px] uppercase rounded-full tracking-widest ring-1 ring-indigo-500/20">Premium</div>
+             <h2 className="text-xl sm:text-2xl font-bold mb-6 tracking-tight text-foreground">🚀 Go Pro for $4.99/mo</h2>
              
-             <div className="text-sm text-left w-full max-w-sm space-y-3 mb-8 bg-indigo-500/5 backdrop-blur-sm p-6 rounded-2xl border border-indigo-500/20 shadow-inner">
-              <p className="flex gap-3 items-start"><span className="text-indigo-500 shrink-0 text-lg leading-none">✅</span> <span className="text-foreground tracking-tight">Unlimited tracking (vs 5 free limit)</span></p>
-              <p className="flex gap-3 items-start"><span className="text-indigo-500 shrink-0 text-lg leading-none">✅</span> <span className="text-foreground tracking-tight">Full spending analytics & forecasting</span></p>
-              <p className="flex gap-3 items-start"><span className="text-indigo-500 shrink-0 text-lg leading-none">✅</span> <span className="text-foreground tracking-tight">Gmail auto-import (no manual entry)</span></p>
-              <p className="flex gap-3 items-start"><span className="text-indigo-500 shrink-0 text-lg leading-none">✅</span> <span className="text-foreground tracking-tight">Priority support & early access</span></p>
+             <div className="text-[12px] sm:text-sm text-left w-full max-w-sm space-y-3 mb-8 bg-indigo-500/5 dark:bg-indigo-500/10 backdrop-blur-sm p-6 rounded-2xl border border-indigo-500/20 shadow-inner">
+              <p className="flex gap-3 items-start"><span className="text-indigo-600 dark:text-indigo-500 shrink-0 text-lg leading-none">✅</span> <span className="text-foreground tracking-tight">Unlimited tracking (vs 5 free limit)</span></p>
+              <p className="flex gap-3 items-start"><span className="text-indigo-600 dark:text-indigo-500 shrink-0 text-lg leading-none">✅</span> <span className="text-foreground tracking-tight">Full spending analytics & forecasting</span></p>
+              <p className="flex gap-3 items-start"><span className="text-indigo-600 dark:text-indigo-500 shrink-0 text-lg leading-none">✅</span> <span className="text-foreground tracking-tight">Gmail auto-import (no manual entry)</span></p>
+              <p className="flex gap-3 items-start"><span className="text-indigo-600 dark:text-indigo-500 shrink-0 text-lg leading-none">✅</span> <span className="text-foreground tracking-tight">Priority support & early access</span></p>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto mt-auto sm:mt-0 mb-8 sm:mb-0">

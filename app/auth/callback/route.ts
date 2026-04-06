@@ -27,6 +27,24 @@ export async function GET(request: Request) {
         session: !!data.session
       })
 
+      // Save Google tokens if this was a Gmail OAuth connection
+      if (data.session?.provider_refresh_token) {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .update({
+            google_refresh_token: data.session.provider_refresh_token,
+            google_access_token: data.session.provider_token,
+            gmail_linked: true,
+          })
+          .eq('id', data.session.user.id)
+          
+        if (profileError) {
+          console.error('[Auth Callback] Failed to save Google tokens to profile:', profileError)
+        } else {
+          console.log('[Auth Callback] Google tokens securely saved to profile.')
+        }
+      }
+
       // If we have a user, check if we're linking or just logging in
       const forwardedHost = request.headers.get('x-forwarded-host')
       const isLocalEnv = process.env.NODE_ENV === 'development'

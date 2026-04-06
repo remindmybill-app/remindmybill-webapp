@@ -221,7 +221,7 @@ export default function PricingPage() {
 
               <CardHeader className="pt-8 pb-4">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 ${plan.iconColor}`}>
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-black/5 dark:bg-white/5 ${plan.iconColor}`}>
                     <plan.icon className="h-5 w-5" />
                   </div>
                   <div>

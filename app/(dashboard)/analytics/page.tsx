@@ -414,13 +414,13 @@ function AnalyticsContent({
 
             {/* PRO UPGRADE SECTION */}
             <div className="mt-12 space-y-6">
-              <div className="bg-gradient-to-r from-emerald-950/60 to-teal-950/60 border border-emerald-800/40 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/60 dark:to-teal-950/60 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xl">🔒</span>
-                    <h3 className="text-white font-semibold text-lg">Unlock Pro Analytics</h3>
+                    <h3 className="text-emerald-950 dark:text-white font-semibold text-lg">Unlock Pro Analytics</h3>
                   </div>
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-emerald-800 dark:text-gray-400 text-sm">
                     Get deeper insights into your spending habits. Trends, forecasts, and velocity tracking.
                   </p>
                 </div>

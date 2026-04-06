@@ -275,9 +275,9 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
                                 />
                               </div>
                               <div>
-                                <span className="block text-sm font-bold text-foreground flex items-center gap-2">
-                                  {sub.name}
-                                  {isPaused && <Lock className="h-3 w-3 text-muted-foreground" />}
+                                <span className="text-sm font-bold text-foreground flex items-center gap-2 truncate min-w-0">
+                                  <span className="truncate">{sub.name}</span>
+                                  {isPaused && <Lock className="h-3 w-3 text-muted-foreground shrink-0" />}
                                 </span>
                                 {sub.shared_with_count > 1 && !isPaused && (
                                   <span className="block mt-0.5 text-[9px] font-black uppercase tracking-tighter text-indigo-600 dark:text-indigo-400">
@@ -414,9 +414,9 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
                             <Icon className="h-6 w-6 text-zinc-600 dark:text-zinc-400" />
                           </div>
                           <div>
-                            <p className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                              {sub.name}
-                              {sub.shared_with_count > 1 && <span className="text-[9px] bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 px-1 rounded">👥</span>}
+                            <p className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2 truncate min-w-0">
+                              <span className="truncate">{sub.name}</span>
+                              {sub.shared_with_count > 1 && <span className="text-[9px] bg-indigo-50 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 px-1 rounded shrink-0">👥</span>}
                             </p>
                             <p className={`text-xs font-medium ${statusColor}`}>Renews in {label}</p>
                           </div>
@@ -588,7 +588,7 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
             <AlertDialogCancel className="rounded-xl">Keep Sub</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => confirmCancelSub && handleCancel(confirmCancelSub.id)}
-              className="bg-zinc-900 dark:bg-zinc-100 rounded-xl"
+              className="bg-zinc-900 text-zinc-50 dark:bg-zinc-100 dark:text-zinc-900 rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-200"
             >
               Confirm Cancel
             </AlertDialogAction>

@@ -314,3 +314,32 @@ export async function scanGmailReceipts(accessToken: string, days: number = 45, 
         return { success: false, error: error.message }
     }
 }
+
+export async function fetchNewAccessToken(refreshToken: string): Promise<string | null> {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    
+    if (!clientId || !clientSecret) {
+        console.error("[GmailAction] Missing Google Client ID or Secret in environment");
+        return null;
+    }
+
+    try {
+        const response = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                client_id: clientId,
+                client_secret: clientSecret,
+                refresh_token: refreshToken,
+                grant_type: 'refresh_token',
+            }),
+        });
+
+        const tokens = await response.json();
+        return tokens.access_token || null;
+    } catch (err) {
+        console.error("[GmailAction] Failed to exchange refresh token:", err);
+        return null;
+    }
+}

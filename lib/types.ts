@@ -48,6 +48,8 @@ export interface Profile {
   current_usage: number
   is_pro: boolean
   google_refresh_token?: string | null
+  google_access_token?: string | null
+  gmail_linked?: boolean
   // New tier fields
   user_tier: UserTier
   subscription_interval?: 'monthly' | 'annual' | null

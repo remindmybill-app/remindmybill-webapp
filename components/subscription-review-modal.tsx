@@ -128,23 +128,23 @@ export function SubscriptionReviewModal() {
         onOpenChange is a no-op so clicking outside or pressing ESC doesn't close it 
         and no DialogClose button is provided
       */}
-            <DialogContent className="sm:max-w-[500px] gap-6 [&>button]:hidden bg-white dark:bg-gray-900">
+            <DialogContent className="sm:max-w-[500px] gap-6 [&>button]:hidden bg-background border-border text-foreground p-6 sm:p-8 rounded-t-[2.5rem] sm:rounded-3xl shadow-2xl">
                 <DialogHeader className="gap-2">
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/30">
                         <ShieldAlert className="h-8 w-8 text-orange-600 dark:text-orange-500" />
                     </div>
-                    <DialogTitle className="text-center text-xl font-semibold text-gray-900 dark:text-white">Your plan has changed</DialogTitle>
-                    <DialogDescription className="text-center text-sm text-gray-600 dark:text-gray-400">
-                        You've been moved to the <strong className="font-medium text-gray-900 dark:text-white">Free plan</strong>.
+                    <DialogTitle className="text-center text-xl font-bold tracking-tight text-foreground">Your plan has changed</DialogTitle>
+                    <DialogDescription className="text-center text-sm text-muted-foreground">
+                        You've been moved to the <strong className="font-bold text-foreground">Free plan</strong>.
                         You can keep up to 5 active subscriptions. Please select which ones to keep &mdash;
                         the rest will remain saved but paused.
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-4">
+                <div className="rounded-2xl border border-border bg-muted/30 p-4">
                     <div className="mb-3 flex items-center justify-between">
-                        <span className="font-medium text-sm text-gray-500 dark:text-gray-400">Select up to 5</span>
-                        <span className="font-semibold text-sm text-emerald-600 dark:text-emerald-400">
+                        <span className="font-bold text-[10px] uppercase tracking-widest text-muted-foreground">Select up to 5</span>
+                        <span className="font-bold text-sm text-emerald-600 dark:text-emerald-400">
                             {selectedCount} / 5 selected
                         </span>
                     </div>
@@ -155,9 +155,9 @@ export function SubscriptionReviewModal() {
                             return (
                                 <div
                                     key={sub.id}
-                                    className={`flex items-center justify-between rounded-lg p-3 transition-all cursor-pointer ${checked
-                                        ? "bg-emerald-50 border border-emerald-200 text-gray-900 dark:bg-emerald-900/30 dark:border-emerald-700 dark:text-white"
-                                        : "bg-white hover:bg-gray-50 text-gray-900 border border-transparent dark:bg-gray-800 dark:hover:bg-gray-750 dark:text-white"
+                                    className={`flex items-center justify-between rounded-xl p-3 transition-all cursor-pointer border ${checked
+                                        ? "bg-emerald-50 border-emerald-200 text-foreground dark:bg-emerald-900/30 dark:border-emerald-700"
+                                        : "bg-background hover:bg-muted/50 text-foreground border-transparent"
                                         }`}
                                     onClick={() => handleToggle(sub.id, !checked)}
                                 >
@@ -169,11 +169,11 @@ export function SubscriptionReviewModal() {
                                             className={checked ? "border-primary" : ""}
                                         />
                                         <div>
-                                            <p className="font-medium">{sub.name}</p>
-                                            <p className={`text-xs mt-1 ${checked ? "text-emerald-700 dark:text-emerald-400" : "text-gray-500 dark:text-gray-400"}`}>{sub.category}</p>
+                                            <p className="font-bold text-sm">{sub.name}</p>
+                                            <p className={`text-[10px] font-bold uppercase tracking-widest mt-0.5 ${checked ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"}`}>{sub.category}</p>
                                         </div>
                                     </div>
-                                    <div className={`text-right font-medium ${checked ? "text-emerald-700 dark:text-emerald-400" : "text-gray-900 dark:text-white"}`}>
+                                    <div className={`text-right font-bold text-sm ${checked ? "text-emerald-600 dark:text-emerald-400" : "text-foreground"}`}>
                                         {formatCurrency(sub.cost, sub.currency)}
                                     </div>
                                 </div>
@@ -190,7 +190,7 @@ export function SubscriptionReviewModal() {
 
                 <div className="flex flex-col gap-3">
                     <Button
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 text-lg"
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 text-base rounded-xl shadow-lg shadow-emerald-500/20"
                         onClick={handleSave}
                         disabled={isSaving}
                     >
@@ -199,7 +199,7 @@ export function SubscriptionReviewModal() {
                     </Button>
                     <Button
                         variant="ghost"
-                        className="w-full h-12 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-sm hover:bg-transparent border-none bg-transparent shadow-none"
+                        className="w-full h-11 text-muted-foreground hover:text-foreground text-xs font-bold uppercase tracking-widest hover:bg-muted/50 rounded-xl"
                         onClick={handleUpgrade}
                         disabled={isSaving}
                     >
