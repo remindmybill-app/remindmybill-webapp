@@ -47,42 +47,10 @@ function SettingsContent() {
 
   const activeTab = searchParams.get('tab') || 'account'
 
-  const [isStandalone, setIsStandalone] = useState(false)
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showDisconnectGmailModal, setShowDisconnectGmailModal] = useState(false)
   const [isDisconnectingGmail, setIsDisconnectingGmail] = useState(false)
 
-  useEffect(() => {
-    // Check both standalone and fullscreen display modes
-    const standaloneQuery = window.matchMedia('(display-mode: standalone)')
-    const fullscreenQuery = window.matchMedia('(display-mode: fullscreen)')
-    
-    // Also check iOS Safari PWA via navigator.standalone
-    const isIOSStandalone = (navigator as any).standalone === true
-    
-    const checkStandalone = () => {
-      setIsStandalone(
-        standaloneQuery.matches || 
-        fullscreenQuery.matches || 
-        isIOSStandalone
-      )
-    }
-    
-    checkStandalone()
-    
-    // Listen for changes (handles edge cases on some Android devices)
-    if (standaloneQuery.addEventListener) {
-      standaloneQuery.addEventListener('change', checkStandalone)
-      return () => standaloneQuery.removeEventListener('change', checkStandalone)
-    } else {
-      // Fallback for older browsers
-      (standaloneQuery as any).addListener(checkStandalone)
-      return () => (standaloneQuery as any).removeListener(checkStandalone)
-    }
-  }, [])
-
-  const canUsePush = isStandalone || 
-    (typeof Notification !== 'undefined' && Notification.permission === 'granted')
+  const canUsePush = typeof Notification !== 'undefined' && typeof navigator !== 'undefined' && 'serviceWorker' in navigator
 
   useEffect(() => {
     if (profile) {
@@ -90,29 +58,6 @@ function SettingsContent() {
     }
   }, [profile])
 
-  const handleInstallApp = async () => {
-      if (!deferredPrompt) {
-          toast.info("Installation is not supported or the prompt is unavailable in your browser");
-          return;
-      }
-      await deferredPrompt.prompt()
-      const { outcome } = await deferredPrompt.userChoice
-      if (outcome === "accepted") {
-          setIsStandalone(true) // assume installed
-      }
-      setDeferredPrompt(null)
-  }
-
-  // Handle beforeinstallprompt separately to avoid reset on re-render
-  useEffect(() => {
-    const handler = (e: Event) => {
-        e.preventDefault()
-        setDeferredPrompt(e as BeforeInstallPromptEvent)
-    }
-
-    window.addEventListener("beforeinstallprompt", handler)
-    return () => window.removeEventListener("beforeinstallprompt", handler)
-  }, [])
 
   const handlePushToggle = async (checked: boolean) => {
     const supabase = createClient()
@@ -612,27 +557,17 @@ function SettingsContent() {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label htmlFor="push-alerts" className={"text-base " + (!canUsePush ? "opacity-50" : "")}>
+                    <Label htmlFor="push-alerts" className="text-base">
                       Push Notifications
                     </Label>
-                    <p className={"text-sm " + (!canUsePush ? "opacity-50 text-muted-foreground" : "text-muted-foreground")}>
+                    <p className="text-sm text-muted-foreground">
                       Browser notifications for real-time alerts
                     </p>
-                    {!canUsePush && (
-                        <div className="mt-3 space-y-3">
-                           <p className="text-xs text-amber-600 dark:text-amber-500 font-medium">Install the app to enable push notifications</p>
-                           <Button variant="outline" size="sm" onClick={handleInstallApp}>
-                               Install App
-                           </Button>
-                        </div>
-                    )}
                   </div>
                   <Switch 
                      id="push-alerts" 
                      checked={pushAlerts} 
                      onCheckedChange={handlePushToggle}
-                     disabled={!canUsePush}
-                     className={!canUsePush ? "opacity-50 cursor-not-allowed" : ""}
                   />
                 </div>
               </CardContent>

@@ -57,12 +57,11 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              (function() {
-                try {
-                  var theme = localStorage.getItem('rmb_theme') || 'dark';
-                  document.documentElement.setAttribute('data-theme', theme);
-                } catch (e) {}
-              })();
+              try {
+                const theme = localStorage.getItem('rmb_theme') || 'dark';
+                document.documentElement.classList.toggle('dark', theme === 'dark');
+                document.documentElement.setAttribute('data-theme', theme);
+              } catch (e) {}
             `,
           }}
         />
