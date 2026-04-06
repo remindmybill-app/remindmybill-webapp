@@ -39,7 +39,8 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 function SettingsContent() {
   const [emailNotifications, setEmailNotifications] = useState(true)
 
-  const [pushAlerts, setPushAlerts] = useState(false)
+  const [pushEnabled, setPushEnabled] = useState(false)
+  const [pushLoading, setPushLoading] = useState(false)
   const { profile, updateProfile, mutate } = useProfile()
   const { subscriptions, refreshSubscriptions } = useSubscriptions()
   const [currency, setCurrency] = useState(profile?.default_currency || "USD")
@@ -59,100 +60,77 @@ function SettingsContent() {
 
   const canUsePush = typeof Notification !== 'undefined' && typeof navigator !== 'undefined' && 'serviceWorker' in navigator
 
+  // Load state from DB on mount
   useEffect(() => {
-    if (profile) {
-      setPushAlerts(profile.push_notifications_enabled ?? false)
+    if (profile?.push_notifications_enabled) {
+      setPushEnabled(true)
     }
   }, [profile])
 
 
-  const handlePushToggle = async (checked: boolean) => {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    if (!user) {
-      toast.error("You must be logged in")
-      return
-    }
+  async function handlePushToggle(checked: boolean) {
+    setPushLoading(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        toast.error('You must be logged in')
+        return
+      }
 
-    if (!checked) {
-      // PART 3 — Fix toggle OFF flow
-      try {
-        const registration = await navigator.serviceWorker.ready
-        const sub = await registration.pushManager.getSubscription()
-        if (sub) {
-          await sub.unsubscribe()
+      if (checked) {
+        // Step 1 — Check browser support
+        if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+          toast.error('Push notifications are not supported on this device')
+          return
         }
+
+        // Step 2 — Request permission
+        const permission = await Notification.requestPermission()
+        if (permission !== 'granted') {
+          toast.error('Permission denied — enable notifications in your device settings')
+          return
+        }
+
+        // Step 3 — Get service worker
+        const registration = await navigator.serviceWorker.ready
+
+        // Step 4 — Subscribe with VAPID key
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!) as any
+        })
+
+        // Step 5 — Save to DB
+        const { error } = await supabase.from('profiles').update({
+          push_notifications_enabled: true,
+          push_subscription: JSON.stringify(subscription.toJSON())
+        }).eq('id', user.id)
+
+        if (error) throw error
+
+        setPushEnabled(true)
+        toast.success('Push notifications enabled')
+
+      } else {
+        // Toggle OFF
+        const registration = await navigator.serviceWorker.ready
+        const subscription = await registration.pushManager.getSubscription()
+        if (subscription) await subscription.unsubscribe()
 
         await supabase.from('profiles').update({
           push_notifications_enabled: false,
           push_subscription: null
         }).eq('id', user.id)
 
-        setPushAlerts(false)
-        await mutate()
-        toast.success("Push notifications disabled")
-      } catch (error: any) {
-        console.error("Failed to unsubscribe:", error)
-        toast.error("Failed to disable push notifications")
-        setPushAlerts(true) // revert
-      }
-      return
-    }
-    
-    // PART 2 — Fix toggle ON flow
-    if (!("Notification" in window)) {
-      toast.error("Push notifications are not supported in this browser")
-      return
-    }
-
-    try {
-      let permission = Notification.permission
-      console.log('Step 1: permission =', permission)
-      
-      if (permission === 'default') {
-        permission = await Notification.requestPermission()
-        console.log('Step 1 (after request): permission =', permission)
-      }
-
-      if (permission === 'granted') {
-        const registration = await navigator.serviceWorker.ready
-        console.log('Step 2: SW registration =', registration)
-
-        if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
-          throw new Error("VAPID public key is missing from environment variables")
-        }
-
-        const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!) as any
-        })
-        console.log('Step 3: subscription =', subscription)
-
-        await supabase.from('profiles').update({
-          push_notifications_enabled: true,
-          push_subscription: JSON.stringify(subscription.toJSON())
-        }).eq('id', user.id)
-
-        setPushAlerts(true)
-        await mutate()
-        toast.success("Push notifications enabled")
-      } else if (permission === 'denied') {
-        toast.error("Notifications blocked — tap here to open settings", {
-          action: {
-            label: "Open Settings",
-            onClick: () => window.open('app-settings:', '_blank') // iOS
-          }
-        })
-        setPushAlerts(false)
-      } else {
-        toast.error("Enable notifications in your device settings")
-        setPushAlerts(false)
+        setPushEnabled(false)
+        toast.success('Push notifications disabled')
       }
     } catch (error: any) {
-      console.error('Push subscription failed:', error)
-      toast.error(`Push setup failed: ${error.message}`)
-      setPushAlerts(false) // Revert toggle to OFF
+      toast.error(`Failed: ${error.message}`)
+      setPushEnabled(!checked) // revert
+    } finally {
+      setPushLoading(false)
     }
   }
 
@@ -568,11 +546,15 @@ function SettingsContent() {
                       Browser notifications for real-time alerts
                     </p>
                   </div>
-                  <Switch 
-                     id="push-alerts" 
-                     checked={pushAlerts} 
-                     onCheckedChange={handlePushToggle}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="push-alerts"
+                      checked={pushEnabled}
+                      onCheckedChange={handlePushToggle}
+                      disabled={pushLoading}
+                    />
+                    {pushLoading && <span className="text-xs text-gray-400">Setting up...</span>}
+                  </div>
                 </div>
               </CardContent>
             </Card>
