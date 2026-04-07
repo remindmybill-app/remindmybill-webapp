@@ -8,9 +8,26 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Bell, Mail, Lock, ArrowRight, Loader2 } from "lucide-react"
+import { Bell, Mail, ArrowRight, Loader2 } from "lucide-react"
 import { toast } from "sonner"
+
+function getPasswordStrength(password: string): {
+  score: number
+  label: string
+  color: string
+} {
+  let score = 0
+  if (password.length >= 8) score++
+  if (password.length >= 12) score++
+  if (/[A-Z]/.test(password)) score++
+  if (/[0-9]/.test(password)) score++
+  if (/[^A-Za-z0-9]/.test(password)) score++
+
+  if (score <= 1) return { score, label: 'Weak', color: '#ef4444' }
+  if (score <= 2) return { score, label: 'Fair', color: '#f97316' }
+  if (score <= 3) return { score, label: 'Good', color: '#eab308' }
+  return { score, label: 'Strong', color: '#22c55e' }
+}
 
 // --- Friendly auth error handler ---
 function handleAuthError(error: any, email: string) {
@@ -167,6 +184,8 @@ export default function LoginPage() {
         )
     }
 
+    const strength = getPasswordStrength(password)
+
     // --- Render ---
     return (
         <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -262,6 +281,26 @@ export default function LoginPage() {
                                     minLength={6}
                                     autoComplete="new-password"
                                 />
+                                {password.length > 0 && (
+                                    <div className="space-y-1.5 mt-1">
+                                        <div className="flex gap-1">
+                                            {[1, 2, 3, 4].map((i) => (
+                                                <div
+                                                    key={i}
+                                                    className="h-1 flex-1 rounded-full transition-all duration-300"
+                                                    style={{
+                                                        background: i <= Math.ceil(strength.score / 1.25)
+                                                            ? strength.color
+                                                            : '#262626'
+                                                    }}
+                                                />
+                                            ))}
+                                        </div>
+                                        <p className="text-xs" style={{ color: strength.color }}>
+                                            {strength.label} password
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="signup-confirm-password">Confirm Password</Label>
@@ -275,13 +314,24 @@ export default function LoginPage() {
                                     minLength={6}
                                     autoComplete="new-password"
                                 />
+                                {confirmPassword.length > 0 && (
+                                    <p className={`text-xs flex items-center gap-1.5 mt-1 ${
+                                        password === confirmPassword ? 'text-green-500' : 'text-red-400'
+                                    }`}>
+                                        {password === confirmPassword ? (
+                                            <><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Passwords match</>
+                                        ) : (
+                                            <><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Passwords don't match</>
+                                        )}
+                                    </p>
+                                )}
                             </div>
                             <Button
                                 id="create-account"
                                 type="submit"
                                 size="lg"
                                 className="w-full h-12 gap-2"
-                                disabled={isSubmitting}
+                                disabled={isSubmitting || password !== confirmPassword || password.length < 6}
                             >
                                 {isSubmitting ? (
                                     <>
@@ -298,20 +348,36 @@ export default function LoginPage() {
                         </form>
                     ) : (
                         /* Sign In Tabs: Magic Link | Password */
-                        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                            <TabsList className="w-full">
-                                <TabsTrigger value="magic-link" className="flex-1 gap-1.5">
-                                    <Mail className="h-3.5 w-3.5" />
+                        <div className="w-full space-y-4">
+                            <div className="flex rounded-lg border border-[#2a2a2a] p-1 gap-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('magic-link')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                                        activeTab === 'magic-link'
+                                            ? 'bg-[#22c55e] text-black shadow-sm'
+                                            : 'text-[#666] hover:text-[#aaa] hover:bg-[#1a1a1a]'
+                                    }`}
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
                                     Magic Link
-                                </TabsTrigger>
-                                <TabsTrigger value="password" className="flex-1 gap-1.5">
-                                    <Lock className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('password')}
+                                    className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-md text-sm font-medium transition-all duration-200 ${
+                                        activeTab === 'password'
+                                            ? 'bg-[#22c55e] text-black shadow-sm'
+                                            : 'text-[#666] hover:text-[#aaa] hover:bg-[#1a1a1a]'
+                                    }`}
+                                >
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                                     Password
-                                </TabsTrigger>
-                            </TabsList>
+                                </button>
+                            </div>
 
-                            {/* Magic Link Tab */}
-                            <TabsContent value="magic-link">
+                            {/* Magic Link Content */}
+                            {activeTab === 'magic-link' && (
                                 <form onSubmit={handleMagicLink} className="space-y-4 pt-2">
                                     <div className="space-y-2">
                                         <Label htmlFor="magic-link-email">Email</Label>
@@ -345,10 +411,10 @@ export default function LoginPage() {
                                         )}
                                     </Button>
                                 </form>
-                            </TabsContent>
+                            )}
 
-                            {/* Password Tab */}
-                            <TabsContent value="password">
+                            {/* Password Content */}
+                            {activeTab === 'password' && (
                                 <form onSubmit={handleEmailSignIn} className="space-y-4 pt-2">
                                     <div className="space-y-2">
                                         <Label htmlFor="password-email">Email</Label>
@@ -402,8 +468,8 @@ export default function LoginPage() {
                                         </Link>
                                     </div>
                                 </form>
-                            </TabsContent>
-                        </Tabs>
+                            )}
+                        </div>
                     )}
                 </div>
 
