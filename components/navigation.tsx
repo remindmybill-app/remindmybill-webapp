@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -23,15 +23,32 @@ import { useNotifications } from "@/lib/hooks/use-notifications"
 import { isPro } from "@/lib/subscription-utils"
 import { ManualSubscriptionModal } from "@/components/manual-subscription-modal"
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions"
+import { getSupabaseBrowserClient } from "@/lib/supabase/client"
+import { Loader2 } from "lucide-react"
 
 export function Navigation() {
-  const [isSearchOpen, setIsSearchOpen] = useState(false)
   const { profile } = useProfile()
   const isAdmin = profile?.is_admin === true;
   const { notifications } = useNotifications()
   const { refreshSubscriptions } = useSubscriptions()
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
+
+  const handleSignOut = async () => {
+    setIsLoggingOut(true)
+    try {
+      const supabase = getSupabaseBrowserClient()
+      await supabase.auth.signOut()
+      router.push('/auth/login')
+      router.refresh()
+    } catch (error) {
+      console.error("Sign out error:", error)
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }
 
   const isActive = (path: string) => pathname === path
 
@@ -112,27 +129,7 @@ export function Navigation() {
 
             {/* Right Side Actions */}
             <div className="flex items-center gap-2">
-              {/* Search Bar */}
-              <div className="hidden lg:block">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder="Search... (Cmd+K)"
-                    className="w-64 pl-9 pr-4"
-                    onFocus={() => setIsSearchOpen(true)}
-                  />
-                  <kbd className="pointer-events-none absolute right-2 top-1/2 hidden h-5 -translate-y-1/2 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-                    <span className="text-xs">⌘</span>K
-                  </kbd>
-                </div>
-              </div>
-
-              {/* Mobile Search - Hidden on mobile as it will be in bottom nav or top logo area if we kept it */}
-              <Button variant="ghost" size="icon" className="lg:hidden">
-                <Search className="h-5 w-5" />
-                <span className="sr-only">Search</span>
-              </Button>
+              {/* Notifications */}
 
               <Popover>
                 <PopoverTrigger asChild>
@@ -217,9 +214,17 @@ export function Navigation() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-destructive">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Log out
+                  <DropdownMenuItem 
+                    className="text-destructive focus:bg-destructive/10 focus:text-destructive cursor-pointer"
+                    onSelect={handleSignOut}
+                    disabled={isLoggingOut}
+                  >
+                    {isLoggingOut ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <LogOut className="mr-2 h-4 w-4" />
+                    )}
+                    {isLoggingOut ? "Signing out..." : "Log out"}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -298,6 +303,20 @@ export function Navigation() {
                           asChild
                         >
                           <Link href="/profile">Profile</Link>
+                        </Button>
+                        <DropdownMenuSeparator className="my-2" />
+                        <Button
+                          variant="ghost"
+                          className="justify-start text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
+                          onClick={handleSignOut}
+                          disabled={isLoggingOut}
+                        >
+                          {isLoggingOut ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <LogOut className="h-4 w-4" />
+                          )}
+                          {isLoggingOut ? "Signing out..." : "Log out"}
                         </Button>
                       </nav>
                     </div>
