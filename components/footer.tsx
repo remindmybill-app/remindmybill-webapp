@@ -20,8 +20,8 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-                  Security
+                <a href="/trust" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+                  Trust Center
                 </a>
               </li>
               <li>

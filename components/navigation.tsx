@@ -87,12 +87,12 @@ export function Navigation() {
                 <Link href="/dashboard">Dashboard</Link>
               </Button>
               <Button
-                variant={isActive("/trust-center") ? "secondary" : "ghost"}
+                variant={isActive("/trust") ? "secondary" : "ghost"}
                 size="sm"
                 asChild
-                className={isActive("/trust-center") ? "bg-primary/10 text-primary hover:bg-primary/20" : ""}
+                className={isActive("/trust") ? "bg-primary/10 text-primary hover:bg-primary/20" : ""}
               >
-                <Link href="/trust-center">Trust Center</Link>
+                <Link href="/trust">Trust Center</Link>
               </Button>
               <Button
                 variant={isActive("/analytics") ? "secondary" : "ghost"}
@@ -258,11 +258,11 @@ export function Navigation() {
                           <Link href="/dashboard">Dashboard</Link>
                         </Button>
                         <Button
-                          variant={isActive("/trust-center") ? "secondary" : "ghost"}
-                          className={`justify-start ${isActive("/trust-center") ? "bg-primary/10 text-primary" : ""}`}
+                          variant={isActive("/trust") ? "secondary" : "ghost"}
+                          className={`justify-start ${isActive("/trust") ? "bg-primary/10 text-primary" : ""}`}
                           asChild
                         >
-                          <Link href="/trust-center">Trust Center</Link>
+                          <Link href="/trust">Trust Center</Link>
                         </Button>
                         <Button
                           variant={isActive("/analytics") ? "secondary" : "ghost"}
@@ -361,8 +361,8 @@ export function Navigation() {
             <Home className={`h-6 w-6 ${isActive('/dashboard') ? 'fill-current opacity-20' : ''}`} />
             <span className="text-[10px] font-bold uppercase tracking-widest">Dash</span>
           </Link>
-          <Link href="/trust-center" className={`flex flex-col items-center justify-center gap-1 transition-all duration-200 ${isActive('/trust-center') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
-            <Shield className={`h-6 w-6 ${isActive('/trust-center') ? 'fill-current opacity-20' : ''}`} />
+          <Link href="/trust" className={`flex flex-col items-center justify-center gap-1 transition-all duration-200 ${isActive('/trust') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
+            <Shield className={`h-6 w-6 ${isActive('/trust') ? 'fill-current opacity-20' : ''}`} />
             <span className="text-[10px] font-bold uppercase tracking-widest">Trust</span>
           </Link>
           <Link href="/analytics" className={`flex flex-col items-center justify-center gap-1 transition-all duration-200 ${isActive('/analytics') ? 'text-primary' : 'text-muted-foreground hover:text-primary'}`}>
