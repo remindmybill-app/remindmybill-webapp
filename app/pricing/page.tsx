@@ -305,7 +305,7 @@ export default function PricingPage() {
                 <tr className="bg-muted sticky top-0 z-10">
                   <th className="text-left p-4 font-semibold text-muted-foreground">Feature</th>
                   <th className="text-center p-4 font-semibold">
-                    <span className="text-zinc-400">Free</span>
+                    <span className="text-muted-foreground">Free</span>
                     <span className="block text-xs text-muted-foreground font-normal">Free</span>
                   </th>
                   <th className="text-center p-4 font-semibold">

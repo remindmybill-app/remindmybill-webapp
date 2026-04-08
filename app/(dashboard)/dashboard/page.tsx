@@ -623,25 +623,25 @@ function DashboardContent() {
                             )}
                             
                             {isGmailConnected && (
-                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mr-1">
+                                <p className="text-xs text-muted-foreground mt-1 mr-1">
                                     Last scanned: {profile?.last_gmail_scan_at ? `${Math.floor((Date.now() - new Date(profile.last_gmail_scan_at).getTime()) / (1000 * 60 * 60))} hours ago` : "Never scanned"}
                                 </p>
                             )}
                             
                             {showGmailNudge && !isGmailConnected && (
-                                <div className="absolute top-[calc(100%+12px)] right-0 w-72 z-50 glass-panel bg-white dark:bg-zinc-950 border border-emerald-500/50 shadow-[0_10px_40px_-10px_rgba(16,185,129,0.3)] rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
-                                    <div className="absolute -top-[5px] right-6 w-2.5 h-2.5 bg-white dark:bg-zinc-950 border-t border-l border-emerald-500/50 rotate-45 transform origin-center rounded-[1px]" />
+                                <div className="absolute top-[calc(100%+12px)] right-0 w-72 z-50 glass-panel bg-card border border-emerald-500/50 shadow-[0_10px_40px_-10px_rgba(16,185,129,0.3)] rounded-xl p-4 animate-in fade-in slide-in-from-top-2">
+                                    <div className="absolute -top-[5px] right-6 w-2.5 h-2.5 bg-card border-t border-l border-emerald-500/50 rotate-45 transform origin-center rounded-[1px]" />
                                     
                                     <div className="relative z-10 flex flex-col gap-2">
                                         <h4 className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
                                             💡 Save time — sync Gmail
                                         </h4>
-                                        <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-snug">
+                                        <p className="text-sm text-muted-foreground leading-snug">
                                             Auto-import subscriptions from your email receipts.
                                             No manual entry needed. Takes 10 seconds.
                                         </p>
                                         <div className="flex items-center justify-end gap-2 mt-2 transition-colors">
-                                            <Button variant="ghost" size="sm" onClick={dismissGmailNudge} className="h-8 text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800">
+                                            <Button variant="ghost" size="sm" onClick={dismissGmailNudge} className="h-8 text-xs text-muted-foreground hover:text-foreground hover:bg-muted">
                                                 Maybe later
                                             </Button>
                                             <Button size="sm" className="h-8 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleConnectGmailFromNudge}>

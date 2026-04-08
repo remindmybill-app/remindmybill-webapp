@@ -382,7 +382,7 @@ function SettingsContent() {
                     <p className="text-sm font-medium text-foreground">Connected with Google</p>
                     <p className="text-xs text-muted-foreground mt-0.5">{authUserEmail}</p>
                   </div>
-                  <span className="ml-auto text-xs bg-green-950/50 text-green-500 border border-green-900 px-2.5 py-1 rounded-full">Active</span>
+                  <span className="ml-auto text-xs bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20 px-2.5 py-1 rounded-full">Active</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-4 pt-4 border-t border-border">
                   Your account is secured by Google. Password and email changes are managed through your Google account settings.
@@ -510,7 +510,7 @@ function SettingsContent() {
                     {profile?.gmail_linked ? (
                       <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800 text-xs px-2 py-0.5 rounded-full">Connected</Badge>
                     ) : (
-                      <Badge variant="outline" className="bg-gray-100 text-gray-500 border border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 text-xs px-2 py-0.5 rounded-full">Not connected</Badge>
+                      <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-xs px-2 py-0.5 rounded-full">Not connected</Badge>
                     )}
                     {profile?.gmail_linked ? (
                       <Button variant="outline" size="sm" className="h-9 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10" onClick={() => setShowDisconnectGmailModal(true)}>
@@ -618,12 +618,12 @@ function SettingsContent() {
                     </Button>
                   )}
                   {profile?.cancellation_scheduled && (
-                    <div className="bg-yellow-50 dark:opacity-100 dark:bg-yellow-500/10 border border-yellow-300 dark:border-yellow-500 rounded-lg p-4 mb-4">
+                    <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 mb-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-500" />
-                        <h4 className="font-semibold text-yellow-900 dark:text-white">Cancellation Scheduled</h4>
+                        <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-500" />
+                        <h4 className="font-semibold text-amber-900 dark:text-amber-400">Cancellation Scheduled</h4>
                       </div>
-                      <p className="text-yellow-800 dark:text-gray-300 text-sm mb-3">
+                      <p className="text-amber-800 dark:text-amber-300 text-sm mb-3">
                         Your subscription will end on{' '}
                         <strong>
                           {profile?.cancellation_date ? new Date(profile.cancellation_date).toLocaleDateString('en-US', {
@@ -698,7 +698,7 @@ function SettingsContent() {
                       onCheckedChange={handlePushToggle}
                       disabled={pushLoading}
                     />
-                    {pushLoading && <span className="text-xs text-gray-400">Setting up...</span>}
+                    {pushLoading && <span className="text-xs text-muted-foreground">Setting up...</span>}
                   </div>
                 </div>
               </CardContent>

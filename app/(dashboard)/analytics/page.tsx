@@ -320,7 +320,7 @@ function AnalyticsContent({
                 </div>
                 <div>
                    <h2 className="text-2xl font-bold mb-1.5 tracking-tight text-white">Welcome to Analytics!</h2>
-                   <p className="text-gray-300 text-sm leading-relaxed max-w-lg">💡 <strong className="text-emerald-400">Pro tip:</strong> Add 3+ subscriptions to unlock full trend forecasting.<br/>📈 Your category breakdown updates monthly based on active renewals.</p>
+                   <p className="text-teal-100/80 text-sm leading-relaxed max-w-lg">💡 <strong className="text-emerald-400">Pro tip:</strong> Add 3+ subscriptions to unlock full trend forecasting.<br/>📈 Your category breakdown updates monthly based on active renewals.</p>
                 </div>
              </div>
              <Button variant="outline" className="shrink-0 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/20 hover:border-emerald-500/30 h-11 px-6 rounded-xl relative z-10 w-full sm:w-auto font-semibold backdrop-blur-md transition-all" onClick={() => setShowWelcomeBanner(false)}>
@@ -340,8 +340,8 @@ function AnalyticsContent({
                 <div className="flex items-center gap-3 mb-4">
                   <AlertTriangle className="h-6 w-6 text-red-500" />
                   <div>
-                    <h3 className="font-bold text-lg text-red-900 dark:text-red-100">Heavy Week Ahead</h3>
-                    <p className="text-sm text-red-800 dark:text-red-200">
+                    <h3 className="font-bold text-lg text-foreground">Heavy Week Ahead</h3>
+                    <p className="text-sm text-muted-foreground">
                       {analytics.upcoming7DaysCount > 0 ? `${formatCurrency(analytics.upcoming7DaysTotal, userCurrency)} due in next 7 days` : `${formatCurrency(247, userCurrency)} due in next 7 days`}
                     </p>
                   </div>
@@ -418,9 +418,9 @@ function AnalyticsContent({
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xl">🔒</span>
-                    <h3 className="text-emerald-950 dark:text-white font-semibold text-lg">Unlock Pro Analytics</h3>
+                    <h3 className="text-foreground font-semibold text-lg">Unlock Pro Analytics</h3>
                   </div>
-                  <p className="text-emerald-800 dark:text-gray-400 text-sm">
+                  <p className="text-muted-foreground text-sm">
                     Get deeper insights into your spending habits. Trends, forecasts, and velocity tracking.
                   </p>
                 </div>

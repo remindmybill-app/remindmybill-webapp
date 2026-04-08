@@ -339,7 +339,7 @@ export function Navigation() {
             priority
           />
         </Link>
-        <Link href="/" className="md:hidden text-sm font-semibold text-gray-900 dark:text-white tracking-tight hover:opacity-80 transition-opacity">
+        <Link href="/" className="md:hidden text-sm font-semibold text-foreground tracking-tight hover:opacity-80 transition-opacity">
           RemindMyBill
         </Link>
         <div className="flex items-center gap-4">

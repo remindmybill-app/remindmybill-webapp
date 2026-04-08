@@ -215,7 +215,7 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
           {isLoading ? (
             <div className="p-8 space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="flex items-center justify-between space-x-4 rounded-2xl border border-zinc-100 dark:border-zinc-800 p-6">
+                <div key={i} className="flex items-center justify-between space-x-4 rounded-2xl border border-border p-6">
                   <div className="flex items-center space-x-4">
                     <Skeleton className="h-12 w-12 rounded-xl" />
                     <div className="space-y-2">
@@ -407,16 +407,16 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
                   return (
                     <div key={sub.id} className="relative space-y-2">
                       <div
-                        className={`rounded-2xl border border-gray-100 bg-white p-6 shadow-sm dark:shadow-none dark:border-gray-800 dark:bg-gray-900 active:scale-[0.97] active:bg-gray-50 dark:active:bg-gray-800/50 transition-all duration-200 ${isPaused ? 'opacity-50 grayscale' : ''}`}
+                        className={`rounded-2xl border border-border bg-card p-6 shadow-sm dark:shadow-none active:scale-[0.97] transition-all duration-200 ${isPaused ? 'opacity-50 grayscale' : ''}`}
                         onClick={() => setSelectedMobileSub(sub)}
                       >
                       <div className="mb-4 flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="h-12 w-12 flex items-center justify-center rounded-xl bg-zinc-50 dark:bg-zinc-800 ring-1 ring-zinc-100 dark:ring-zinc-700">
-                            <Icon className="h-6 w-6 text-zinc-600 dark:text-zinc-400" />
+                          <div className="h-12 w-12 flex items-center justify-center rounded-xl bg-muted ring-1 ring-border">
+                            <Icon className="h-6 w-6 text-muted-foreground" />
                           </div>
                           <div>
-                            <p className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2 truncate min-w-0">
+                            <p className="text-base font-bold text-foreground flex items-center gap-2 truncate min-w-0">
                               <span className="truncate">{sub.name}</span>
                               {sub.shared_with_count > 1 && <span className="text-[9px] bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400 px-1 rounded shrink-0">👥</span>}
                             </p>
@@ -425,19 +425,19 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
                             </p>
                           </div>
                         </div>
-                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-100/50 dark:bg-zinc-800/50 border border-zinc-200/50 dark:border-zinc-700/50">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-muted/50 border border-border/50">
                           <MoreHorizontal className="h-6 w-6 text-muted-foreground" />
                         </div>
                       </div>
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-50 dark:border-gray-800/50">
+                      <div className="flex items-center justify-between pt-4 border-t border-border/50">
                         <div>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Cost</p>
-                          <p className="text-xl font-black tracking-tighter text-gray-900 dark:text-white">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Cost</p>
+                          <p className="text-xl font-black tracking-tighter text-foreground">
                             {formatCurrency(sub.cost / sub.shared_with_count, sub.currency)}
-                            <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1 uppercase">/{sub.frequency === 'yearly' ? 'yr' : 'mo'}</span>
+                            <span className="text-xs font-normal text-muted-foreground ml-1 uppercase">/{sub.frequency === 'yearly' ? 'yr' : 'mo'}</span>
                           </p>
                           {sub.shared_with_count > 1 && (
-                            <p className="text-[9px] text-gray-500 dark:text-gray-400 font-medium">Full: {formatCurrency(sub.cost, sub.currency)}</p>
+                            <p className="text-[9px] text-muted-foreground font-medium">Full: {formatCurrency(sub.cost, sub.currency)}</p>
                           )}
                         </div>
                         <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-wide uppercase ${
@@ -487,7 +487,7 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
           <div className="flex flex-col gap-3 mb-8">
             <Button
               variant="outline"
-              className="h-16 w-full rounded-2xl flex items-center justify-between px-6 border-zinc-200 dark:border-zinc-800 active:scale-[0.98] transition-all"
+              className="h-16 w-full rounded-2xl flex items-center justify-between px-6 border-border active:scale-[0.98] transition-all"
               onClick={() => {
                 if (selectedMobileSub) handleToggleEnable(selectedMobileSub);
               }}
@@ -503,7 +503,7 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
 
             <Button
               variant="outline"
-              className="h-16 w-full rounded-2xl flex items-center justify-between px-6 border-zinc-200 dark:border-zinc-800 active:scale-[0.98] transition-all"
+              className="h-16 w-full rounded-2xl flex items-center justify-between px-6 border-border active:scale-[0.98] transition-all"
               onClick={() => {
                 setEditingSubscription(selectedMobileSub)
                 setSelectedMobileSub(null)
@@ -518,7 +518,7 @@ export function SubscriptionsTable({ onScanGmail }: { onScanGmail?: () => void }
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </Button>
 
-            <div className="flex items-center justify-between h-16 w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 px-6 active:scale-[0.98] transition-all">
+            <div className="flex items-center justify-between h-16 w-full rounded-2xl border border-border px-6 active:scale-[0.98] transition-all">
               <div className="flex items-center gap-4">
                 <div className="h-10 w-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center">
                   <Calendar className="h-5 w-5 text-indigo-600" />
