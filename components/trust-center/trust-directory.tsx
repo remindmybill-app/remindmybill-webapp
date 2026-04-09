@@ -174,9 +174,9 @@ export function TrustDirectory({ initialServices, highRiskServices }: TrustDirec
                   {service.cancellation_method || "N/A"}
                 </div>
                 <Button
-                  variant="secondary"
+                  variant="ghost"
                   size="sm"
-                  className="w-full bg-white/10 hover:bg-white/20 text-white border-none rounded-lg h-8 text-xs font-bold"
+                  className="w-full bg-red-100 dark:bg-red-500/10 hover:bg-red-200 dark:hover:bg-red-500/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/20 rounded-lg h-8 text-xs font-bold transition-colors"
                   onClick={() => setSelectedService(service)}
                 >
                   View Details
