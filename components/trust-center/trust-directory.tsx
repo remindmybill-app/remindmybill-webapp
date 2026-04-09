@@ -169,10 +169,18 @@ export function TrustDirectory({ initialServices, highRiskServices }: TrustDirec
                     {service.difficulty_level}
                   </Badge>
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground pb-2">
                   <span className="font-semibold block mb-0.5 opacity-70 uppercase tracking-widest text-[9px]">Method</span>
                   {service.cancellation_method || "N/A"}
                 </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="w-full bg-white/10 hover:bg-white/20 text-white border-none rounded-lg h-8 text-xs font-bold"
+                  onClick={() => setSelectedService(service)}
+                >
+                  View Details
+                </Button>
               </div>
             ))}
           </div>
@@ -402,35 +410,35 @@ export function TrustDirectory({ initialServices, highRiskServices }: TrustDirec
                       </Badge>
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4 py-4 border-y border-border/50">
-                    <div>
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Method</p>
-                      <p className="font-semibold">{selectedService.cancellation_method || "Online"}</p>
-                    </div>
-                    {selectedService.website_url && (
-                      <div>
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Website</p>
-                        <a
-                          href={selectedService.website_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="font-semibold text-primary hover:underline flex items-center gap-1"
-                        >
-                          Visit Site <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
 
-              {selectedService.cancellation_steps && selectedService.cancellation_steps.length > 0 && (
-                <div className="space-y-4">
-                  <h4 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4 text-green-500" />
-                    How to cancel
-                  </h4>
+              <div className="grid grid-cols-2 gap-4 py-4 border-y border-border/50">
+                <div>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Method</p>
+                  <p className="font-semibold">{selectedService.cancellation_method || "Online"}</p>
+                </div>
+                {selectedService.website_url && selectedService.website_url.trim() !== "" && (
+                  <div>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Website</p>
+                    <a
+                      href={selectedService.website_url.startsWith('http') ? selectedService.website_url : `https://${selectedService.website_url}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-primary hover:underline flex items-center gap-1"
+                    >
+                      Visit Site <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-green-500" />
+                  How to cancel
+                </h4>
+                {selectedService.cancellation_steps && selectedService.cancellation_steps.length > 0 ? (
                   <ol className="space-y-3">
                     {selectedService.cancellation_steps.map((step, index) => (
                       <li key={index} className="flex gap-4 group">
@@ -441,13 +449,17 @@ export function TrustDirectory({ initialServices, highRiskServices }: TrustDirec
                       </li>
                     ))}
                   </ol>
-                </div>
-              )}
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">No step-by-step guide available yet.</p>
+                )}
+              </div>
 
               <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                {selectedService.cancellation_url && (
+                {selectedService.cancellation_url && 
+                 selectedService.cancellation_url.trim() !== "" && 
+                 !selectedService.cancellation_url.toLowerCase().includes("example.com") && (
                   <Button asChild className="flex-1 h-12 rounded-xl text-md font-bold shadow-lg shadow-primary/20">
-                    <a href={selectedService.cancellation_url} target="_blank" rel="noopener noreferrer">
+                    <a href={selectedService.cancellation_url.startsWith('http') ? selectedService.cancellation_url : `https://${selectedService.cancellation_url}`} target="_blank" rel="noopener noreferrer">
                       Cancel This Subscription →
                     </a>
                   </Button>
