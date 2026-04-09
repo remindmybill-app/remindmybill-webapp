@@ -17,8 +17,14 @@ export default async function TrustCenterPage() {
     .select("*")
     .order("trust_score", { ascending: false })
 
+  const { data: highRisk } = await supabase
+    .from("service_benchmarks")
+    .select("*")
+    .order("trust_score", { ascending: true })
+    .limit(5)
+
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-foreground selection:bg-primary/20">
+    <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
       {/* Background Decorative Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]" />
@@ -33,7 +39,7 @@ export default async function TrustCenterPage() {
             RemindMyBill Transparency
           </div>
           
-          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-[1.1]">
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-foreground leading-[1.1]">
             The Subscription <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-emerald-400 to-primary animate-gradient">Trust Center</span>
           </h1>
@@ -61,7 +67,7 @@ export default async function TrustCenterPage() {
             <Shield className="h-7 w-7 text-primary" />
           </div>
           <div className="space-y-1 text-center md:text-left">
-            <h3 className="text-lg font-bold text-white">Why the Trust Center?</h3>
+            <h3 className="text-lg font-bold text-foreground">Why the Trust Center?</h3>
             <p className="text-muted-foreground text-sm">
               Some services make it intentionally difficult to leave. We believe in "Easy In, Easy Out". 
               Our scores reflect the honesty of a company's cancellation policies.
@@ -70,7 +76,7 @@ export default async function TrustCenterPage() {
         </div>
 
         {/* Directory Component */}
-        <TrustDirectory initialServices={services || []} />
+        <TrustDirectory initialServices={services || []} highRiskServices={highRisk || []} />
 
         {/* Footer Note */}
         <div className="mt-24 text-center space-y-4">

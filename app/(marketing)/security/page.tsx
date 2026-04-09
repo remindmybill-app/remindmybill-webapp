@@ -30,7 +30,7 @@ const SectionHeading = ({
 }) => (
   <h2
     id={id}
-    className="text-2xl font-bold text-white mb-6"
+    className="text-2xl font-bold text-foreground mb-6"
   >
     {children}
   </h2>
@@ -38,7 +38,7 @@ const SectionHeading = ({
 
 const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
   <div
-    className={`rounded-2xl border border-[#1f1f1f] bg-[#1a1a1a] p-6 sm:p-8 ${className}`}
+    className={`rounded-2xl border border-border bg-card p-6 sm:p-8 ${className}`}
   >
     {children}
   </div>
@@ -47,7 +47,7 @@ const Card = ({ children, className = "" }: { children: React.ReactNode; classNa
 /* ─────────────── page ─────────────── */
 export default function SecurityPage() {
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-[#888] selection:bg-emerald-500/20">
+    <div className="min-h-screen bg-background text-muted-foreground selection:bg-emerald-500/20">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
 
         {/* ═══════════ HERO ═══════════ */}
@@ -56,11 +56,11 @@ export default function SecurityPage() {
             <Shield className="h-8 w-8 text-[#22c55e]" />
           </div>
 
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-white mb-6">
+          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-foreground mb-6">
             Your data is yours. Full&nbsp;stop.
           </h1>
 
-          <p className="mx-auto max-w-2xl text-lg leading-relaxed text-[#888] mb-10">
+          <p className="mx-auto max-w-2xl text-lg leading-relaxed text-muted-foreground mb-10">
             RemindMyBill is built on a simple principle: we only access what we
             need, we never sell your data, and you can revoke access at any time.
           </p>
@@ -101,7 +101,7 @@ export default function SecurityPage() {
                   ].map((item) => (
                     <li
                       key={item}
-                      className="flex items-start gap-3 text-sm text-[#ccc]"
+                      className="flex items-start gap-3 text-sm text-foreground/80"
                     >
                       <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#22c55e]" />
                       {item}
@@ -125,7 +125,7 @@ export default function SecurityPage() {
                   ].map((item) => (
                     <li
                       key={item}
-                      className="flex items-start gap-3 text-sm text-[#ccc]"
+                      className="flex items-start gap-3 text-sm text-foreground/80"
                     >
                       <XCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-400" />
                       {item}
@@ -136,9 +136,9 @@ export default function SecurityPage() {
             </div>
 
             {/* Note */}
-            <div className="mt-8 rounded-xl border border-[#1f1f1f] bg-[#0a0a0a] px-5 py-4">
-              <p className="text-sm leading-relaxed text-[#888]">
-                <span className="font-semibold text-white">Note:</span> We
+            <div className="mt-8 rounded-xl border border-border bg-background px-5 py-4">
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                <span className="font-semibold text-foreground">Note:</span> We
                 request read-only OAuth access. We cannot send emails, delete
                 emails, or modify your inbox in any way.
               </p>
@@ -179,10 +179,10 @@ export default function SecurityPage() {
                 <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[#22c55e]/10 border border-[#22c55e]/20">
                   <card.icon className="h-5 w-5 text-[#22c55e]" />
                 </div>
-                <h3 className="text-base font-semibold text-white mb-2">
+                <h3 className="text-base font-semibold text-foreground mb-2">
                   {card.title}
                 </h3>
-                <p className="text-sm leading-relaxed text-[#888]">
+                <p className="text-sm leading-relaxed text-muted-foreground">
                   {card.desc}
                 </p>
               </Card>
@@ -217,10 +217,10 @@ export default function SecurityPage() {
                   <item.icon className="h-5 w-5 text-[#22c55e]" />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-white mb-1">
+                  <h3 className="text-base font-semibold text-foreground mb-1">
                     {item.title}
                   </h3>
-                  <p className="text-sm leading-relaxed text-[#888]">
+                  <p className="text-sm leading-relaxed text-muted-foreground">
                     {item.desc}
                   </p>
                 </div>
@@ -234,7 +234,7 @@ export default function SecurityPage() {
           <SectionHeading id="gdpr">GDPR &amp; Privacy</SectionHeading>
 
           <Card>
-            <p className="text-sm leading-relaxed text-[#888] mb-6">
+            <p className="text-sm leading-relaxed text-muted-foreground mb-6">
               RemindMyBill is committed to GDPR compliance. We act as a data
               processor on behalf of our users. We do not sell, rent, or share
               personal data with third parties for marketing purposes. For the
@@ -261,7 +261,7 @@ export default function SecurityPage() {
         <section className="text-center">
           <SectionHeading id="contact">Questions?</SectionHeading>
 
-          <p className="text-sm leading-relaxed text-[#888] mb-8 max-w-xl mx-auto">
+          <p className="text-sm leading-relaxed text-muted-foreground mb-8 max-w-xl mx-auto">
             Have a question about how we handle your data? We&apos;re
             transparent by default.
           </p>

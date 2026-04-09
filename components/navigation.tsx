@@ -104,6 +104,15 @@ export function Navigation() {
                 <Link href="/pricing">Pricing</Link>
               </Button>
 
+              <Button
+                variant={isActive("/trust") ? "secondary" : "ghost"}
+                size="sm"
+                asChild
+                className={isActive("/trust") ? "bg-primary/10 text-primary hover:bg-primary/20" : ""}
+              >
+                <Link href="/trust">Trust Center</Link>
+              </Button>
+
 
               {isAdmin && (
                 <Button
@@ -264,6 +273,13 @@ export function Navigation() {
                           asChild
                         >
                           <Link href="/pricing">Pricing</Link>
+                        </Button>
+                        <Button
+                          variant={isActive("/trust") ? "secondary" : "ghost"}
+                          className={`justify-start ${isActive("/trust") ? "bg-primary/10 text-primary" : ""}`}
+                          asChild
+                        >
+                          <Link href="/trust">Trust Center</Link>
                         </Button>
                         {isAdmin && (
                           <Button

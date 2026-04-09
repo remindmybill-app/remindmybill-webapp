@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Search, Filter, ArrowUpDown, ExternalLink, ShieldCheck, X } from "lucide-react"
+import { Search, Filter, ArrowUpDown, ExternalLink, ShieldCheck, X, ChevronDown, AlertTriangle, Plus, ChevronRight, Info } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -11,8 +11,26 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
+import { getSupabaseBrowserClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
+import { Textarea } from "@/components/ui/textarea"
+import { Label } from "@/components/ui/label"
 
 interface ServiceBenchmark {
   id: string
@@ -28,13 +46,24 @@ interface ServiceBenchmark {
 
 interface TrustDirectoryProps {
   initialServices: ServiceBenchmark[]
+  highRiskServices: ServiceBenchmark[]
 }
 
-export function TrustDirectory({ initialServices }: TrustDirectoryProps) {
+export function TrustDirectory({ initialServices, highRiskServices }: TrustDirectoryProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All")
-  const [sortBy, setSortBy] = useState<"score" | "difficulty">("score")
+  const [sortBy, setSortBy] = useState<string>("most_trusted")
   const [selectedService, setSelectedService] = useState<ServiceBenchmark | null>(null)
+  const [isSuggestModalOpen, setIsSuggestModalOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // Suggest form state
+  const [suggestForm, setSuggestForm] = useState({
+    name: "",
+    website_url: "",
+    category: "",
+    reason: ""
+  })
 
   const categories = useMemo(() => {
     const cats = new Set(initialServices.map((s) => s.category))
@@ -49,12 +78,19 @@ export function TrustDirectory({ initialServices }: TrustDirectoryProps) {
         return matchesSearch && matchesCategory
       })
       .sort((a, b) => {
-        if (sortBy === "score") {
-          return b.trust_score - a.trust_score
-        } else {
-          // Hardest to cancel (Impossible > Hard > Medium > Easy)
-          const difficultyMap = { Impossible: 4, Hard: 3, Medium: 2, Easy: 1 }
-          return difficultyMap[b.difficulty_level] - difficultyMap[a.difficulty_level]
+        const difficultyMap: Record<string, number> = { "Very Hard": 5, Impossible: 4, Hard: 3, Medium: 2, Easy: 1 }
+        
+        switch (sortBy) {
+          case "most_trusted":
+            return b.trust_score - a.trust_score
+          case "lowest_score":
+            return a.trust_score - b.trust_score
+          case "hardest":
+            return (difficultyMap[b.difficulty_level] || 0) - (difficultyMap[a.difficulty_level] || 0)
+          case "easiest":
+            return (difficultyMap[a.difficulty_level] || 0) - (difficultyMap[b.difficulty_level] || 0)
+          default:
+            return 0
         }
       })
   }, [initialServices, searchQuery, selectedCategory, sortBy])
@@ -76,10 +112,77 @@ export function TrustDirectory({ initialServices }: TrustDirectoryProps) {
     }
   }
 
+  const handleSuggestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!suggestForm.name) return
+    
+    setIsSubmitting(true)
+    try {
+      const supabase = getSupabaseBrowserClient()
+      const { error } = await supabase
+        .from("service_suggestions")
+        .insert([
+          {
+            name: suggestForm.name,
+            website_url: suggestForm.website_url || null,
+            category: suggestForm.category || null,
+            reason: suggestForm.reason || null,
+            status: "pending"
+          }
+        ])
+
+      if (error) throw error
+
+      toast.success("Thanks! We'll review your suggestion.")
+      setIsSuggestModalOpen(false)
+      setSuggestForm({ name: "", website_url: "", category: "", reason: "" })
+    } catch (error) {
+      console.error("Submission error:", error)
+      toast.error("Failed to submit suggestion. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <div className="space-y-8">
+      {/* High Risk Section */}
+      {highRiskServices.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-red-500">
+            <AlertTriangle className="h-5 w-5" />
+            <h2 className="text-lg font-bold">High Risk Subscriptions</h2>
+          </div>
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-none snap-x">
+            {highRiskServices.map((service) => (
+              <div 
+                key={service.id}
+                className="flex-shrink-0 w-[280px] snap-start p-4 rounded-xl bg-red-950/20 border border-red-900/30 space-y-3"
+              >
+                <div className="flex justify-between items-start">
+                  <h3 className="font-bold text-foreground truncate pr-2">{service.name}</h3>
+                  <span className="text-red-500 font-black tracking-tighter">{service.trust_score}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Badge className={cn("text-[10px] px-1.5 py-0 border", getDifficultyColor(service.difficulty_level))}>
+                    {service.difficulty_level}
+                  </Badge>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  <span className="font-semibold block mb-0.5 opacity-70 uppercase tracking-widest text-[9px]">Method</span>
+                  {service.cancellation_method || "N/A"}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground/70">
+            ⚠️ These services have been flagged as difficult to cancel or use dark patterns.
+          </p>
+        </div>
+      )}
+
       {/* Search and Filters */}
-      <div className="flex flex-col gap-6 sticky top-16 z-30 bg-background/95 backdrop-blur py-4 -mx-4 px-4 border-b border-border/40">
+      <div className="flex flex-col gap-6 sticky top-16 z-30 bg-background py-4 -mx-4 px-4 border-b border-border">
         <div className="relative max-w-2xl mx-auto w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -90,8 +193,8 @@ export function TrustDirectory({ initialServices }: TrustDirectoryProps) {
           />
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-4 overflow-x-auto pb-2 scrollbar-none">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none max-w-full">
             {categories.map((category) => (
               <button
                 key={category}
@@ -108,16 +211,73 @@ export function TrustDirectory({ initialServices }: TrustDirectoryProps) {
             ))}
           </div>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSortBy(sortBy === "score" ? "difficulty" : "score")}
-            className="gap-2 rounded-full border-border/50"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-            Sort by: {sortBy === "score" ? "Most Trusted" : "Hardest to Cancel"}
-          </Button>
+          <div className="flex items-center gap-2">
+             <span className="text-sm text-muted-foreground hidden sm:inline">Sort by:</span>
+             <Select value={sortBy} onValueChange={setSortBy}>
+               <SelectTrigger className="w-[180px] h-9 rounded-full bg-card border-border/50">
+                 <SelectValue placeholder="Sort by" />
+               </SelectTrigger>
+               <SelectContent>
+                 <SelectItem value="most_trusted">Most Trusted</SelectItem>
+                 <SelectItem value="lowest_score">Lowest Score First</SelectItem>
+                 <SelectItem value="hardest">Hardest to Cancel</SelectItem>
+                 <SelectItem value="easiest">Easiest to Cancel</SelectItem>
+               </SelectContent>
+             </Select>
+          </div>
         </div>
+
+        {/* Calculation Breakdown */}
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="how-it-works" className="border-none">
+            <AccordionTrigger className="py-2 text-sm text-muted-foreground hover:no-underline hover:text-foreground transition-colors justify-start gap-2">
+              <Info className="h-4 w-4" />
+              How is the Trust Score calculated?
+            </AccordionTrigger>
+            <AccordionContent>
+              <div className="bg-muted rounded-lg p-4 text-sm text-muted-foreground space-y-3">
+                <p className="font-semibold text-foreground">Trust Score is calculated from 0–100 based on:</p>
+                <div className="grid sm:grid-cols-2 gap-x-8 gap-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-500">✅ +5</span>
+                    <span>Instant cancellation with immediate confirmation</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-500">❌ -5</span>
+                    <span>No direct cancellation URL available</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-500">❌ -10</span>
+                    <span>No self-service cancellation (must contact support)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-500">❌ -10</span>
+                    <span>Cancellation difficulty rated Hard</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-500">❌ -20</span>
+                    <span>Cancellation difficulty rated Very Hard</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-500">❌ -15</span>
+                    <span>Known for dark patterns (surprise charges, hidden auto-renewal)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-500">❌ -15</span>
+                    <span>Requires live chat with retention agent to cancel</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-500">❌ -20</span>
+                    <span>Requires phone call to cancel</span>
+                  </div>
+                </div>
+                <p className="pt-2 border-t border-border/50 text-xs italic">
+                  Scores are researched and verified. Higher = safer subscription.
+                </p>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
 
       {/* Grid */}
@@ -283,6 +443,105 @@ export function TrustDirectory({ initialServices }: TrustDirectoryProps) {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Suggest a Service Feature */}
+      <div className="mt-12 text-center">
+        <Button 
+          variant="outline" 
+          onClick={() => setIsSuggestModalOpen(true)}
+          className="gap-2 rounded-full border-primary/20 hover:border-primary/50 text-primary"
+        >
+          Don't see a service? Suggest it <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <Dialog open={isSuggestModalOpen} onOpenChange={setIsSuggestModalOpen}>
+        <DialogContent className="sm:max-w-[500px] bg-card border-border/50 rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black">Suggest a Service</DialogTitle>
+            <DialogDescription>
+              Help us expand the Trust Center. Suggest a service you'd like us to research.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSuggestSubmit} className="space-y-6 py-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Service Name <span className="text-red-500">*</span></Label>
+                <Input 
+                  id="name"
+                  placeholder="e.g., Netflix, Adobe, Planet Fitness"
+                  required
+                  value={suggestForm.name}
+                  onChange={(e) => setSuggestForm({ ...suggestForm, name: e.target.value })}
+                  className="bg-muted/50 border-border/50 focus:border-primary/50 rounded-xl"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="website">Website URL (optional)</Label>
+                <Input 
+                  id="website"
+                  type="url"
+                  placeholder="https://example.com"
+                  value={suggestForm.website_url}
+                  onChange={(e) => setSuggestForm({ ...suggestForm, website_url: e.target.value })}
+                  className="bg-muted/50 border-border/50 focus:border-primary/50 rounded-xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Select 
+                  value={suggestForm.category} 
+                  onValueChange={(val) => setSuggestForm({ ...suggestForm, category: val })}
+                >
+                  <SelectTrigger className="bg-muted/50 border-border/50 rounded-xl">
+                    <SelectValue placeholder="Select a category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.filter(c => c !== "All").map(cat => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reason">Why should it be added? (optional)</Label>
+                <Textarea 
+                  id="reason"
+                  placeholder="Tell us about the cancellation experience..."
+                  maxLength={200}
+                  value={suggestForm.reason}
+                  onChange={(e) => setSuggestForm({ ...suggestForm, reason: e.target.value })}
+                  className="bg-muted/50 border-border/50 focus:border-primary/50 rounded-xl min-h-[100px]"
+                />
+                <div className="text-[10px] text-right text-muted-foreground">
+                  {suggestForm.reason.length}/200
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button 
+                type="button" 
+                variant="ghost" 
+                onClick={() => setIsSuggestModalOpen(false)}
+                className="rounded-xl"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="rounded-xl px-8"
+              >
+                {isSubmitting ? "Submitting..." : "Submit Suggestion"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>
