@@ -158,25 +158,25 @@ export function TrustDirectory({ initialServices, highRiskServices }: TrustDirec
             {highRiskServices.map((service) => (
               <div 
                 key={service.id}
-                className="flex-shrink-0 w-[280px] snap-start p-4 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 space-y-3"
+                className="flex-shrink-0 w-[280px] snap-start p-4 rounded-xl bg-card border border-red-500/40 space-y-3"
               >
                 <div className="flex justify-between items-start">
-                  <h3 className="font-bold text-red-950 dark:text-foreground truncate pr-2">{service.name}</h3>
-                  <span className="text-red-600 dark:text-red-500 font-black tracking-tighter">{service.trust_score}</span>
+                  <h3 className="font-bold text-foreground truncate pr-2">{service.name}</h3>
+                  <span className="text-red-500 font-black tracking-tighter">{service.trust_score}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Badge className={cn("text-[10px] px-1.5 py-0 border", getDifficultyColor(service.difficulty_level))}>
+                  <Badge className="text-[10px] px-1.5 py-0 border bg-red-500/20 text-red-400 border-red-500/30">
                     {service.difficulty_level}
                   </Badge>
                 </div>
-                <div className="text-xs text-muted-foreground pb-2">
-                  <span className="font-semibold block mb-0.5 opacity-70 uppercase tracking-widest text-[9px]">Method</span>
-                  {service.cancellation_method || "N/A"}
+                <div className="text-xs space-y-1 pb-2">
+                  <span className="font-semibold block opacity-70 uppercase tracking-widest text-[9px] text-muted-foreground">Method</span>
+                  <p className="text-foreground">{service.cancellation_method || "N/A"}</p>
                 </div>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  className="w-full bg-red-100 dark:bg-red-500/10 hover:bg-red-200 dark:hover:bg-red-500/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-500/20 rounded-lg h-8 text-xs font-bold transition-colors"
+                  className="w-full border-red-500/50 text-red-400 hover:bg-red-500/10 h-8 text-xs font-bold transition-colors"
                   onClick={() => setSelectedService(service)}
                 >
                   View Details
