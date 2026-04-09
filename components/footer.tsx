@@ -120,7 +120,11 @@ export function Footer() {
             </span>
           </div>
           <div className="text-sm text-muted-foreground">
-            Built with security and privacy in mind • developed by{" "}
+            Built with security and privacy in mind • {" "}
+            <a href="/security" className="text-primary hover:underline font-medium">
+              How we protect your data →
+            </a>
+            {" "} • developed by{" "}
             <a
               href="https://foryoudigitalsolutions.com"
               target="_blank"
