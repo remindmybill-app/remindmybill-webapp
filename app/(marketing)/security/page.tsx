@@ -267,11 +267,11 @@ export default function SecurityPage() {
           </p>
 
           <a
-            href="mailto:hello@remindmybill.com"
+            href="mailto:support@remindmybill.com"
             className="inline-flex items-center gap-2 rounded-lg border border-[#22c55e] px-6 py-3 text-sm font-semibold text-[#22c55e] transition-colors hover:bg-[#22c55e]/10"
           >
             <Mail className="h-4 w-4" />
-            hello@remindmybill.com
+            support@remindmybill.com
           </a>
         </section>
       </div>

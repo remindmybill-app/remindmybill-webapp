@@ -56,6 +56,7 @@ export function TrustDirectory({ initialServices, highRiskServices }: TrustDirec
   const [selectedService, setSelectedService] = useState<ServiceBenchmark | null>(null)
   const [isSuggestModalOpen, setIsSuggestModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showAll, setShowAll] = useState(false)
   
   // Suggest form state
   const [suggestForm, setSuggestForm] = useState({
@@ -157,11 +158,11 @@ export function TrustDirectory({ initialServices, highRiskServices }: TrustDirec
             {highRiskServices.map((service) => (
               <div 
                 key={service.id}
-                className="flex-shrink-0 w-[280px] snap-start p-4 rounded-xl bg-red-950/20 border border-red-900/30 space-y-3"
+                className="flex-shrink-0 w-[280px] snap-start p-4 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 space-y-3"
               >
                 <div className="flex justify-between items-start">
-                  <h3 className="font-bold text-foreground truncate pr-2">{service.name}</h3>
-                  <span className="text-red-500 font-black tracking-tighter">{service.trust_score}</span>
+                  <h3 className="font-bold text-red-950 dark:text-foreground truncate pr-2">{service.name}</h3>
+                  <span className="text-red-600 dark:text-red-500 font-black tracking-tighter">{service.trust_score}</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Badge className={cn("text-[10px] px-1.5 py-0 border", getDifficultyColor(service.difficulty_level))}>
@@ -282,8 +283,9 @@ export function TrustDirectory({ initialServices, highRiskServices }: TrustDirec
 
       {/* Grid */}
       {filteredServices.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredServices.map((service) => (
+        <div className="space-y-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredServices.slice(0, showAll ? filteredServices.length : 12).map((service) => (
             <div
               key={service.id}
               className="group flex flex-col bg-card border border-border/50 rounded-2xl p-6 transition-all hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 animate-in fade-in slide-in-from-bottom-4 duration-500"
@@ -322,6 +324,23 @@ export function TrustDirectory({ initialServices, highRiskServices }: TrustDirec
               </Button>
             </div>
           ))}
+          </div>
+
+          {filteredServices.length > 12 && (
+            <div className="flex justify-center">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowAll(!showAll)}
+                className="gap-2 rounded-full border-border hover:bg-muted"
+              >
+                {showAll ? (
+                  <>Show Less</>
+                ) : (
+                  <>View All {filteredServices.length} Services <ChevronDown className="h-4 w-4" /></>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       ) : (
         <div className="text-center py-24 bg-card/30 rounded-3xl border border-dashed border-border/50">
